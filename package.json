@@ -1,0 +1,21 @@
+{
+  "name": "base-package-haicc",
+  "description": "HAICC: declare what a project needs, check it, make it so (haicc-reconcile), and its lifecycle (haicc-deployment). The entry package.",
+  "private": true,
+  "license": "MIT",
+  "pkgm": {
+    "package": "haicc",
+    "requires": [
+      "mycelium"
+    ],
+    "folders": [
+      "pear-full-square/haicc-reconcile",
+      "pear-full-square/haicc-deployment",
+      "pear-full-square/haicc-base-boot"
+    ],
+    "hash": "586ee9433b83a53bbbd2e97be92e98ce2fdfb0c7a0182747e138460ec837caee",
+    "root": [
+      "kick.sh"
+    ]
+  }
+}
