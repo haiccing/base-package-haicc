@@ -5,7 +5,7 @@ HAICC: declare what a project needs, check it, make it so (haicc-reconcile), and
 A package: self-contained, its code ready to run, laid out as it is installed. Written by the package manager (`pear-full-square/pkgm-base-manager`) from the development repository; do not edit here.
 
 - requires: `haiccing/base-package-mycelium`
-- hash: `586ee9433b83a53bbbd2e97be92e98ce2fdfb0c7a0182747e138460ec837caee`
+- hash: `eb12eac8d80ba38867840d4719226b67f493e663698b719b96dae5ece1fd9574`
 
 ## Kicking HAICC
 
@@ -16,7 +16,7 @@ sh base-package-haicc/kick.sh            # step 0 (the host's prerequisites), th
 sh base-package-haicc/pear-full-square/haicc-base-boot/step0.sh check   # only look
 ```
 
-Step 0 checks the host (Linux x86-64; Node.js 22 or later; git 2.25 or later; for a swarm, Docker Engine, rootful, native, running, and the user in the `docker` group) and fixes what is missing only with your yes (`--yes` to agree beforehand): Node.js into `~/.haicc/node` (no sudo), git and Docker Engine with `apt`. Then `haicc` is in `~/.haicc/bin`. A project (a demo) needs no kick: its `run.sh` kicks HAICC if needed.
+Step 0 checks the host (Linux x86-64; Node.js 22 or later; git 2.25 or later; Docker Engine, rootful, native, running, and the user in the `docker` group: all needed, since nodes run in Docker containers) and fixes what is missing only with your yes (`--yes` to agree beforehand): Node.js into `~/.haicc/node` (no sudo), git and Docker Engine with `apt`. Then `haicc` is in `~/.haicc/bin`. A project (a demo) needs no kick: its `run.sh` kicks HAICC if needed.
 
 ## From scratch
 
