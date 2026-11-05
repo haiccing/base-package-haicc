@@ -13,9 +13,6 @@
       "pear-full-square/haicc-deployment",
       "pear-full-square/haicc-base-boot"
     ],
-    "hash": "eb12eac8d80ba38867840d4719226b67f493e663698b719b96dae5ece1fd9574",
-    "root": [
-      "kick.sh"
-    ]
+    "hash": "2f56981ba7309abe39fb267f745d50cec10a535f00bb36a80974d247e6f3c2de"
   }
 }
