@@ -1,43 +1,29 @@
 # base-package-haicc
 
-HAICC: declare what a project needs, check it, make it so (haicc-reconcile), and its lifecycle (haicc-deployment). The entry package.
+HAICC: declare what a project needs, check it, make it so (haicc-reconcile), its lifecycle (haicc-deployment), and its boot (haicc-base-boot). The entry: everything starts here.
 
-A package: self-contained, its code ready to run, laid out as it is installed. Written by the package manager (`pear-full-square/pkgm-base-manager`) from the development repository; do not edit here.
+## Start here
 
-- requires: `haiccing/base-package-mycelium`
-- hash: `2f56981ba7309abe39fb267f745d50cec10a535f00bb36a80974d247e6f3c2de`
-
-## A work folder
-
-Everything starts here. The setup, a release of this package (`haicc-setup.sh`, self-extracting: `sh` and `tar` only), extracts a work folder's `haiccing/`; its `boot` does the rest:
+Linux on x86-64 (on Windows: inside WSL2), with `curl` and `tar`. The setup is this package's release, `haicc-setup.sh`:
 
 ```sh
-sh haicc-setup.sh ~/haicc-work                 # haiccing/: boot, sources (github haiccing), base-package-haicc
-~/haicc-work/haiccing/boot                     # step 0, the repositories fetched, the package manager and HAICC into .haicc, ./haicc
-cd ~/haicc-work && ./haicc run base-demo-liveness
+curl -fsSL -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh
+sh haicc-setup.sh ~/haicc-work         # a work folder: haiccing/ with boot, sources and this package
+~/haicc-work/haiccing/boot             # the root: Node.js, HAICC's root part, then git and Docker checked
+cd ~/haicc-work
+./haicc list
 ```
 
-```
-<work>/
-  haicc        the launcher: ./haicc <command>
-  haiccing/    boot, sources, [install], the repositories
-  .haicc/      the install: node/, packages/, log/ (boot's output, every command, every fetch)
-  manager/     the deployments, one folder per project
-```
+The boot runs in two stages. Stage 1, `haiccing/boot`, in plain shell: Linux x86-64 and Node.js (Node.js fixed with your yes, into `.haicc/node`); the root's part of HAICC (`haicc-base-boot`) copied into `.haicc/`; `./haicc` written. Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands. Everything it prints goes to `.haicc/log/haicc.log` too.
 
-Step 0 checks the host (Linux x86-64; Node.js 22 or later; git 2.25 or later; Docker Engine, rootful, native, running, and the user in the `docker` group: all needed, since nodes run in Docker containers) and fixes what is missing only with your yes (`haiccing/boot --yes` to agree beforehand): Node.js into `.haicc/node` (no sudo), git and Docker Engine with `apt`. `haiccing/sources` says where the repositories come from (`folder <path>`, `github <org>`), and `haiccing/install`, if there, is carried on with: one `haicc` command a line (`selftest.install` in `haicc-base-boot` is one).
+The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in managers: each swarm self-contained, with its own HAICC, package manager and packages (`./haicc boot <manager>`, next).
 
-## Holds
+## The package
 
-- `pear-full-square/haicc-reconcile`
-- `pear-full-square/haicc-deployment`
-- `pear-full-square/haicc-base-boot`
+- holds: `pear-full-square/haicc-reconcile`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-base-boot`
+- requires: [haiccing/base-package-pkgm](https://github.com/haiccing/base-package-pkgm)
+- hash: `96cfc58bc18fa731853ca87559bc93b71e41ebab9ddb83f0ed4a118c82eb3181`
 
-## Installed
+In a work folder (see [haiccing/base-package-haicc](https://github.com/haiccing/base-package-haicc)), installed by HAICC as a project needs it, or by `./haicc install haicc`, into `.haicc/packages` with what it requires; tested there, within the package: `./haicc test haicc`.
 
-By the package manager, into the host's install folder (`~/.haicc/packages`), with the packages it requires; its tests run there:
-
-```sh
-node <install folder>/pear-full-square/pkgm-base-manager/cli.js install haicc --from <folder of haiccing repositories>
-node <install folder>/pear-full-square/pkgm-base-manager/cli.js test haicc
-```
+Written by the package manager from the development repository ([splectrum/dev-env-2-p2p-cluster](https://github.com/splectrum/dev-env-2-p2p-cluster)): not edited here.

@@ -12,15 +12,19 @@
 // where they come from), .haicc/ (the install), manager/ (the deployments,
 // one folder per project; one fixed manager folder for now). <project>: its
 // repository's name, with or without `base-`, or a folder with project.json.
-// Every command, its input, output and outcome, to .haicc/log/commands.jsonl.
-// Exit 0 when done; 1 when not (the output says what is missing); 2 on a bad call.
+// What every command prints goes to .haicc/log/haicc.log too, in order
+// (files of 10 KB); --verbose and --debug say more. Every visible state
+// change is printed. Exit 0 when done; 1 when not (the output says what is
+// missing); 2 on a bad call.
 import process from 'node:process'
-import { existsSync, readFileSync, appendFileSync, mkdirSync } from 'node:fs'
+import { existsSync, readFileSync, readdirSync } from 'node:fs'
 import { join, resolve, dirname, basename } from 'node:path'
 import { spawnSync } from 'node:child_process'
 import { pathToFileURL } from 'node:url'
 import { openDeployment } from './index.js'
 import { humanText } from './lib/human.js'
+import { openLog } from './lib/log.js'
+import { journal } from '../haicc-reconcile/lib/journal.js'
 
 const argv = process.argv.slice(2)
 const flags = Object.fromEntries(argv.filter(a => a.startsWith('--')).map(a => { const [k, v] = a.slice(2).split('='); return [k, v ?? true] }))
@@ -33,19 +37,7 @@ const manager = join(work, 'manager')
 process.env.HAICC_HOME = home
 process.env.HAICC_PACKAGES = packages
 
-// The command's record: what was typed, what it said, how it ended.
-const t0 = Date.now()
-const said = []
-for (const stream of [process.stdout, process.stderr]) {
-  const write = stream.write.bind(stream)
-  stream.write = (chunk, ...rest) => { said.push(String(chunk)); return write(chunk, ...rest) }
-}
-process.on('exit', code => {
-  try {
-    mkdirSync(join(home, 'log'), { recursive: true })
-    appendFileSync(join(home, 'log', 'commands.jsonl'), JSON.stringify({ time: new Date(t0).toISOString(), command: ['haicc', ...argv], cwd: process.cwd(), exit: code, ms: Date.now() - t0, output: said.join('') }) + '\n')
-  } catch {}
-})
+const log = openLog({ dir: join(home, 'log'), command: ['haicc', ...argv], level: flags.debug ? 'debug' : flags.verbose ? 'verbose' : 'normal' })
 
 const usage = () => { process.stderr.write(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(1, 16).map(l => l.replace(/^\/\/ ?/, '')).join('\n') + '\n'); process.exit(2) }
 const pkgm = async () => import(pathToFileURL(join(packages, 'pear-full-square', 'pkgm-base-manager', 'index.js')).href)
@@ -117,14 +109,11 @@ try {
     const reg = (await pkgm()).installed(packages)
     console.log(`installed (${packages}):`)
     for (const [n, p] of Object.entries(reg.packages)) console.log(`  ${n}  ${p.hash.slice(0, 12)}${p.overrides ? '  overridden' : ''}`)
-    const { readdirSync } = await import('node:fs')
     const deployments = existsSync(manager) ? readdirSync(manager).filter(n => existsSync(join(manager, n, 'deployment'))) : []
     console.log(`deployments (${manager}):${deployments.length ? '' : ' none'}`)
     const { desiredOf } = await import('./index.js')
-    const { openTopic, folderStorage } = await import(pathToFileURL(join(packages, 'pear-full-square', 'mycelium-topic', 'index.js')).href)
     for (const n of deployments) {
-      const t = await openTopic({ storage: folderStorage(join(manager, n, 'deployment', 'topics', 'lifecycle')) })
-      const w = desiredOf(await t.consume(0))
+      const w = desiredOf(journal(join(manager, n, 'deployment', 'lifecycle.jsonl')).read())
       console.log(`  ${n}  ${w.running ? 'running' : w.deployed ? 'deployed' : 'nothing'}${w.last ? ` (last: ${w.last})` : ''}`)
     }
   } else if (verb === 'fetch') {
