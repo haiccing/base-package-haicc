@@ -7,7 +7,7 @@ HAICC: declare what a project needs, check it, make it so (haicc-reconcile), its
 Linux on x86-64 (on Windows: inside WSL2), with `curl` and `tar`. The setup is this package's release, `haicc-setup.sh`:
 
 ```sh
-curl -fsSL -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh
+curl -fL --progress-bar -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh
 sh haicc-setup.sh ~/haicc-work         # a work folder: haiccing/ with boot, sources and this package
 ~/haicc-work/haiccing/boot             # the root: Node.js, HAICC's root part, then git and Docker checked
 cd ~/haicc-work
@@ -22,7 +22,7 @@ The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in managers: each
 
 - holds: `pear-full-square/haicc-reconcile`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-base-boot`
 - requires: [haiccing/base-package-pkgm](https://github.com/haiccing/base-package-pkgm)
-- hash: `58fb397be615ebeebe5b0a4c57bc559e624c6f260aa509f242ba2737666ec37d`
+- hash: `b8c4a67a5e834b751c7bcdcddc54cd7adcfe4e643b658b685859e44995f3baaa`
 
 In a work folder (see [haiccing/base-package-haicc](https://github.com/haiccing/base-package-haicc)), installed by HAICC as a project needs it, or by `./haicc install haicc`, into `.haicc/packages` with what it requires; tested there, within the package: `./haicc test haicc`.
 
