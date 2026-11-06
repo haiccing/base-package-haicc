@@ -22,7 +22,7 @@ The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in managers: each
 
 - holds: `pear-full-square/haicc-reconcile`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-base-boot`
 - requires: [haiccing/base-package-pkgm](https://github.com/haiccing/base-package-pkgm)
-- hash: `96cfc58bc18fa731853ca87559bc93b71e41ebab9ddb83f0ed4a118c82eb3181`
+- hash: `58fb397be615ebeebe5b0a4c57bc559e624c6f260aa509f242ba2737666ec37d`
 
 In a work folder (see [haiccing/base-package-haicc](https://github.com/haiccing/base-package-haicc)), installed by HAICC as a project needs it, or by `./haicc install haicc`, into `.haicc/packages` with what it requires; tested there, within the package: `./haicc test haicc`.
 
