@@ -1,5 +1,11 @@
 #!/usr/bin/env node
-// haicc: HAICC for a work folder, as its boot installs it (./haicc <command>).
+// haicc: HAICC in a manager (<manager>/haicc <command>), the full HAICC,
+// copied in by the root's `./haicc boot <manager>`.
+//   haicc boot                        the node's boot: the self-test of what was copied
+//                                     in (each package's tests, in place); 0 when all pass
+//   haicc shutdown                    the node's shutdown: its container removed (with the
+//                                     swarm's step); its folder kept, for its boot
+// Removing a node is its swarm's: <swarm>/haicc shutdown|teardown <node>.
 //   haicc run <project> [--no-open]   fetched (with what it needs), installed, deployed and
 //                                     started, the browser opened
 //   haicc test <project|package>      a package's tests within the package; a project's: its
@@ -8,12 +14,12 @@
 //   haicc install <package>           a package, fetched and installed by the package manager
 //   haicc fetch <repository>          a repository (and what it requires) into haiccing/
 //   haicc list | version
-// The work folder ($HAICC_WORK): haiccing/ (the repositories, and sources:
-// where they come from), install/ (the install), log/ (its log), manager/ (the deployments,
-// one folder per project; one fixed manager folder for now). <project>: its
-// repository's name, with or without `base-`, or a folder with project.json.
-// What every command prints goes to log/haicc.log too, in order
-// (files of 10 KB); --verbose and --debug say more. Every visible state
+// The manager's folder ($HAICC_WORK): packages/ (its packages, whole
+// repositories), log/ (its log); the root's haiccing/ beside it. (`run` and
+// the lifecycle verbs: being reworked for managers, the swarm's step.)
+// <project>: its repository's name, with or without `base-`, or a folder
+// with project.json. What every command prints goes to log/ too, in order
+// (files of 10 KB named by their start, newest last); --verbose and --debug say more. Every visible state
 // change is printed. Exit 0 when done; 1 when not (the output says what is
 // missing); 2 on a bad call.
 import process from 'node:process'
@@ -24,24 +30,35 @@ import { pathToFileURL } from 'node:url'
 import { openDeployment } from './index.js'
 import { humanText } from './lib/human.js'
 import { openLog } from './lib/log.js'
+import { selfTest } from './lib/selftest.js'
 import { journal } from '../haicc-reconcile/lib/journal.js'
 
 const argv = process.argv.slice(2)
 const flags = Object.fromEntries(argv.filter(a => a.startsWith('--')).map(a => { const [k, v] = a.slice(2).split('='); return [k, v ?? true] }))
 const [verb, name] = argv.filter(a => !a.startsWith('--'))
 const work = resolve(process.env.HAICC_WORK || '.')
-const home = join(work, 'install')
-const packages = join(home, 'packages')
-const haiccing = join(work, 'haiccing')
+const packages = join(work, 'packages')
+const home = work
+// The root's haiccing/: a node is two down from it (<work>/<swarm>/<node>).
+const haiccing = [join(work, 'haiccing'), join(work, '..', 'haiccing'), join(work, '..', '..', 'haiccing')].find(d => existsSync(d)) || join(work, 'haiccing')
 const manager = join(work, 'manager')
-process.env.HAICC_HOME = home
 process.env.HAICC_PACKAGES = packages
 
 const log = openLog({ dir: join(work, 'log'), command: ['haicc', ...argv], level: flags.debug ? 'debug' : flags.verbose ? 'verbose' : 'normal' })
 
 const usage = () => { process.stderr.write(readFileSync(new URL(import.meta.url), 'utf8').split('\n').slice(1, 16).map(l => l.replace(/^\/\/ ?/, '')).join('\n') + '\n'); process.exit(2) }
-const pkgm = async () => import(pathToFileURL(join(packages, 'pear-full-square', 'pkgm-base-manager', 'index.js')).href)
-const fetchScript = join(packages, 'pear-full-square', 'haicc-base-boot', 'fetch.sh')
+const pkgm = async () => import(pathToFileURL(join(packages, 'base-package-pkgm', 'pear-full-square', 'pkgm-base-manager', 'index.js')).href)
+const fetchScript = join(packages, 'base-package-haicc', 'pear-full-square', 'haicc-base-boot', 'fetch.sh')
+// What is here: the packages copied in whole (no registry entry), and any the
+// package manager installed.
+const packagesHere = async () => {
+  const found = {}
+  for (const n of existsSync(packages) ? readdirSync(packages) : []) {
+    const f = join(packages, n, 'package.json')
+    if (existsSync(f)) { const h = JSON.parse(readFileSync(f, 'utf8')).pkgm?.hash; if (h) found[n] = { hash: h } }
+  }
+  return { ...found, ...(await pkgm()).installed(packages).packages }
+}
 
 // A repository and what it requires, into haiccing/ from the sources.
 function fetchRepos (repos) {
@@ -101,14 +118,29 @@ function printTest (n, t) {
 }
 
 try {
-  if (verb === 'version') {
-    const reg = (await pkgm()).installed(packages)
+  if (verb === 'shutdown') {
+    // The node's shutdown: its container removed; its folder kept (its
+    // HAICC, its log, its state), for its boot to start it again.
+    console.log(`The node ${basename(dirname(work))}/${basename(work)}: its shutdown`)
+    console.log('  its container: none yet (nothing deployed here), nothing to remove')
+    console.log('Shut down')
+    process.exit(0)
+  } else if (verb === 'boot') {
+    // The node's boot: what was copied in, tested in place; then its
+    // container started (with the swarm's step: none yet).
+    console.log(`The node ${basename(dirname(work))}/${basename(work)}: the self-test of its packages (${packages})`)
+    const t = selfTest(packages)
+    const failed = t.runs.filter(r => !r.ok)
+    if (!t.repos.length) console.log('  no packages here: nothing to test')
+    console.log(t.ok ? `Ready: ${t.runs.length} test runs passed (${t.repos.join(', ')})` : `Not ready: ${failed.length} of ${t.runs.length} test runs failed`)
+    if (t.ok) console.log('  its container: none yet (nothing deployed here), nothing to start')
+    process.exit(t.ok ? 0 : 1)
+  } else if (verb === 'version') {
     console.log(`haicc, the work folder ${work}`)
-    for (const [n, p] of Object.entries(reg.packages)) console.log(`  ${n}: ${p.hash.slice(0, 12)}${p.overrides ? ' (overridden)' : ''}`)
+    for (const [n, p] of Object.entries(await packagesHere())) console.log(`  ${n}: ${p.hash.slice(0, 12)}${p.overrides ? ' (overridden)' : ''}`)
   } else if (verb === 'list') {
-    const reg = (await pkgm()).installed(packages)
     console.log(`installed (${packages}):`)
-    for (const [n, p] of Object.entries(reg.packages)) console.log(`  ${n}  ${p.hash.slice(0, 12)}${p.overrides ? '  overridden' : ''}`)
+    for (const [n, p] of Object.entries(await packagesHere())) console.log(`  ${n}  ${p.hash.slice(0, 12)}${p.overrides ? '  overridden' : ''}`)
     const deployments = existsSync(manager) ? readdirSync(manager).filter(n => existsSync(join(manager, n, 'deployment'))) : []
     console.log(`deployments (${manager}):${deployments.length ? '' : ' none'}`)
     const { desiredOf } = await import('./index.js')
