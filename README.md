@@ -4,17 +4,19 @@ HAICC: declare what a project needs, check it, make it so (haicc-reconcile), its
 
 ## Start here
 
-Linux on x86-64 (on Windows: inside WSL2), with `curl` and `tar`. The setup is this package's release, `haicc-setup.sh`:
+Linux on x86-64 (on Windows: inside WSL2), with `curl` and `tar`. The setup is this package's release, `haicc-setup.sh`; one command, stopping at the first step that fails:
 
 ```sh
-curl -fL --progress-bar -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh
-sh haicc-setup.sh ~/haicc-work         # a work folder: haiccing/ with boot, sources and this package
-~/haicc-work/haiccing/boot             # the root: Node.js, HAICC's root part, then git and Docker checked
-cd ~/haicc-work
-./haicc list
+curl -fL --progress-bar --retry 5 --retry-all-errors --connect-timeout 20 \
+     -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh \
+  && sh haicc-setup.sh ~/haicc-work \
+  && ~/haicc-work/haiccing/boot \
+  && cd ~/haicc-work && ./haicc list
 ```
 
-The boot runs in two stages. Stage 1, `haiccing/boot`, in plain shell: Linux x86-64 and Node.js (Node.js fixed with your yes, into `.haicc/node`); the root's part of HAICC (`haicc-base-boot`) copied into `.haicc/`; `./haicc` written. Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands. Everything it prints goes to `.haicc/log/haicc.log` too.
+The boot runs in two stages. Stage 1, `haiccing/boot`, in plain shell: Linux x86-64 and Node.js (Node.js fixed with your yes, into `install/node`); the root's part of HAICC (`haicc-base-boot`) copied into `install/`; `./haicc` written. Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands.
+
+Everything it does is logged in the work folder: `~/haicc-work/log/haicc.log`. Everything is in plain sight: no hidden folders.
 
 The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in managers: each swarm self-contained, with its own HAICC, package manager and packages (`./haicc boot <manager>`, next).
 
@@ -22,7 +24,7 @@ The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in managers: each
 
 - holds: `pear-full-square/haicc-reconcile`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-base-boot`
 - requires: [haiccing/base-package-pkgm](https://github.com/haiccing/base-package-pkgm)
-- hash: `b8c4a67a5e834b751c7bcdcddc54cd7adcfe4e643b658b685859e44995f3baaa`
+- hash: `47f2b29b0194428acfd6d42fc12aa4cf976840bc0e3fbfaa1800a3759bd2affd`
 
 In a work folder (see [haiccing/base-package-haicc](https://github.com/haiccing/base-package-haicc)), installed by HAICC as a project needs it, or by `./haicc install haicc`, into `.haicc/packages` with what it requires; tested there, within the package: `./haicc test haicc`.
 
