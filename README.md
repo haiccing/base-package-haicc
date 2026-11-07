@@ -7,12 +7,14 @@ HAICC, the platform: its boot (haicc-base-boot), declaring and reconciling (haic
 Linux on x86-64 (on Windows: inside WSL2), with `curl` and `tar`. The setup is this package's release, `haicc-setup.sh`; one command, stopping at the first step that fails:
 
 ```sh
-curl -fL --progress-bar --retry 5 --retry-all-errors --connect-timeout 20 \
+rm -f haicc-setup.sh && curl -fL --progress-bar --retry 5 --retry-all-errors --connect-timeout 20 \
      -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh \
   && sh haicc-setup.sh ~/haicc-work \
   && ~/haicc-work/boot \
   && cd ~/haicc-work && ./haicc list
 ```
+
+The setup is about 36 MB (it carries Bare's runtime: nothing more to download). On a poor connection: if the download stops, `curl -fL -C - -o haicc-setup.sh https://github.com/haiccing/base-package-haicc/releases/latest/download/haicc-setup.sh` continues it where it stopped; run it again until it ends without an error, then `sh haicc-setup.sh ~/haicc-work && ~/haicc-work/boot`.
 
 The boot runs in two stages. Stage 1, `./boot`, in plain shell: Linux x86-64, and Bare's runtime (carried by this package: nothing to download) placed in `bare/`; HAICC's package copied whole into `packages/base-package-haicc/`; `./haicc` written (HAICC runs on Bare). Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands.
 
@@ -24,7 +26,7 @@ Tested by its own tests, on your machine: after the boot, `./haicc boot base-pac
 
 ## The package
 
-- modules: `pear-full-square/haicc-base-boot`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-reconcile`, `pear-full-square/pkgm-base-manager`; 77 third-party (`modules/third-party.json`)
+- modules: `pear-full-square/haicc-base-boot`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-reconcile`, `pear-full-square/pkgm-base-manager`; 75 third-party (`modules/third-party.json`)
 - the platform (`platform/`)
 - tests: `test/modules-load`, `test/platform`, `test/sets`
 

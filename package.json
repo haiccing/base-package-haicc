@@ -12,7 +12,7 @@
         "pear-full-square/haicc-reconcile",
         "pear-full-square/pkgm-base-manager"
       ],
-      "third": 77
+      "third": 75
     },
     "swarms": [],
     "tests": [
@@ -31,6 +31,6 @@
       "pear-full-square/pkgm-base-manager: dep-z",
       "pear-full-square/pkgm-base-manager: dep-y"
     ],
-    "hash": "bb5ab8f7a96dc050c020f0f28658ec1b1c7c105714dd3007a55f444a8b92eece"
+    "hash": "ab31937787131d6b6efd4ffc7a003391ecf59c3d479e116d137fc8a58b7ba31f"
   }
 }

@@ -275,13 +275,6 @@
       "integrity": "sha512-CaAvy1trputD49mtwfJ6G75vydhnirLrW/F3Sznp4H556e1uZn8YMo9ELicBTrGYy7RBNUgPl9bpB/ERzRCiDw=="
     },
     {
-      "name": "bare-runtime-linux-x64",
-      "version": "1.36.0",
-      "license": "Apache-2.0",
-      "resolved": "https://registry.npmjs.org/bare-runtime-linux-x64/-/bare-runtime-linux-x64-1.36.0.tgz",
-      "integrity": "sha512-PBywp7WONAjuqsKc4VPqlmr33Ij4ugbNPd/xw2kwIO6OxsWhRT3t2HkHhvySjaxq7R6FDybec/fveW0EcBpKQQ=="
-    },
-    {
       "name": "bare-semver",
       "version": "1.1.0",
       "license": "Apache-2.0",
@@ -469,13 +462,6 @@
       "license": "Apache-2.0",
       "resolved": "https://registry.npmjs.org/require-addon/-/require-addon-1.3.0.tgz",
       "integrity": "sha512-j8pifaPNZI7ShKY3ihXZwF0qaEjua8zmlqPvDil0a8SBnyRvjCbAiEQuzO0UcoXH1sqU5U/ilXSjYd1W5NYwAA=="
-    },
-    {
-      "name": "require-asset",
-      "version": "1.2.4",
-      "license": "Apache-2.0",
-      "resolved": "https://registry.npmjs.org/require-asset/-/require-asset-1.2.4.tgz",
-      "integrity": "sha512-wGqZYy8rDKHNvBJ4qmxM+34zatGwuGQhHpTxunnnjJkT29wO8vGfZQRCfN6hCR7qstENQbem4fAJ2XqwK3O8KQ=="
     },
     {
       "name": "same-object",
