@@ -1,18 +1,37 @@
 {
   "name": "base-package-haicc",
-  "description": "HAICC: declare what a project needs, check it, make it so (haicc-reconcile), its lifecycle (haicc-deployment), and its boot (haicc-base-boot). The entry: everything starts here.",
+  "description": "HAICC, the platform: its boot (haicc-base-boot), declaring and reconciling (haicc-reconcile), the lifecycle (haicc-deployment) and the package manager (pkgm-base-manager). The entry: everything starts here.",
   "private": true,
   "license": "MIT",
   "pkgm": {
     "package": "haicc",
-    "requires": [
-      "pkgm"
+    "modules": {
+      "ours": [
+        "pear-full-square/haicc-base-boot",
+        "pear-full-square/haicc-deployment",
+        "pear-full-square/haicc-reconcile",
+        "pear-full-square/pkgm-base-manager"
+      ],
+      "third": 0
+    },
+    "swarms": [],
+    "tests": [
+      "modules-load",
+      "platform",
+      "sets"
     ],
-    "folders": [
-      "pear-full-square/haicc-reconcile",
-      "pear-full-square/haicc-deployment",
-      "pear-full-square/haicc-base-boot"
+    "sets": [
+      "full",
+      "validation"
     ],
-    "hash": "25a1bd107a92c3a6c5d38cba1fc6631df24e71d7ef105ffc1bf375b1cf48d2fb"
+    "platform": true,
+    "unresolved": [
+      "pear-full-square/pkgm-base-manager: bmod",
+      "pear-full-square/pkgm-base-manager: dep-x",
+      "pear-full-square/pkgm-base-manager: amod",
+      "pear-full-square/pkgm-base-manager: dep-z",
+      "pear-full-square/pkgm-base-manager: dep-y"
+    ],
+    "hash": "25c91afc480133767a72c1dae1a05173478c6cc34086994f5f580bed084f812f"
   }
 }

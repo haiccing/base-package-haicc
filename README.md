@@ -1,6 +1,6 @@
 # base-package-haicc
 
-HAICC: declare what a project needs, check it, make it so (haicc-reconcile), its lifecycle (haicc-deployment), and its boot (haicc-base-boot). The entry: everything starts here.
+HAICC, the platform: its boot (haicc-base-boot), declaring and reconciling (haicc-reconcile), the lifecycle (haicc-deployment) and the package manager (pkgm-base-manager). The entry: everything starts here.
 
 ## Start here
 
@@ -20,12 +20,12 @@ Everything it does is logged in the work folder's `log/` (`~/haicc-work/log/`): 
 
 The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in the nodes: `./haicc boot <swarm>` makes a swarm (in `swarms.json`), `<swarm>/haicc boot <node>` a node in it (in `<swarm>/nodes.json`; the first is the master), with its own HAICC and package manager. `haicc boot` and `haicc shutdown` work on the config of the folder they are called from.
 
+Tested by its own tests, on your machine: after the boot, `./haicc boot base-package-haicc/test` (the full set: the modules' tests, the package's, and the platform test, which sets up a fresh install inside its run and works it through every level), or `--set=validation` (the package as it is, nothing started).
+
 ## The package
 
-- holds: `pear-full-square/haicc-reconcile`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-base-boot`
-- requires: [haiccing/base-package-pkgm](https://github.com/haiccing/base-package-pkgm)
-- hash: `25a1bd107a92c3a6c5d38cba1fc6631df24e71d7ef105ffc1bf375b1cf48d2fb`
+- modules: `pear-full-square/haicc-base-boot`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-reconcile`, `pear-full-square/pkgm-base-manager`
+- the platform (`platform/`)
+- tests: `test/modules-load`, `test/platform`, `test/sets`
 
-In a work folder (see [haiccing/base-package-haicc](https://github.com/haiccing/base-package-haicc)), installed by HAICC as a project needs it, or by `./haicc install haicc` in a node's manager, into its `packages/` with what it requires; tested there, within the package: `./haicc test haicc`.
-
-Written by the package manager from the development repository ([splectrum/dev-env-2-p2p-cluster](https://github.com/splectrum/dev-env-2-p2p-cluster)): not edited here.
+Self-contained: it carries what it runs on. Written from the development repository ([splectrum/dev-env-2-p2p-cluster](https://github.com/splectrum/dev-env-2-p2p-cluster)): not edited here.

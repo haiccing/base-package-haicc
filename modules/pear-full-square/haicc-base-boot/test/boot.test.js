@@ -135,19 +135,19 @@ test('the setup: a self-extracting release, extracting haiccing/ (boot, sources,
   try {
     // base-package-haicc in miniature: its manifest and this boot.
     const pkg = join(dir, 'base-package-haicc')
-    mkdirSync(join(pkg, 'pear-full-square'), { recursive: true })
-    execFileSync('cp', ['-a', here, join(pkg, 'pear-full-square', 'haicc-base-boot')])
+    mkdirSync(join(pkg, 'modules', 'pear-full-square'), { recursive: true })
+    execFileSync('cp', ['-a', here, join(pkg, 'modules', 'pear-full-square', 'haicc-base-boot')])
     writeFileSync(join(pkg, 'package.json'), JSON.stringify({ name: 'base-package-haicc', pkgm: { package: 'haicc', hash: 'abcdef1234567890' } }))
     execFileSync('sh', [join(here, 'release.sh'), pkg, join(dir, 'haicc-setup.sh')])
     const work = join(dir, 'work')
     const r = spawnSync('sh', [join(dir, 'haicc-setup.sh'), work, `--sources=folder:${dir}/repos`, '--sources=github:haiccing'], { encoding: 'utf8' })
     assert.equal(r.status, 0, r.stdout + r.stderr)
     assert.match(r.stdout, /next: .*\/work\/boot/)
-    assert.ok(existsSync(join(work, 'haiccing', 'base-package-haicc', 'pear-full-square', 'haicc-base-boot', 'boot.sh')))
+    assert.ok(existsSync(join(work, 'haiccing', 'base-package-haicc', 'modules', 'pear-full-square', 'haicc-base-boot', 'boot.sh')))
     // The stubs, ./boot and ./shutdown: executable, naming their setup.
     for (const s of ['boot', 'shutdown']) {
       assert.ok(statSync(join(work, s)).mode & 0o100)
-      assert.match(readFileSync(join(work, s), 'utf8'), new RegExp(`base-package-haicc/pear-full-square/haicc-base-boot/${s}\\.sh`))
+      assert.match(readFileSync(join(work, s), 'utf8'), new RegExp(`base-package-haicc/modules/pear-full-square/haicc-base-boot/${s}\\.sh`))
     }
     assert.deepEqual(readFileSync(join(work, 'haiccing', 'sources'), 'utf8').split('\n').filter(l => l && !l.startsWith('#')), [`folder ${dir}/repos`, 'github haiccing'])
     // Logged from the start: the setup's own lines in the work folder's log.
@@ -159,9 +159,9 @@ test('the setup: a self-extracting release, extracting haiccing/ (boot, sources,
     // The first boot's stage 1, on a folder with no packages/ yet: HAICC's package copied in whole.
     const stage1 = spawnSync('sh', [join(work, 'boot')], { encoding: 'utf8', env: { ...process.env, HAICC_BOOT_LOGGING: '1' } })
     assert.equal(stage1.status, 0, stage1.stdout + stage1.stderr)
-    assert.ok(existsSync(join(work, 'packages', 'base-package-haicc', 'pear-full-square', 'haicc-base-boot', 'haicc.js')), stage1.stdout + stage1.stderr)
+    assert.ok(existsSync(join(work, 'packages', 'base-package-haicc', 'modules', 'pear-full-square', 'haicc-base-boot', 'haicc.js')), stage1.stdout + stage1.stderr)
     assert.ok(existsSync(join(work, 'haicc')))
-    assert.match(readFileSync(join(work, 'haicc'), 'utf8'), /packages\/base-package-haicc\/pear-full-square\/haicc-base-boot\/haicc\.js/)
+    assert.match(readFileSync(join(work, 'haicc'), 'utf8'), /packages\/base-package-haicc\/modules\/pear-full-square\/haicc-base-boot\/haicc\.js/)
     // Nothing hidden, no install/: the work folder's shape.
     assert.deepEqual(readdirSync(work).sort(), ['boot', 'haicc', 'haiccing', 'log', 'packages', 'shutdown'])
     // Again, the same setup: said, exit 0, nothing changed.
@@ -177,4 +177,53 @@ test('the setup: a self-extracting release, extracting haiccing/ (boot, sources,
     spawnSync('sh', [join(dir, 'haicc-setup.sh'), join(dir, 'work2')])
     assert.deepEqual(readFileSync(join(dir, 'work2', 'haiccing', 'sources'), 'utf8').split('\n').filter(l => l && !l.startsWith('#')), ['github haiccing'])
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('a path for a name is refused, not cleaned into one name: a node is its swarm\'s', () => {
+  const work = mkdtempSync(join(tmpdir(), 'names-'))
+  try {
+    const r = spawnSync(process.execPath, [join(here, 'haicc.js'), 'boot', 'hosts/master'], { encoding: 'utf8', env: { ...process.env, HAICC_WORK: work, HAICC_SWARM: '' } })
+    assert.equal(r.status, 2)
+    assert.match(r.stdout, /'hosts\/master': one swarm's name here; a node is its swarm's: hosts\/haicc boot master/)
+    assert.ok(!existsSync(join(work, 'swarms.json')) && !existsSync(join(work, 'hosts-master')), 'nothing made')
+    const s = spawnSync(process.execPath, [join(here, 'haicc.js'), 'teardown', 'a/b'], { encoding: 'utf8', env: { ...process.env, HAICC_WORK: work, HAICC_SWARM: 'hosts' } })
+    assert.equal(s.status, 2)
+    assert.match(s.stdout, /one node's name here \(hosts\/haicc teardown <node>\)/)
+  } finally { rmSync(work, { recursive: true, force: true }) }
+})
+
+test('a test booted by its URI: in place first, then each booted one in its run, torn down; its result its exit code', () => {
+  const work = mkdtempSync(join(tmpdir(), 'tests-'))
+  const put = (f, s, x = false) => { mkdirSync(dirname(join(work, f)), { recursive: true }); writeFileSync(join(work, f), s); if (x) chmodSync(join(work, f), 0o755) }
+  try {
+    const pkg = 'haiccing/base-x'
+    put(`${pkg}/package.json`, JSON.stringify({ name: 'base-x', pkgm: { package: 'x', hash: 'abc' } }))
+    put(`${pkg}/test/full.json`, JSON.stringify({ modules: false, tests: ['a', 'b'] }))
+    put(`${pkg}/test/a/test`, '#!/bin/sh\necho "# tests 1"\necho "# pass 1"\n', true)
+    // A booted test: its cold boot runs in its run, with what it is told.
+    put(`${pkg}/test/b/boot`, '#!/bin/sh\nprintf "in %s, " "$(basename "$PWD")"; echo "the package $(basename "$HAICC_PACKAGE")"\n[ "$HAICC_RUN" = "$PWD" ] && touch made\n', true)
+    put(`${pkg}/test/c/boot`, '#!/bin/sh\necho broken\nexit 3\n', true)
+    put(`${pkg}/test/d/boot`, '#!/bin/sh\nexit 0\n', true)
+    put(`${pkg}/test/d/teardown`, '#!/bin/sh\necho "its own teardown"\nrm -rf "$HAICC_RUN"\n', true)
+    const haicc = (...args) => spawnSync(process.execPath, [join(here, 'haicc.js'), 'boot', ...args], { encoding: 'utf8', env: { ...process.env, HAICC_WORK: work, HAICC_SWARM: '', HAICC_NOLOG: '' } })
+    const set = haicc('base-x/test')
+    assert.equal(set.status, 0, set.stdout)
+    assert.match(set.stdout, /ok {5}base-x\/test\/a \(1\/1/)
+    assert.match(set.stdout, / {2}\| in b, the package base-x\n/)
+    assert.match(set.stdout, /torn down: swarms\/test\/b\//)
+    assert.match(set.stdout, /Passed: 2 passed, 0 failed, 0 skipped/)
+    assert.ok(!existsSync(join(work, 'swarms')), 'its run removed, no empty folders left')
+    // One test, failing: its exit code is the result; torn down all the same.
+    const c = haicc('base-x/test/c')
+    assert.equal(c.status, 1)
+    assert.match(c.stdout, /FAILED base-x\/test\/c \(.* s, exit 3\)/)
+    // --keep: its run left to look at.
+    assert.equal(haicc('base-x/test/b', '--keep').status, 0)
+    assert.ok(existsSync(join(work, 'swarms', 'test', 'b', 'made')))
+    // Its own teardown.
+    assert.match(haicc('base-x/test/d').stdout, /\| its own teardown/)
+    assert.equal(haicc('base-x/test/nope').status, 1)
+    // Logged: the root's log has what it printed.
+    assert.match(readdirSync(join(work, 'log')).map(f => readFileSync(join(work, 'log', f), 'utf8')).join(''), /in b, the package base-x/)
+  } finally { rmSync(work, { recursive: true, force: true }) }
 })

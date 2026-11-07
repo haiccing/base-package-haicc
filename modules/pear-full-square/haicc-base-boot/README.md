@@ -60,10 +60,11 @@ Making and removing one thing, from its parent:
   launcher and `nodes.json` made, then booted. `./haicc teardown <swarm>`:
   its shutdown, its folder and its entry removed.
 - `<swarm>/haicc boot <node>`: the node added to `nodes.json` with its role
-  (the first: `master`, then `node`; `--role=`), its manager made (the
-  package manager and HAICC copied in whole, its launcher), then its own
-  boot, `<swarm>/<node>/haicc boot`: the self-test of what was copied in,
-  up when all pass. Its output shown as it happens (`--no-echo`: its
+  (the first: `master`, then `node`; `--role=`); its cold boot: its folder
+  made, the platform's package (`base-package-haicc`: HAICC and the package
+  manager) copied in whole, its launcher written; then its warm boot,
+  `<swarm>/<node>/haicc boot`: the self-test of what was copied in, bottom
+  up, up when all pass. Its output shown as it happens (`--no-echo`: its
   outcome only). `<swarm>/haicc teardown <node>`: its shutdown, its folder
   and its entry removed.
 - Names are required, made URI parts if they are not (the change said).
@@ -78,6 +79,21 @@ Making and removing one thing, from its parent:
   <path>`, `github <org>`), `list` (the swarms, their nodes and roles).
 - **The host checks are the boot's own copy**: `haicc-reconcile`'s machine
   kinds hold the same for projects; a test keeps the two agreeing.
+
+## A package's functionality, by its URI: tests
+
+`./haicc boot <repo>/test/<test>` boots a package's test (from `haiccing/`,
+or `--from=<folder>`): its folder copied into its run, `swarms/test/<test>/`;
+its cold boot (its `boot` script) run there, with `HAICC_WORK`,
+`HAICC_PACKAGE` (the package under test), `HAICC_RUN` (its run) and
+`HAICC_PLATFORM`; its result its exit code; then its teardown (its own
+`teardown`, else the platform's, `platform/test/teardown`: the run removed;
+`--keep` leaves it). `./haicc boot <repo>/test` runs a set (`--set=`,
+default `full`; `test/<set>.json`): the tests that run in place first (the
+package manager), then each booted one. A test that needs Docker Engine
+where it is not ready: skipped, said; one that changes what is outside its
+run (`test.json`: `destroys`) runs only with a yes. Everything it prints
+goes to the root's log.
 
 ## Logged
 
