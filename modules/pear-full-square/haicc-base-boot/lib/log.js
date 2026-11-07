@@ -5,12 +5,16 @@
 // newest is the current one. A command starts a new file, named by its own
 // start, when the current one is over 10 KB (whole commands a file). Each
 // command: a header line (its real start, the command, its folder, its
-// level) and a close line (its exit code, how long it took). The setup and
+// level) and a close line (its exit code, how long it took), on stdout too:
+// where each command starts and ends. The setup and
 // the boot's stage 1 (in shell) write the same way. The root's own copy
 // (haicc-deployment has the managers').
 //   const log = openLog({ dir, command, level })   its stdout and stderr, teed from now
-import { appendFileSync, mkdirSync, statSync, readdirSync } from 'node:fs'
-import { join } from 'node:path'
+//   openLog({ command, file: false })   the header and close line on stdout only (a command
+//        run by another that echoes and logs it)
+import { appendFileSync, mkdirSync, statSync, readdirSync, writeSync } from 'bare-fs'
+import { join } from 'bare-path'
+import process from 'bare-process'
 
 export const LIMIT = 10 * 1024
 export const LEVELS = ['normal', 'verbose', 'debug']
@@ -23,17 +27,28 @@ export function logFile (dir, start = new Date()) {
   return join(dir, start.toISOString().replace(/[-:]/g, '').replace(/\.\d+Z$/, 'Z') + '.log')
 }
 
-export function openLog ({ dir, command, level = 'normal' }) {
-  mkdirSync(dir, { recursive: true })
+export function openLog ({ dir, command, level = 'normal', file: logged = true }) {
   const t0 = Date.now()
-  const file = logFile(dir, new Date(t0))
-  const write = text => { try { appendFileSync(file, text) } catch {} }
-  write(`== ${new Date(t0).toISOString()} ${command.join(' ')}  (in ${process.cwd()}${level === 'normal' ? '' : `, ${level}`})\n`)
-  for (const stream of [process.stdout, process.stderr]) {
-    const original = stream.write.bind(stream)
-    stream.write = (chunk, ...rest) => { write(String(chunk)); return original(chunk, ...rest) }
+  let file = null
+  if (logged) { mkdirSync(dir, { recursive: true }); file = logFile(dir, new Date(t0)) }
+  const write = text => { if (file) try { appendFileSync(file, text) } catch {} }
+  // Everything it prints, through either channel (console.log, or a stream's
+  // write), written at once and in order: to the terminal (or pipe) and to
+  // the log. On Bare, console.log does not go through process.stdout, and a
+  // stream's buffered output is lost to an exit.
+  const put = (fd, text) => {
+    write(text)
+    const b = Buffer.from(text)
+    for (let at = 0; at < b.length;) { try { at += writeSync(fd, b, at, b.length - at) } catch (err) { if (err.code !== 'EAGAIN') return } }
   }
-  process.on('exit', code => write(`== exit ${code}, ${((Date.now() - t0) / 1000).toFixed(1)} s\n`))
+  const say = v => typeof v === 'string' ? v : v instanceof Error ? (v.stack || v.message) : JSON.stringify(v)
+  process.stdout.write = chunk => { put(1, String(chunk)); return true }
+  process.stderr.write = chunk => { put(2, String(chunk)); return true }
+  console.log = (...args) => put(1, args.map(say).join(' ') + '\n')
+  console.error = (...args) => put(2, args.map(say).join(' ') + '\n')
+  // Said on stdout too, as the log has it: where a command starts, and ends.
+  put(1, `== ${new Date(t0).toISOString()} ${command.join(' ')}  (in ${process.cwd()}${level === 'normal' ? '' : `, ${level}`})\n`)
+  process.on('exit', code => put(1, `== exit ${code}, ${((Date.now() - t0) / 1000).toFixed(1)} s\n`))
   return {
     level,
     verbose: LEVELS.indexOf(level) >= 1,

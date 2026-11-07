@@ -1,6 +1,6 @@
 # base-package-haicc
 
-HAICC, the platform: its boot (haicc-base-boot), declaring and reconciling (haicc-reconcile), the lifecycle (haicc-deployment) and the package manager (pkgm-base-manager). The entry: everything starts here.
+HAICC, the platform: its boot (haicc-base-boot), declaring and reconciling (haicc-reconcile), the lifecycle (haicc-deployment) and the package manager (pkgm-base-manager). The entry: everything starts here. On Bare: it carries Bare's runtime.
 
 ## Start here
 
@@ -14,9 +14,9 @@ curl -fL --progress-bar --retry 5 --retry-all-errors --connect-timeout 20 \
   && cd ~/haicc-work && ./haicc list
 ```
 
-The boot runs in two stages. Stage 1, `./boot`, in plain shell: Linux x86-64 and Node.js (Node.js fixed with your yes, into `nodejs/`); HAICC's package copied whole into `packages/base-package-haicc/`; `./haicc` written. Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands.
+The boot runs in two stages. Stage 1, `./boot`, in plain shell: Linux x86-64, and Bare's runtime (carried by this package: nothing to download) placed in `bare/`; HAICC's package copied whole into `packages/base-package-haicc/`; `./haicc` written (HAICC runs on Bare). Stage 2, `./haicc boot`: the host's other prerequisites (git 2.25 or later; Docker Engine installed, running, rootful, native, and you in the `docker` group), each fixed only with your yes (`--yes` agrees beforehand); then `haiccing/install` if there (one `./haicc` command a line), or the next commands.
 
-Everything it does is logged in the work folder's `log/` (`~/haicc-work/log/`): files named by their start, newest last. Everything is in plain sight: `boot`, `shutdown`, `haicc`, `haiccing/`, `packages/`, `nodejs/`, `log/`; no hidden folders. `./shutdown` takes it all back to the setup (keeping `haiccing/`, `log/`, `nodejs/`); `./boot` again sets it up.
+Everything it does is logged in the work folder's `log/` (`~/haicc-work/log/`): files named by their start, newest last. Everything is in plain sight: `boot`, `shutdown`, `haicc`, `haiccing/`, `packages/`, `bare/`, `log/`; no hidden folders. `./shutdown` takes it all back to the setup (keeping `haiccing/`, `log/`, `bare/`); `./boot` again sets it up.
 
 The rest of HAICC (`haicc-reconcile`, `haicc-deployment`) runs in the nodes: `./haicc boot <swarm>` makes a swarm (in `swarms.json`), `<swarm>/haicc boot <node>` a node in it (in `<swarm>/nodes.json`; the first is the master), with its own HAICC and package manager. `haicc boot` and `haicc shutdown` work on the config of the folder they are called from.
 
@@ -24,7 +24,7 @@ Tested by its own tests, on your machine: after the boot, `./haicc boot base-pac
 
 ## The package
 
-- modules: `pear-full-square/haicc-base-boot`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-reconcile`, `pear-full-square/pkgm-base-manager`
+- modules: `pear-full-square/haicc-base-boot`, `pear-full-square/haicc-deployment`, `pear-full-square/haicc-reconcile`, `pear-full-square/pkgm-base-manager`; 77 third-party (`modules/third-party.json`)
 - the platform (`platform/`)
 - tests: `test/modules-load`, `test/platform`, `test/sets`
 
