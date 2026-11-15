@@ -17,7 +17,14 @@ export const IDENTITY = '/runtime/mrepo.json'
 export const SHORTCUTS = '.shortcuts.json'
 export const shortcutOf = position => `main/${position === ROOT ? '' : `${position}/`}${SHORTCUTS}`
 // The sources recorded at a position: its list, [] when it has none.
-export const shortcutsAt = (exec, position) => exec.read(shortcutOf(position)).then(b => { const l = JSON.parse(b.toString()); return Array.isArray(l) ? l : [] }, () => [])
+// log: none (a read of one small file; its callers say what they found)
+export const shortcutsAt = async (exec, position) => {
+  const bytes = await exec.find(shortcutOf(position))
+  if (bytes === null) return []
+  let list
+  try { list = JSON.parse(bytes.toString()) } catch (err) { throw new Error(`not a list of shortcuts: ${shortcutOf(position)}`, { cause: err }) }
+  return Array.isArray(list) ? list : []
+}
 
 // A position's folder in the shadow structure of main, relative to the
 // mrepo's own folder: host -> main/host. What is linked at the position
@@ -36,7 +43,7 @@ export const uriOf = (parent, name) => `${swarmOf(parent)}/${name}`
 // layers. at: the position as written at main (`.`, host).
 export async function resolve (exec, uri) {
   const u = joined(segmented(uri))
-  if (u === ROOT) return { at: ROOT, shortcut: null }
+  if (u === ROOT) { exec.log('verbose', 'resolved', { uri: u, at: ROOT, shortcut: null }); return { at: ROOT, shortcut: null } }
   const at = within(MAIN, u)
   if (at === null) throw new Error(`not a position in main: ${u} (main, main/<position>)`)
   const segments = at === ROOT ? [] : at.split('/')
@@ -44,12 +51,15 @@ export async function resolve (exec, uri) {
     const position = segments.slice(0, i).join('/')
     // one source in use for now: the first
     const [entry] = await shortcutsAt(exec, position)
+    exec.log('debug', 'position', { position, shortcut: entry?.mrepo ?? null })
     if (!entry) continue
     // The simple rule: a URI stays inside its mrepo. One that runs through a
     // shortcut is not resolved: the way across is a goto at the shortcut.
     if (i < segments.length) throw new Error(`${position} is a shortcut: a URI does not run through it (haicc ${position} haicc ${segments.slice(i).join('/')} ...)`)
     const dir = exec.runtime?.dir ?? exec.dir ?? null
+    exec.log('verbose', 'resolved', { uri: u, at: position, shortcut: entry.mrepo })
     return { at: position, shortcut: { at: position, ...entry, folder: shadowOf(position), dir: dir ? join(dir, shadowOf(position)) : null } }
   }
+  exec.log('verbose', 'resolved', { uri: u, at, shortcut: null })
   return { at, shortcut: null }
 }

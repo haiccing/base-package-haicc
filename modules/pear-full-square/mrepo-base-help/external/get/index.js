@@ -17,8 +17,11 @@ export async function get (exec, { args = [] }) {
   // (the help layer's index is keyed by slash-led paths)
   const u = slashed(relative(about ? args[0] : '.')).replace(/^\/help(?=\/|$)/, '') || '/'
   const said = unslashed(u)
-  const index = JSON.parse((await exec.read('/help/index.json').catch(() => { throw new Error('no help extracted in this mrepo yet (help/extract)') })).toString())
+  const bytes = await exec.find('/help/index.json')
+  if (bytes === null) throw new Error('no help extracted in this mrepo yet (help/extract)')
+  const index = JSON.parse(bytes.toString())
   const known = index[u]
+  exec.log('debug', 'index', { entries: Object.keys(index).length, subject: said, known: Boolean(known) })
   if (!known) {
     const near = Object.keys(index).filter(k => u.startsWith(k === '/' ? '/' : k + '/')).sort((a, b) => b.length - a.length)[0] ?? '/'
     throw new Error(`no help at ${said}: nearest ${unslashed(near)}`)
@@ -28,6 +31,7 @@ export async function get (exec, { args = [] }) {
   const level = LEVELS.includes(rest[0]) ? rest[0] : 'summary'
   const section = rest.length && !LEVELS.includes(rest[0]) ? rest.join(' ') : null
   const links = known.links.map(l => ({ uri: unslashed(l), oneliner: index[l].oneliner }))
+  exec.log('verbose', 'found', { uri: said, level: section ? 'section' : level, section, links: links.length, sections: r.sections.length })
   const out = { uri: said, title: r.title, oneliner: r.oneliner, links }
   if (section) {
     const s = r.sections.find(x => x.title.toLowerCase() === section.toLowerCase())

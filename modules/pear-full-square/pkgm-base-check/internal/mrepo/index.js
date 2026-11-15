@@ -48,6 +48,7 @@ export function checkStructure (pkg) {
       if (more.length || !name || !name.endsWith('.json')) { at(`mrepo/runtime/hooks/${f}: not a hook's place (hooks/<transition>/<name>.json)`); continue }
       if (!TRANSITIONS.includes(transition)) { at(`mrepo/runtime/hooks/${f}: no transition ${transition} (${TRANSITIONS.join(', ')})`); continue }
       let command = null
+      // catch: not JSON: said where JSON is checked
       try { command = json(join(hooksDir, f)) } catch { continue } // (said where JSON is checked)
       if (!Array.isArray(command) || !command.length || command.some(p => typeof p !== 'string' || !p) || !/^[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)?$/.test(command[0])) at(`mrepo/runtime/hooks/${f}: not a command (its parts: <protocol>/<action> <URI> <arguments>)`)
     }
@@ -67,12 +68,14 @@ export function checkStructure (pkg) {
     // its list ends with the package itself: the last package of a list
     // defines the mrepo (its runtime config is the one laid in)
     else if (l === 'packages') {
+      // catch: no package.json that reads: no name (said by the package check)
       const name = (() => { try { return json(join(pkg, 'package.json')).name } catch { return null } })()
       if (name && cfg.packages.at(-1)?.split('/')[1] !== name) at(`mrepo/packages/layer.json: its list ends with ${cfg.packages.at(-1)}, not with the package itself (${name})`)
     }
     if (l.startsWith('request/pending/')) {
       for (const f of files.filter(f => f !== 'layer.json' && f.endsWith('.json'))) {
         let r = null
+        // catch: not JSON: said where JSON is checked
         try { r = json(join(root, l, f)) } catch { continue }
         const form = r?.value?.value
         if (r.topic !== `/${l}`) at(`mrepo/${l}/${f}: its envelope's topic ${r.topic} (/${l})`)
@@ -127,6 +130,7 @@ export async function checkProtocol (pkg) {
       const found = methods[a] ?? []
       let method = null
       for (const m of found) {
+        // catch: a method that does not load is not the one: the next (none found is the problem said)
         try { if (Object.values(await import(pathToFileURL(join(m.dir, 'index.js')).href)).includes(actions[p][a])) { method = m; break } } catch {}
       }
       if (!method) { at(found.length ? `${p} ${a}: the function mounted is not its method's (external/${a}/ in ${found.map(m => m.module).join(', ')})` : `${p} ${a}: not a documented method (external/${a}/ in a module it carries)`); continue }

@@ -6,6 +6,9 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 
 - a module that keeps the rules: none
 - a module that breaks each: structure, imports, references
+- logging and handling: code that keeps the rules
+- logging and handling: each rule broken
+- logging and handling: a module's own code, not its tests
 
 ## `mrepo.test.js`
 

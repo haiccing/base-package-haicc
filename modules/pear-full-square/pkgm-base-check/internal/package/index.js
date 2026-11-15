@@ -29,6 +29,7 @@ export async function provides (pkg) {
   const pj = existsSync(join(pkg, 'package.json')) ? json(join(pkg, 'package.json')) : {}
   let protocols = []
   if (existsSync(join(pkg, 'protocol.js'))) {
+    // catch: a protocol.js that does not load: its protocols unknown here (the mrepo check says why)
     try { protocols = Object.keys((await import(pathToFileURL(join(pkg, 'protocol.js')).href)).protocols ?? {}).sort() } catch { protocols = null }
   }
   return {
@@ -104,6 +105,7 @@ export function checkTests (pkg, what) {
   const out = []
   const at = detail => out.push({ check: 'package', detail })
   const own = what.template ? [] : ownTests(pkg)
+  // catch: a set that does not read names no tests (said where the sets are checked)
   const inSet = name => { try { return json(join(pkg, 'test', `${name}.json`)).tests ?? [] } catch { return [] } }
   for (const t of [...testFolders(pkg).filter(n => GENERIC.includes(n)), ...own]) {
     const dir = join(pkg, 'test', t)

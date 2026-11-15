@@ -3,7 +3,8 @@ import test from 'brittle'
 import { resolve, shortcutOf, shortcutsAt, shadowOf, swarmOf, uriOf, IDENTITY, SHORTCUTS } from '../index.js'
 
 function context (files, dir = '/work/mrepos/boot') {
-  return { runtime: { dir }, read: async uri => { if (!(uri in files)) throw new Error('none'); return Buffer.from(JSON.stringify(files[uri])) } }
+  // (the rest of an execution context standing in: a file that may not be there, the log, a step)
+  return { runtime: { dir }, read: async uri => { if (!(uri in files)) throw new Error('none'); return Buffer.from(JSON.stringify(files[uri])) }, find: async function (p) { try { return await this.read(p) } catch { return null } }, log () {}, step: async (event, data, fn) => fn() }
 }
 
 test('a position: an ordinary node, a shortcut, a URI through a shortcut', async (t) => {
@@ -19,7 +20,7 @@ test('a position: an ordinary node, a shortcut, a URI through a shortcut', async
   await t.exception(resolve(exec, ['/host']), /not a relative URI/)
   await t.exception(resolve(exec, ['runtime/hooks']), /not a position in main: runtime\/hooks/)
   await t.exception(resolve(exec, ['host']), /not a position in main: host/, 'from the root the layer comes first')
-  t.is((await resolve({ read: exec.read }, ['main', 'host'])).shortcut.dir, null, 'no folder in the context: none')
+  t.is((await resolve({ ...exec, runtime: undefined }, ['main', 'host'])).shortcut.dir, null, 'no folder in the context: none')
   t.is((await resolve(exec, ['main', 'swarms/swarm-1/node-1'])).shortcut.mrepo, 'swarm-1/node-1', 'several sources at one node: the first in use')
   t.alike(await resolve(exec, ['main', 'empty']), { at: 'empty', shortcut: null }, 'a list with no source: an ordinary node')
   t.alike([await shortcutsAt(exec, 'host'), await shortcutsAt(exec, 'swarms'), (await shortcutsAt(exec, 'swarms/swarm-1/node-1')).length], [[{ mrepo: 'local/host' }], [], 2], 'shortcutsAt: the sources recorded at a position, none: []')

@@ -7,7 +7,14 @@ import test from '../../modules/node_modules/brittle/index.js'
 import * as mounted from '../../protocol.js'
 
 const ran = new Set()
-const act = (name, exec, form) => { ran.add(name); return mounted.actions.haicc[name](exec, form) }
+// an action that wrote into the execution's log as it ran: every one must
+const logged = new Set()
+const act = async (name, exec, form) => {
+  ran.add(name)
+  const before = exec.entries?.length ?? 0
+  // (one refused has logged too, before it threw)
+  try { return await mounted.actions.haicc[name](exec, form) } finally { if ((exec.entries?.length ?? 0) > before) logged.add(name) }
+}
 
 // An execution as the action sees it: this mrepo's folder, its shortcuts
 // entries by URI; a command executed here answers with what it was given.
@@ -17,6 +24,11 @@ function execution (shortcuts = {}) {
   const exec = {
     runtime: { dir: '/work/mrepos/boot' },
     read: async uri => { if (!(uri in shortcuts)) throw new Error(`nothing at ${uri}`); return Buffer.from(JSON.stringify(shortcuts[uri])) },
+    // the rest of an execution context, standing in: a file that may not
+    // be there, the log (kept: entries), a step run as it is
+    find: async function (p) { try { return await this.read(p) } catch { return null } },
+    log: function (level, event, data = {}) { (this.entries ??= []).push({ level, event, ...data }) },
+    step: async function (event, data, fn, level = 'verbose') { const r = await fn(); (this.entries ??= []).push({ level, event, ...(typeof data === 'function' ? data(r) : data) }); return r },
     run: async command => { executed.push(command); return { executed: command } },
     forward: (to, command) => { sent.push({ to, command }); return null }
   }
@@ -41,7 +53,8 @@ test('its config, value by value: goto, the default action, at any position', (t
   t.alike(goto.uris, ['**'], 'at any position: the root, a shortcut, deeper')
   t.alike(goto.args, ['command'], 'one argument, required and named: the command that follows')
   t.ok(goto.description, 'its description')
-  t.alike(Object.keys(goto).sort(), ['args', 'description', 'uris'], 'nothing else: no target, no states: not behind the service\'s door, the command that follows is checked where it is executed')
+  t.is(goto.command, true, 'the words after its URI are a command, passed on as written: a flag list among them is that command\'s')
+  t.alike(Object.keys(goto).sort(), ['args', 'command', 'description', 'uris'], 'nothing else: no target, no states: not behind the service\'s door, the command that follows is checked where it is executed')
 })
 
 test('goto at the root: the command that follows executed here, its value returned', async (t) => {
@@ -71,4 +84,5 @@ test('goto: what it refuses', async (t) => {
 
 test('every action the config names was run here', (t) => {
   t.alike([...ran].sort(), Object.keys(mounted.protocols.haicc.actions).sort(), 'none left out: an action added without its test fails this')
+  t.alike([...logged].sort(), Object.keys(mounted.protocols.haicc.actions).sort(), 'and each wrote into the request\'s log as it ran: an action that logs nothing fails this')
 })

@@ -34,7 +34,9 @@ test('extract: each README at the URI it documents; the index; the packages link
 
 test('help get: the levels, a section, the nearest when nothing is there', async (t) => {
   const files = extract(packages)
-  const exec = { read: async uri => { const f = files[uri.slice('/help'.length)]; if (!f) throw new Error('none'); return f } }
+  // (the rest of an execution context standing in: a file that may not be there, the log, a step)
+  const rest = { find: async function (p) { try { return await this.read(p) } catch { return null } }, log () {}, step: async (event, data, fn) => fn() }
+  const exec = { read: async uri => { const f = files[uri.slice('/help'.length)]; if (!f) throw new Error('none'); return f }, ...rest }
   const s = await help(exec, { uri: ['main', '.'], args: ['packages/haiccing/app'] })
   t.alike([s.uri, s.oneliner, s.links], ['packages/haiccing/app', 'An app.', [{ uri: 'packages/haiccing/app/test', oneliner: 'Its tests.' }]], 'the subject its first argument, from the mrepo\'s root; the summary level: the one-liner, the links with theirs')
   t.ok(typeof s.summary === 'string')
@@ -47,7 +49,7 @@ test('help get: the levels, a section, the nearest when nothing is there', async
   await t.exception(help(exec, { uri: ['main', '.'], args: ['/packages'] }), /not a relative URI: \/packages/)
   await t.exception(help(exec, { uri: ['main', '.'], args: ['packages/haiccing/app/test/nothing'] }), /no help at packages\/haiccing\/app\/test\/nothing: nearest packages\/haiccing\/app\/test/)
   await t.exception(help(exec, { uri: ['main', '.'], args: ['packages/haiccing/app', 'no', 'such', 'section'] }), /no section "no such section" at packages\/haiccing\/app/)
-  await t.exception(help({ read: async () => { throw new Error('none') } }, { uri: ['main', '.'] }), /no help extracted in this mrepo yet \(help\/extract\)/)
+  await t.exception(help({ read: async () => { throw new Error('none') }, ...rest }, { uri: ['main', '.'] }), /no help extracted in this mrepo yet \(help\/extract\)/)
 })
 
 test('the rules: a README against them, and a tree with a broken link, an unlinked folder, an unreached README', (t) => {

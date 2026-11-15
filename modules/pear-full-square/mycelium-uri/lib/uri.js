@@ -31,6 +31,7 @@ export function validate (uri, { star = false } = {}) {
 }
 
 export function isUri (uri) {
+  // catch: not a URI is the answer here: validate says so by throwing
   try { return validate(uri) === uri } catch { return false }
 }
 

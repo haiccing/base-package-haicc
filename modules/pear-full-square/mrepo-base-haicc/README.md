@@ -25,7 +25,9 @@ haicc host haicc swarms/swarm-1 boot/deploy node-1
 
 `CONFIG`, in `internal/config.js`: `goto` at any position, and the
 protocol's default action. The protocol is not behind the service's door:
-the command that follows is checked where it is executed.
+the command that follows is checked where it is executed. `command:
+true`: the words after its URI are a command, passed on as written, so a
+flag list among them is that command's, not goto's.
 
 ## Tests
 
