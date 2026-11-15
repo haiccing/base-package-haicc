@@ -26,6 +26,8 @@ The tests of mycelium-uri, a section per file, each test by its name.
 ## `relative.test.js`
 
 - relative: no leading slash, . the position itself, ./ allowed in front
+- relative: a part may carry filters, kept as written
+- stepsOf, selects: the parts of a URI, a filter with its part
 - from, within: to and from a position
 - slashed, unslashed: the slash-led paths
 - a URI as data: an array of segments, each a relative URI

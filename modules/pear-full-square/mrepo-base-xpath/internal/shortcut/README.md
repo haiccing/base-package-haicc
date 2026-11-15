@@ -1,6 +1,6 @@
-# resolve
+# shortcut
 
-Resolves a local URI to a node position in an mrepo and says whether it is an ordinary node or a shortcut.
+Says where a node's sources are recorded and where a shortcut leads.
 
 A shortcut is a node whose data originates elsewhere: another mrepo, linked
 at that position. Its sources are in `main`, beside its node's document,
@@ -9,16 +9,13 @@ one.
 
 ## Signature
 
-`resolve(exec, uri)`: `exec` reads the mrepo, `exec.read(path)`; `uri` is
-local to it, its segments as a request's form holds it, and addresses a
-position in `main`: `["main", "."]`, `["main", "host"]`. `["."]` is the
-mrepo itself, above its layers: no shortcut there.
+`linkOf(exec, position, entry)`: `position` as written at `main`
+(`host`); `entry` one of its sources, `{ mrepo }`; `exec` names this
+mrepo's folder (`exec.runtime.dir`).
 
 ## Returns
 
-`{ at, shortcut }`: `at` is the position as written at `main`: `.`,
-`host`. `shortcut` is `null` for an
-ordinary node. For a shortcut it is its entry and where it leads:
+The shortcut as a command is sent on to it:
 
 ```
 { at, mrepo, ..., folder, dir }
@@ -28,14 +25,6 @@ ordinary node. For a shortcut it is its entry and where it leads:
 - `folder`: its folder, relative to this mrepo's: `main/<position>`.
 - `dir`: the same, absolute, when the context names this mrepo's folder.
 
-## Errors
-
-- The URI is not an array of segments, a segment is not canonical or
-  has a leading slash.
-- The URI is not in `main`.
-- The URI runs through a shortcut: a URI stays inside its mrepo. The
-  message names the shortcut and the way across, a `haicc` at it.
-
 ## Design
 
 - **Local linking only.** The linked mrepo's folder is found by logic:
@@ -44,7 +33,7 @@ ordinary node. For a shortcut it is its entry and where it leads:
   folders inside.
 - **Only the link in main.** A shortcut is a node with a list of its
   sources; one is in use for now, the first.
-- **Own shortcuts only.** An mrepo resolves its own. Those of a linked
+- **Own shortcuts only.** An mrepo knows its own. Those of a linked
   mrepo are not visible from here.
 
 ## Also exported
@@ -53,6 +42,7 @@ ordinary node. For a shortcut it is its entry and where it leads:
   for a position as written at `main`. `SHORTCUTS`: the file's name.
 - `shortcutsAt(exec, position)`: the sources recorded there, `[]` when
   it has none.
+- `MAIN`: `main`, the layer positions are in.
 - `shadowOf(position)`: the position's folder in the shadow of `main`.
 - `IDENTITY`: `/runtime/mrepo.json`, an mrepo's own `{ uri }`.
 - `swarmOf(uri)`: the swarm of a unique URI, `local` when it has none.

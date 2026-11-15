@@ -1,7 +1,7 @@
 {
   "name": "mrepo-base-xpath",
   "version": "0.1.0",
-  "description": "Module: a local URI resolved to a node position in an mrepo, an ordinary node or a shortcut.",
+  "description": "Module: a request's URI resolved to what it selects in an mrepo, and where it stops at a shortcut.",
   "type": "module",
   "main": "index.js",
   "scripts": {

@@ -1,6 +1,6 @@
 # mrepo-base-haicc
 
-The mrepo haicc protocol: a command executed at a node position, or sent on where the node is a shortcut.
+The mrepo haicc protocol: a command executed at the positions a URI selects, or sent on at a shortcut.
 
 `haicc <URI> <command>` means: go to this node position and execute the
 command that follows, in the context of the node where the data originates
@@ -19,6 +19,8 @@ structure is moved: only the position it is sent to changes. Offered by
 haicc . boot/deploy host haiccing/base-component-haicc
 haicc host service/initialise
 haicc host haicc swarms/swarm-1 boot/deploy node-1
+haicc host/swarms/swarm-1 boot/deploy node-1
+haicc "swarms/*[state='started']" crud/read .
 ```
 
 ## Config

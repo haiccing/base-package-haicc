@@ -64,6 +64,14 @@ given; `./x` is `x`.
 - `relative(uri)` → its canonical form. Throws on a leading slash, saying
   the URI as it is written now, on a segment that is not a name, and on a
   form that is not canonical.
+- A part may be `*`, for a URI that selects, and may carry filters,
+  `[...]`: a query, read by `mycelium-xpath`. A part's name is checked as
+  any name part; a filter for its brackets and quotes only, and kept as
+  written. A filter without a name filters the position itself, in front
+  only: `[state='started']`.
+- `stepsOf(uri)` → its parts, split at the slashes outside filters, a
+  filter with its part: `a/*[x='b/c']/d` gives `a`, `*[x='b/c']`, `d`.
+- `selects(uri)` → whether it selects: a part that is `*`, or a filter.
 - `from(at, uri)` → the URI written at a position, from that position's
   start: `from('main', 'host')` is `main/host`.
 - `within(at, uri)` → the other way: `host`; `.` for the position itself;

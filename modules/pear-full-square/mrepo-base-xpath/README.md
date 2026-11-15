@@ -1,11 +1,13 @@
 # mrepo-base-xpath
 
-XPath in an mrepo: a local URI resolved to a node position, an ordinary node or a shortcut.
+XPath in an mrepo: a request's URI resolved to what it selects, and where it stops at a shortcut.
 
 Internal functionality of the runtime, beside request and execute: nobody
 requests it, it has no protocol. The `haicc` protocol's `goto` uses it to
-tell where a command is executed, and the boot protocol uses it to place
-and remove the shortcuts of the mrepos it deploys.
+tell where a command is executed, the `crud` protocol to tell which nodes
+a URI selects, and the boot protocol to place and remove the shortcuts of
+the mrepos it deploys. The query itself is `mycelium-xpath`'s: this
+module hands it the mrepo as a tree.
 
 | | |
 |---|---|
@@ -30,4 +32,4 @@ Every mrepo has a unique URI, `<swarm>/<node>`, in its runtime layer
 
 ## Tests
 
-- `npm test`: positions and shortcuts resolved on a context written for it.
+- `npm test`: URIs resolved on a context written for it.

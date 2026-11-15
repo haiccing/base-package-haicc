@@ -4,4 +4,5 @@ The methods of mrepo-base-xpath called by code, never requested.
 
 | | |
 |---|---|
-| [resolve/](resolve/) | Resolves a local URI to a node position, an ordinary node or a shortcut. |
+| [query/](query/) | Resolves a request's URI to what it selects in this mrepo, and says where it stopped at a shortcut. |
+| [shortcut/](shortcut/) | Says where a node's sources are recorded and where a shortcut leads. |

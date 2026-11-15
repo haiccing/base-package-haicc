@@ -15,12 +15,17 @@ keeps what is executed here and what is sent on.
   target: it is not behind the service's door.
 - **`goto` at the root**: the command that follows executed here, once,
   as it was given, its value returned.
-- **`goto` at a shortcut**: the command sent on, unchanged, to the mrepo
-  linked there, its folder in the shadow of `main`; nothing executed
-  here. A command that is itself a `haicc` goes on as it is: they chain.
-- **What it refuses**: no command, a position inside `main` other than
-  the root, a URI through a shortcut with the way across named, a URI
-  that is not canonical. A refusal executes and sends nothing.
+- **`goto` at a position inside `main`**: the command executed there,
+  standing at the position; a URI that selects (a `*`, a filter): the
+  command at each position, a list of what each gave, empty when nothing
+  is selected.
+- **`goto` at a shortcut**: the command sent on to the mrepo linked
+  there, its folder in the shadow of `main`; nothing executed here. A
+  command that is itself a `haicc` goes on as it is: they chain. A URI
+  through the shortcut: what is left of it goes in front of the command.
+- **What it refuses**: no command, a position that is not there or is a
+  file, a shortcut beside other positions, a URI that is not canonical
+  or not in `main`. A refusal executes and sends nothing.
 - **Nothing forgotten**: the last test fails when the config names an
   action that was not run here, or one that wrote nothing into the
   request's log as it ran.

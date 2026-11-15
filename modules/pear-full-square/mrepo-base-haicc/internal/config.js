@@ -4,9 +4,9 @@
 // after its URI are a command, passed on as written (a flag list among
 // them is that command's, not goto's).
 export const CONFIG = {
-  description: 'A command executed at a node position, or sent on where the node is a shortcut.',
+  description: 'A command executed at the node positions a URI selects, or sent on where it reaches a shortcut.',
   default: 'goto',
   actions: {
-    goto: { uris: ['**'], args: ['command'], command: true, description: 'Go to this node position and execute the command that follows; at a shortcut, the command is sent to the mrepo linked there.' }
+    goto: { uris: ['**'], args: ['command'], command: true, description: 'Go to the node positions the URI selects and execute the command that follows at each; where the URI reaches a shortcut, the command is sent to the mrepo linked there, with what is left of the URI.' }
   }
 }

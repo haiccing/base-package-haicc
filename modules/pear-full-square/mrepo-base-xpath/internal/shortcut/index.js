@@ -1,10 +1,11 @@
-// resolve: a local URI resolved to a node position in an mrepo, an ordinary
-// node or a shortcut (README.md beside it).
+// shortcut: a node whose data originates elsewhere, another mrepo linked at
+// its position: where its sources are recorded, and where it leads
+// (README.md beside it).
 import { join } from 'bare-path'
-import { segmented, joined, within, ROOT } from 'mycelium-uri'
+import { ROOT } from 'mycelium-uri'
 
 // The layer positions are in: where the outside stands.
-const MAIN = 'main'
+export const MAIN = 'main'
 
 // An mrepo's identity, in its runtime layer: { uri }, its unique URI,
 // <swarm>/<node> (local/<name> for what the boot mrepo creates).
@@ -38,28 +39,12 @@ export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? ur
 // in the same swarm.
 export const uriOf = (parent, name) => `${swarmOf(parent)}/${name}`
 
-// uri: as a request's form holds it, its segments: ['main', '.'] (main's
-// root position), ['main', 'host']; ['.'] the mrepo itself, above its
-// layers. at: the position as written at main (`.`, host).
-export async function resolve (exec, uri) {
-  const u = joined(segmented(uri))
-  if (u === ROOT) { exec.log('verbose', 'resolved', { uri: u, at: ROOT, shortcut: null }); return { at: ROOT, shortcut: null } }
-  const at = within(MAIN, u)
-  if (at === null) throw new Error(`not a position in main: ${u} (main, main/<position>)`)
-  const segments = at === ROOT ? [] : at.split('/')
-  for (let i = 1; i <= segments.length; i++) {
-    const position = segments.slice(0, i).join('/')
-    // one source in use for now: the first
-    const [entry] = await shortcutsAt(exec, position)
-    exec.log('debug', 'position', { position, shortcut: entry?.mrepo ?? null })
-    if (!entry) continue
-    // The simple rule: a URI stays inside its mrepo. One that runs through a
-    // shortcut is not resolved: the way across is a goto at the shortcut.
-    if (i < segments.length) throw new Error(`${position} is a shortcut: a URI does not run through it (haicc ${position} haicc ${segments.slice(i).join('/')} ...)`)
-    const dir = exec.runtime?.dir ?? exec.dir ?? null
-    exec.log('verbose', 'resolved', { uri: u, at: position, shortcut: entry.mrepo })
-    return { at: position, shortcut: { at: position, ...entry, folder: shadowOf(position), dir: dir ? join(dir, shadowOf(position)) : null } }
-  }
-  exec.log('verbose', 'resolved', { uri: u, at, shortcut: null })
-  return { at, shortcut: null }
+// A shortcut as a command is sent on to it: its entry (the first source:
+// one in use for now) and where it leads: the linked mrepo's folder,
+// relative to this mrepo's (the shadow of main) and absolute, when the
+// context names this mrepo's folder.
+// log: none (nothing read: a value made from its arguments)
+export const linkOf = (exec, position, entry) => {
+  const dir = exec.runtime?.dir ?? exec.dir ?? null
+  return { at: position, ...entry, folder: shadowOf(position), dir: dir ? join(dir, shadowOf(position)) : null }
 }

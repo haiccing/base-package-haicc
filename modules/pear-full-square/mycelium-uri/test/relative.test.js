@@ -1,5 +1,5 @@
 import test from 'brittle'
-import { relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT } from '../index.js'
+import { relative, stepsOf, selects, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT } from '../index.js'
 
 test('relative: no leading slash, . the position itself, ./ allowed in front', (t) => {
   t.is(ROOT, '.')
@@ -22,6 +22,31 @@ test('relative: no leading slash, . the position itself, ./ allowed in front', (
   t.exception(() => relative('a/../b'), /bad segment/, 'no way up: forward only')
   t.exception(() => relative('a/./b'), /bad segment/, '. only in front')
   t.exception(() => relative(7), /not a URI/)
+})
+
+test('relative: a part may carry filters, kept as written', (t) => {
+  for (const u of ["swarms/*[state='started']", "requests/*[value/uri='main/host']/key", "users[starts-with(name,'s')]", '*[size>2 and publicKey="K1"][name]/nodes/*', "[readme='hello']", "a[b='x]y']"]) t.is(relative(u), u, u)
+  t.is(relative("./swarms[name='A B']"), "swarms[name='A B']", 'a value keeps its case and its spaces')
+  t.exception(() => relative("Swarms[name='sam']"), /not canonical: Swarms\[name='sam'\] \(swarms\[name='sam'\]\)/, 'a name is checked as it is without a filter')
+  t.exception(() => relative("a_b[x=1]"), /bad segment/)
+  t.exception(() => relative("a//b[x=1]"), /not canonical/)
+  t.exception(() => relative("a/[x=1]"), /bad segment/, 'a filter without its part: in front only')
+  t.exception(() => relative("a[x=1]b"), /a filter ends its part/)
+  t.exception(() => relative("a[x=1"), /a filter not closed/)
+  t.exception(() => relative("a[x='1]"), /a quote not closed/)
+  t.exception(() => relative('a]'), /a \] without its \[/)
+  t.exception(() => relative("/a[x=1]"), /not a relative URI/)
+  t.alike(segmented(['main', "swarms/*[state='started']", '.']), ['main', "swarms/*[state='started']", '.'], 'a segment of a URI as data')
+  t.is(joined(['main', "swarms/*[value/uri='a/b']", '.']), "main/swarms/*[value/uri='a/b']")
+})
+
+test('stepsOf, selects: the parts of a URI, a filter with its part', (t) => {
+  t.alike(stepsOf("a/*[x='b/c'][y]/d"), ['a', "*[x='b/c'][y]", 'd'])
+  t.alike(stepsOf('main/host'), ['main', 'host'])
+  t.alike(stepsOf('.'), ['.'])
+  t.alike(stepsOf('a[b[c]/d]/e'), ['a[b[c]/d]', 'e'], 'brackets inside a filter')
+  t.alike([selects('main/host'), selects('.'), selects('main/*'), selects("main/host[state='x']"), selects('*/a')], [false, false, true, true, true])
+  t.exception(() => stepsOf("a[x='1"), /a quote not closed/)
 })
 
 test('from, within: to and from a position', (t) => {

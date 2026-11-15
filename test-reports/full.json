@@ -1,8 +1,8 @@
 {
   "package": "haiccing/base-package-haicc",
-  "content": "cad0b5bcc06085913e2a159217854700f1b7040aaeab5bd0bbde0d0561fde04d",
+  "content": "d7c0fd4aa32fdabfb19247e79594df6899da943a80c39ea06e2d2f27e5c83595",
   "bare": "v1.36.0",
-  "date": "2026-11-15T08:25:49.080Z",
+  "date": "2026-11-15T12:29:53.257Z",
   "set": "full",
   "ok": true,
   "units": [
@@ -10,12 +10,12 @@
       "unit": "/test/mounted",
       "ok": true,
       "tests": {
-        "passed": 6,
-        "total": 6
+        "passed": 7,
+        "total": 7
       },
       "asserts": {
-        "passed": 26,
-        "total": 26
+        "passed": 35,
+        "total": 35
       },
       "failures": []
     },
@@ -75,12 +75,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-haicc",
       "ok": true,
       "tests": {
-        "passed": 2,
-        "total": 2
+        "passed": 5,
+        "total": 5
       },
       "asserts": {
-        "passed": 17,
-        "total": 17
+        "passed": 38,
+        "total": 38
       },
       "failures": []
     },
@@ -101,12 +101,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-xpath",
       "ok": true,
       "tests": {
-        "passed": 2,
-        "total": 2
+        "passed": 5,
+        "total": 5
       },
       "asserts": {
-        "passed": 25,
-        "total": 25
+        "passed": 44,
+        "total": 44
       },
       "failures": []
     },
@@ -114,12 +114,25 @@
       "unit": "/test/modules/pear-full-square/mycelium-uri",
       "ok": true,
       "tests": {
+        "passed": 21,
+        "total": 21
+      },
+      "asserts": {
+        "passed": 190,
+        "total": 190
+      },
+      "failures": []
+    },
+    {
+      "unit": "/test/modules/pear-full-square/mycelium-xpath",
+      "ok": true,
+      "tests": {
         "passed": 19,
         "total": 19
       },
       "asserts": {
-        "passed": 166,
-        "total": 166
+        "passed": 115,
+        "total": 115
       },
       "failures": []
     },
