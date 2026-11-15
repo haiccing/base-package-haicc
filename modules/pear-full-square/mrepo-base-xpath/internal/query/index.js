@@ -1,7 +1,7 @@
 // query: a request's URI resolved to what it selects in this mrepo, each a
 // reference, and where it stopped at a shortcut (README.md beside it).
 import { query as select } from 'mycelium-xpath'
-import { segmented, joined, stepsOf, isName, unslashed, ROOT } from 'mycelium-uri'
+import { segmented, joined, stepsOf, isName, unslashed, uriFormOf, ROOT } from 'mycelium-uri'
 import { MAIN, SHORTCUTS, linkOf } from '../shortcut/index.js'
 
 // A node is a folder holding its document under this name: hidden (no URI
@@ -52,6 +52,9 @@ export async function query (exec, uri) {
         try { return JSON.parse(text) } catch { return text }
       },
       stop: linkAt,
+      // a document's key is a data name: in a URI it takes its URI form
+      // (rules.md: publicKey is public-key), in a filter too
+      name: uriFormOf,
       step: (event, data, fn) => exec.step(event, data, fn)
     }
     const r = await select(tree, root, steps.join('/'))

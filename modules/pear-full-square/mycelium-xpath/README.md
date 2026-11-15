@@ -53,6 +53,9 @@ The tree is handed in, `tree`:
 - `stop(ref)`, optional: truthy where the query must not go on from a node,
   a link to elsewhere, whose children and document are there
 - `match(name, step)`, optional: as `select`'s
+- `name(key)`, optional: the name a document's key has in a query and in
+  a path, where keys are written another way there (`publicKey` as
+  `public-key`); the key itself by default
 - `step(event, data, fn)`, optional: each round is run through it, for who
   calls to measure: `segment` (`{ steps, in, out }`) and `filter`
   (`{ filter, in, out }`), `data` a function of the round's result

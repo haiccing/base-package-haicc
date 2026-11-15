@@ -43,6 +43,10 @@ Nothing there, or no such layer: `found` is empty.
 - **The tree.** A folder's children are what is not hidden in it: a name
   starting with a dot is no URI's. A folder's document is its
   `.node.json`; a file's is the file, JSON, or its text when it is not.
+- **A data name in its URI form.** A document's key is written in a URI
+  as the rules say, each capital as `-` and the letter in lowercase:
+  `publicKey` is `public-key`, as a step, in a filter
+  (`*[owner/public-key='k1']`) and in the position of a value found.
 - **A shortcut stops it.** In `main`, a position with sources is a link
   to elsewhere: its children and its document are in the mrepo linked
   there. One source is in use for now, the first.

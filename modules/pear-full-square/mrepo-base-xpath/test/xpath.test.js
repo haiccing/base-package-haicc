@@ -24,7 +24,7 @@ const files = () => ({
   'main/layer.json': {},
   'main/.node.json': { name: 'boot' },
   'main/swarms/.node.json': {},
-  'main/swarms/swarm-1/.node.json': { name: 'sam', size: 3, state: 'started', owner: { name: 'ann' } },
+  'main/swarms/swarm-1/.node.json': { name: 'sam', size: 3, state: 'started', owner: { name: 'ann', publicKey: 'k1' } },
   'main/swarms/swarm-1/nodes/.node.json': {},
   'main/swarms/swarm-1/nodes/node-1/.node.json': { state: 'started' },
   'main/swarms/swarm-2/.node.json': { name: 'tom', size: 1, state: 'stopped' },
@@ -53,6 +53,9 @@ test('query: what a URI selects, each a reference with what it is', async (t) =>
   t.alike((await query(exec, ['main', 'swarms/swarm-1/owner/name'])).found, [{ at: 'swarms/swarm-1/owner/name', kind: 'value', value: 'ann' }], 'inside a node\'s document: a value')
   t.alike(at(await query(exec, ['runtime/service.json'])), [['service.json', 'file']], 'the mrepo\'s own: the layer first; a file')
   t.alike((await query(exec, ['request/done/r1.json/value/uri'])).found, [{ at: 'done/r1.json/value/uri', kind: 'value', value: 'main/host' }], 'a file that is a document goes on below it')
+  t.alike((await query(exec, ['main', 'swarms/swarm-1/owner/public-key'])).found, [{ at: 'swarms/swarm-1/owner/public-key', kind: 'value', value: 'k1' }], 'a data name in its URI form: publicKey is public-key')
+  t.alike(at(await query(exec, ['main', "swarms/*[owner/public-key='k1']"])), [['swarms/swarm-1', 'node']], 'in a filter too')
+  t.alike(at(await query(exec, ['main', "swarms/*[owner/publicKey='k1']"])), [], 'not as it is stored')
   await t.exception(query(exec, ['.']), /not a node: \. \(the mrepo itself; a layer first: main\)/)
   await t.exception(query(exec, ["main[x='1']"]), /not a layer: main\[x='1'\]/)
   await t.exception(query(exec, 'main/host'), /not a URI: its segments, an array/)

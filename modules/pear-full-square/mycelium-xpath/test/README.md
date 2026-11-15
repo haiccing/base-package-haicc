@@ -20,6 +20,7 @@ Shared by the tests, not a test itself.
 - query: a document read once, a stop asked once
 - query: each round through step, to be measured
 - query: match replaces exact matching of a name
+- query: name gives a document's key its name in a query and in a path
 - query: async children and documents
 - query: without document and stop, a tree of names only
 - query: what is not a query, and what is not of this phase

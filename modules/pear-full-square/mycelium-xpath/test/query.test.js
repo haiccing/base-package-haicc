@@ -174,6 +174,16 @@ test('query: match replaces exact matching of a name', async (t) => {
   t.alike(paths(await run('swarms/SWARM-1', { match: (name, step) => name === step.toLowerCase() })), ['/swarms/swarm-1'])
 })
 
+test('query: name gives a document\'s key its name in a query and in a path', async (t) => {
+  const name = key => key.replace(/[A-Z]/g, c => '-' + c.toLowerCase())
+  t.alike((await run('swarms/swarm-1/owner/public-key', { name })).found, [{ path: '/swarms/swarm-1/owner/public-key', value: 'k1' }], 'a step')
+  t.alike(paths(await run("swarms/*[owner/public-key='k1']", { name })), ['/swarms/swarm-1'], 'a leaf in a filter')
+  t.alike(paths(await run('swarms/swarm-1/owner/*', { name })), ['/swarms/swarm-1/owner/name', '/swarms/swarm-1/owner/public-key'], '*: each by its name')
+  t.alike(paths(await run("swarms/swarm-1/owner/*[name()='public-key']", { name })), ['/swarms/swarm-1/owner/public-key'], 'name() says it')
+  t.alike(paths(await run("swarms/*[owner/publicKey='k1']", { name })), [], 'the key as stored is not its name then')
+  t.alike((await run('swarms/swarm-1/owner/publicKey')).found.map(f => f.value), ['k1'], 'without it: the key itself')
+})
+
 test('query: async children and documents', async (t) => {
   const { tree } = treeOf()
   const slow = { children: async n => tree.children(n), document: async n => tree.document(n), stop: async r => tree.stop(r) }

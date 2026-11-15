@@ -14,6 +14,10 @@
 //                           and its document are there): what it says is
 //                           handed back
 //     tree.match(name, step) optional: replaces exact matching of a name
+//     tree.name(key)        optional: the name a document's key has in a
+//                           query and in a path (a key written another way
+//                           there: publicKey as public-key); the key itself
+//                           by default
 //     tree.step(event, data, fn) optional: each round run through it, to
 //                           be measured by who calls (event: segment,
 //                           filter; data a function of the round's result)
@@ -46,7 +50,6 @@ const INSIDE = Symbol('inside a document')
 const inside = value => ({ [INSIDE]: true, value })
 const isInside = node => node !== null && typeof node === 'object' && node[INSIDE] === true
 const isObject = v => v !== null && typeof v === 'object'
-const keysOf = v => (Array.isArray(v) ? v.map((x, i) => [String(i), x]) : isObject(v) ? Object.entries(v) : [])
 const exact = (name, step) => name === step
 const fail = (text, at, what) => new Error(`not a query: ${what} (${text.slice(0, at)}>>>${text.slice(at)})`)
 
@@ -165,6 +168,9 @@ function expression (text, from, to) {
 export async function query (tree, root, text) {
   if (typeof text !== 'string') throw new Error('not a query: its text')
   const match = tree.match ?? exact
+  // a document's entries by the names they have in a query
+  const named = tree.name ?? (key => key)
+  const keysOf = v => (Array.isArray(v) ? v.map((x, i) => [String(i), x]) : isObject(v) ? Object.entries(v).map(([k, x]) => [named(k), x]) : [])
   const round = tree.step ?? ((event, data, fn) => fn())
   const documents = new Map()
   // a node's document, read once a query
