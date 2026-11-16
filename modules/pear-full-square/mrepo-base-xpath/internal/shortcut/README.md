@@ -53,5 +53,6 @@ The shortcut as a command is sent on to it:
   `main/registry/<swarm>/<name>`.
 - `IDENTITY`: `/runtime/mrepo.json`, an mrepo's own `{ uri }`.
 - `swarmOf(uri)`: the swarm of a unique URI, `local` when it has none.
+  `LOCAL`: `local`, the swarm of the mrepos in no swarm.
 - `uriOf(parent, name)`: the unique URI of an mrepo linked at a name, in
   its parent's swarm.

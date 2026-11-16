@@ -36,7 +36,9 @@ the link's record, by the key the shortcut names:
 
 Every mrepo has a unique URI, `<swarm>/<node>`, in its runtime layer
 (`/runtime/mrepo.json`). What the boot mrepo creates is `local/<name>`:
-`local/host`. A shortcut names the mrepo it leads to by that URI.
+`local/host`; `local` is the swarm of what is in none. A swarm's node,
+deployed at `swarms/<swarm>/<name>`, is `<swarm>/<name>`. A shortcut
+names the mrepo it leads to by that URI.
 
 ## Tests
 

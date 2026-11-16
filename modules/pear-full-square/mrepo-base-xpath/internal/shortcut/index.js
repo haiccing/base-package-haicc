@@ -56,8 +56,10 @@ export async function linked (exec, key) {
 export const REGISTRY = 'registry'
 export const registryOf = uri => `${MAIN}/${REGISTRY}/${uri}`
 
-// The swarm of a unique URI: its first part; local when it has none.
-export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? uri.split('/')[0] : 'local')
+// The swarm of a unique URI: its first part; local when it has none (the
+// mrepos in no swarm: the boot mrepo, a host).
+export const LOCAL = 'local'
+export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? uri.split('/')[0] : LOCAL)
 
 // The unique URI of an mrepo linked at a name, by the mrepo that links it:
 // in the same swarm.
