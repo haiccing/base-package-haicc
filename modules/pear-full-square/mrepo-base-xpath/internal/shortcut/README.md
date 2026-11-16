@@ -10,8 +10,9 @@ one.
 ## Signature
 
 `linkOf(exec, position, entry)`, async: `position` as written at `main`
-(`host`); `entry` one of its sources, `{ mrepo }`; `exec` reads the
-registry (`exec.find`) and names this mrepo's folder (`exec.runtime.dir`).
+(`host`); `entry` one of its sources, `{ mrepo, link }`; `exec` reads
+the links layer (`exec.find`) and names this mrepo's folder
+(`exec.runtime.dir`).
 
 ## Returns
 
@@ -22,16 +23,16 @@ The shortcut as a command is sent on to it:
 ```
 
 - `mrepo`: the linked mrepo's unique URI.
-- `folder`: its folder, relative to this mrepo's, as its entry in the
-  registry says it (`../local/host`); `null` when the registry has none.
+- `folder`: its folder, relative to this mrepo's, as its link's record
+  says it (`../local/host`); `null` when it has no record here.
 - `dir`: the same, absolute, when the context names this mrepo's folder.
 
 ## Design
 
-- **Where it leads is read from the registry**, a layer of the mrepo
-  that deploys: an entry an mrepo it deployed, a node by that mrepo's
-  unique URI (`registry/local/host`), saying where it is on this
-  machine. No entry: not reachable from here.
+- **Where it leads is read from the links layer**, the mrepo's own: a
+  record a link, by the link's own key, which the shortcut names:
+  everything this machine knows of the linked mrepo. No record: not
+  reachable from here. `main` holds what is needed to show a link.
 - **Only the link in main.** A shortcut is a node with a list of its
   sources; one is in use for now, the first.
 - **Own shortcuts only.** An mrepo knows its own. Those of a linked
@@ -44,9 +45,12 @@ The shortcut as a command is sent on to it:
 - `shortcutsAt(exec, position)`: the sources recorded there, `[]` when
   it has none.
 - `MAIN`: `main`, the layer positions are in.
-- `REGISTRY`: `registry`, the layer. `entryOf(uri)`: an mrepo's entry
-  there, `registry/<swarm>/<name>/.node.json`. `registered(exec, uri)`:
-  the entry, `null` when there is none. `NODE`: `.node.json`.
+- `LINKS`: `links`, the layer. `linkPath(key)`: a link's record there,
+  `links/<key>.json`. `linked(exec, key)`: the record, `null` when
+  there is none. `NODE`: `.node.json`.
+- `REGISTRY`: `registry`, the position of the mrepo registry in the
+  boot mrepo's `main`. `registryOf(uri)`: an mrepo's node there,
+  `main/registry/<swarm>/<name>`.
 - `IDENTITY`: `/runtime/mrepo.json`, an mrepo's own `{ uri }`.
 - `swarmOf(uri)`: the swarm of a unique URI, `local` when it has none.
 - `uriOf(parent, name)`: the unique URI of an mrepo linked at a name, in

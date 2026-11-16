@@ -25,18 +25,18 @@ const FILES = () => ({
   'main/layer.json': {},
   'main/notes.txt': 'a text',
   'main/host/.node.json': {},
-  'main/host/.shortcuts.json': [{ mrepo: 'local/host' }],
+  'main/host/.shortcuts.json': [{ mrepo: 'local/host', link: 'k-host' }],
   'main/swarms/.node.json': {},
   'main/swarms/swarm-1/.node.json': { state: 'started', size: 3 },
   'main/swarms/swarm-2/.node.json': { state: 'stopped', size: 1 },
   'main/swarms/swarm-3/.node.json': { state: 'started', size: 9 },
-  'registry/local/host/.node.json': { uri: 'local/host', at: 'host', folder: '../local/host' },
-  'registry/swarm-9/far/.node.json': { uri: 'swarm-9/far', at: 'links/far', folder: '../swarm-9/far' },
+  'links/k-host.json': { key: 'k-host', uri: 'local/host', at: 'host', folder: '../local/host' },
+  'links/k-far.json': { key: 'k-far', uri: 'swarm-9/far', at: 'links/far', folder: '../swarm-9/far' },
   'main/links/.node.json': {},
   'main/links/far/.node.json': {},
-  'main/links/far/.shortcuts.json': [{ mrepo: 'swarm-9/far' }]
+  'main/links/far/.shortcuts.json': [{ mrepo: 'swarm-9/far', link: 'k-far' }]
 })
-const HOST = { at: 'host', mrepo: 'local/host', folder: '../local/host', dir: '/work/mrepos/local/host' }
+const HOST = { at: 'host', mrepo: 'local/host', link: 'k-host', folder: '../local/host', dir: '/work/mrepos/local/host' }
 
 test('goto: at the root executed here; at a shortcut sent on; no command', async (t) => {
   const { exec, seen } = context(FILES())

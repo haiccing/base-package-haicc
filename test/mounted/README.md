@@ -20,7 +20,7 @@ keeps what is executed here and what is sent on.
   command at each position, a list of what each gave, empty when nothing
   is selected.
 - **`goto` at a shortcut**: the command sent on to the mrepo linked
-  there, its folder as the registry says it; nothing executed here. A
+  there, its folder as its link's record says it; nothing executed here. A
   command that is itself a `haicc` goes on as it is: they chain. A URI
   through the shortcut: what is left of it goes in front of the command.
 - **What it refuses**: no command, a position that is not there or is a

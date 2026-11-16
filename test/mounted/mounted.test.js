@@ -42,13 +42,13 @@ const HOST = {
   'main/layer.json': {},
   'main/notes.txt': 'a text',
   'main/host/.node.json': {},
-  'main/host/.shortcuts.json': [{ mrepo: 'local/host' }],
-  'registry/local/host/.node.json': { uri: 'local/host', at: 'host', folder: '../local/host' },
+  'main/host/.shortcuts.json': [{ mrepo: 'local/host', link: 'k-host' }],
+  'links/k-host.json': { key: 'k-host', uri: 'local/host', at: 'host', folder: '../local/host' },
   'main/swarms/.node.json': {},
   'main/swarms/swarm-1/.node.json': { state: 'started' },
   'main/swarms/swarm-2/.node.json': { state: 'stopped' }
 }
-const LINK = { at: 'host', mrepo: 'local/host', folder: '../local/host', dir: '/work/mrepos/local/host' }
+const LINK = { at: 'host', mrepo: 'local/host', link: 'k-host', folder: '../local/host', dir: '/work/mrepos/local/host' }
 
 test('what it provides: one protocol, haicc, its config and its action', (t) => {
   t.alike(Object.keys(mounted.protocols), ['haicc'], 'the package provides the haicc protocol, and no other')
@@ -91,7 +91,7 @@ test('goto at a shortcut: the command sent on to the mrepo linked there, with wh
   const { exec, executed, sent } = execution(HOST)
   const command = ['haicc', 'node-1', 'service/start']
   t.is(await act('goto', exec, { uri: ['main', 'host'], args: command }), null, 'nothing returned here: the request waits for the linked mrepo\'s response')
-  t.alike(sent, [{ to: LINK, command }], 'where it leads: the linked mrepo, its folder as the registry says it; the command as it was, a haicc of its own included: commands chain')
+  t.alike(sent, [{ to: LINK, command }], 'where it leads: the linked mrepo, its folder as its link\'s record says it; the command as it was, a haicc of its own included: commands chain')
   t.is(await act('goto', exec, { uri: ['main', 'host/swarms/*'], args: ['service/start'] }), null, 'a URI through the shortcut: sent on too')
   t.alike(sent[1], { to: LINK, command: ['haicc', 'swarms/*', 'service/start'] }, 'what is left of the URI a goto there, in front of the command')
   t.alike(executed, [], 'nothing of it executed here')

@@ -18,17 +18,18 @@ module hands it the mrepo as a tree.
 
 A shortcut is in `main`, beside its node's document, under a hidden
 name: a list of the sources the node's data comes from, each by its
-unique URI. Only the link: nothing local to a machine.
+unique URI and its link's key. What is needed to show the link:
+nothing local to a machine.
 
 ```
-/main/host/.shortcuts.json     [{ "mrepo": "local/host" }]
+/main/host/.shortcuts.json     [{ "mrepo": "local/host", "link": "<key>" }]
 ```
 
-Where it leads on this machine is in the registry, a layer of the mrepo
-that deployed it, an entry by the linked mrepo's unique URI:
+Where it leads on this machine is in the links layer, the mrepo's own:
+the link's record, by the key the shortcut names:
 
 ```
-/registry/local/host/.node.json     { "uri": "local/host", "at": "host", "folder": "../local/host", ... }
+/links/<key>.json     { "key": "<key>", "uri": "local/host", "at": "host", "folder": "../local/host", ... }
 ```
 
 ## Unique URIs
