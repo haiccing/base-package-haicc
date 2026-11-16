@@ -22,6 +22,7 @@ function context (files) {
 }
 const FILES = () => ({
   'main/layer.json': {},
+  'main/notes.txt': 'a text',
   'main/host/.node.json': {},
   'main/host/.shortcuts.json': [{ mrepo: 'local/host' }],
   'main/swarms/.node.json': {},
@@ -57,7 +58,7 @@ test('goto: a position inside main: the command executed there, the current root
   t.alike(seen.at.at(-1), ['main', 'swarms/swarm-2'])
   await t.exception(goto(exec, { uri: ['main', 'nowhere'], args: ['crud/read', '.'] }), /haicc nowhere: no node there/, 'a position named that is not there: an error')
   await t.exception(goto(exec, { uri: ['main', 'swarms/swarm-1/state'], args: ['crud/read', '.'] }), /haicc swarms\/swarm-1\/state: not a position \(a node; a value inside a document is none\)/)
-  await t.exception(goto(exec, { uri: ['main', 'layer.json'], args: ['crud/read', '.'] }), /haicc layer\.json: not a position \(a node; a file is none\)/)
+  await t.exception(goto(exec, { uri: ['main', 'notes.txt'], args: ['crud/read', '.'] }), /haicc notes\.txt: not a position \(a node; a file is none\)/)
   t.alike(exec.entries.filter(e => e.event === 'executed here').map(e => e.at), ['swarms/swarm-1', 'swarms/swarm-2'])
 })
 

@@ -41,7 +41,8 @@ Nothing there, or no such layer: `found` is empty.
 ## Design
 
 - **The tree.** A folder's children are what is not hidden in it: a name
-  starting with a dot is no URI's. A folder's document is its
+  starting with a dot is no URI's, and a layer's own config, `layer.json`
+  at its root, is the layer's, not its data. A folder's document is its
   `.node.json`; a file's is the file, JSON, or its text when it is not.
 - **A data name in its URI form.** A document's key is written in a URI
   as the rules say, each capital as `-` and the letter in lowercase:

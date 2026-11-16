@@ -39,6 +39,7 @@ function execution (files = {}) {
 }
 const HOST = {
   'main/layer.json': {},
+  'main/notes.txt': 'a text',
   'main/host/.node.json': {},
   'main/host/.shortcuts.json': [{ mrepo: 'local/host' }],
   'main/swarms/.node.json': {},
@@ -99,7 +100,7 @@ test('goto: what it refuses', async (t) => {
   await t.exception(act('goto', exec, { uri: ['main', 'host'] }), /missing argument: command/, 'no command follows')
   await t.exception(act('goto', exec, { uri: ['main', '.'], args: [] }), /missing argument: command/, 'an empty one neither')
   await t.exception(act('goto', exec, { uri: ['main', 'nowhere'], args: ['boot/deploy', 'node-1'] }), /haicc nowhere: no node there/, 'a position named that is not there')
-  await t.exception(act('goto', exec, { uri: ['main', 'layer.json'], args: ['service/start'] }), /not a position/, 'a file is no position')
+  await t.exception(act('goto', exec, { uri: ['main', 'notes.txt'], args: ['service/start'] }), /not a position/, 'a file is no position')
   await t.exception(act('goto', exec, { uri: ['main', '*'], args: ['service/start'] }), /not yet: it reaches a shortcut \(host\) among 2 positions; a command goes on from one shortcut at a time/, 'a shortcut beside other positions: not yet, said so')
   await t.exception(act('goto', exec, { uri: ['main', 'Host'], args: ['service/start'] }), /not canonical: Host \(host\)/, 'a URI that is not canonical')
   await t.exception(act('goto', exec, { uri: ['runtime/hooks'], args: ['service/start'] }), /not a position in main/)
