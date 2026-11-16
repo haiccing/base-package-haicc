@@ -1,7 +1,7 @@
 // A query: standard XPath's forward part, phase 1 (README.md): steps by
-// name, `*` and `.`; filters on a node's leaves; name(), starts-with(),
-// contains(). Generic, as select is: the tree is reached only through what
-// is handed in.
+// name, `*` and `.`; filters on a node's leaves; a position ([1],
+// [last()]); name(), starts-with(), contains(). Generic, as select is: the
+// tree is reached only through what is handed in.
 //
 //   query(tree, root, text) -> { found, stopped }
 //     tree.children(node)   a node's children, [name, child] pairs, or null
@@ -38,13 +38,21 @@
 //
 // A node's document continues the tree below it: a step that names no
 // child is looked for in the document (its keys), and goes on inside it, an
-// object's keys its children, a leaf its value. `*` selects children; of a
-// node without any, the keys of its document. A leaf of the tree itself has
-// a value in a filter when its document is no object (a text, a number).
+// object's keys its children, a leaf its value. A list is a child that
+// repeats, as XPath sees one: its key names every item, in order, and a
+// position picks one (`tags` all of them, `tags[2]` the second; an item's
+// path says its position). `*` selects children; of a node without any,
+// the keys of its document. A leaf of the tree itself has a value in a
+// filter when its document is no object (a text, a number).
+//
+// A position, [n] or [last()], alone in its filter: the n-th (from 1) of
+// the nodes the step selected under the same parent, in the order they
+// came (the tree's own order; a list's).
 //
 // What is not of this phase is refused, said as such: descendants (`//`),
-// the union (`|`), a position (`[1]`), the axes (`::`), the other
-// functions. What looks back (`..`) is not built.
+// the union (`|`), position() and a position joined with something else,
+// the axes (`::`), the other functions. What looks back (`..`) is not
+// built.
 
 const INSIDE = Symbol('inside a document')
 const inside = value => ({ [INSIDE]: true, value })
@@ -140,7 +148,7 @@ function expression (text, from, to) {
     space()
     const op = OPS.find(o => text.startsWith(o, at) && at + o.length <= to)
     if (!op) {
-      if (typeof left.literal === 'number') throw fail(text, at, 'a position: not in this phase')
+      if (typeof left.literal === 'number') throw fail(text, at, 'a position stands alone in its filter ([1], [last()]): joined with something else, not in this phase')
       return { exists: left }
     }
     at += op.length
@@ -157,6 +165,10 @@ function expression (text, from, to) {
   function and () { const all = [unary()]; while (word('and')) all.push(unary()); return all.length === 1 ? all[0] : { and: all } }
   function or () { const all = [and()]; while (word('or')) all.push(and()); return all.length === 1 ? all[0] : { or: all } }
 
+  // a position stands alone in its filter
+  const alone = text.slice(from, to).trim()
+  if (/^[1-9][0-9]*$/.test(alone)) return { position: Number(alone) }
+  if (/^last\s*\(\s*\)$/.test(alone)) return { position: 'last' }
   const e = or()
   space()
   if (at < to) throw fail(text, at, 'not understood')
@@ -170,7 +182,11 @@ export async function query (tree, root, text) {
   const match = tree.match ?? exact
   // a document's entries by the names they have in a query
   const named = tree.name ?? (key => key)
-  const keysOf = v => (Array.isArray(v) ? v.map((x, i) => [String(i), x]) : isObject(v) ? Object.entries(v).map(([k, x]) => [named(k), x]) : [])
+  // -> [the entry's part of a path, its value, its name]: a list is a child
+  // that repeats: an entry each item, its position in its path, from 1
+  const keysOf = v => (isObject(v) && !Array.isArray(v)
+    ? Object.entries(v).flatMap(([k, x]) => { const n = named(k); return Array.isArray(x) ? x.flat(Infinity).map((item, i) => [`${n}[${i + 1}]`, item, n]) : [[n, x, n]] })
+    : [])
   const round = tree.step ?? ((event, data, fn) => fn())
   const documents = new Map()
   // a node's document, read once a query
@@ -186,21 +202,22 @@ export async function query (tree, root, text) {
     if (!stops.has(ref.path)) stops.set(ref.path, (await tree.stop(ref)) || null)
     return stops.get(ref.path)
   }
-  const nameOf = ref => ref.path.slice(ref.path.lastIndexOf('/') + 1)
+  const nameOf = ref => ref.path.slice(ref.path.lastIndexOf('/') + 1).replace(/\[[0-9]+\]$/, '')
+  const parentOf = ref => ref.path.slice(0, ref.path.lastIndexOf('/'))
   const at = (ref, name) => (ref.path === '/' ? '' : ref.path) + '/' + name
 
   // One step from one reference -> the references it leads to.
   async function take (ref, step) {
     if (step === '.') return [ref]
     if (isInside(ref.node)) {
-      return keysOf(ref.node.value).filter(([k]) => step === '*' || k === step).map(([k, v]) => ({ path: at(ref, k), node: inside(v) }))
+      return keysOf(ref.node.value).filter(([, , n]) => step === '*' || n === step).map(([p, v]) => ({ path: at(ref, p), node: inside(v) }))
     }
     const children = (await tree.children(ref.node)) || []
     const found = children.filter(([n]) => step === '*' || match(n, step)).map(([n, child]) => ({ path: at(ref, n), node: child }))
     if (found.length) return found
     // nothing of that name in the tree: the node's document goes on below it
     const doc = await documentOf(ref)
-    return keysOf(doc).filter(([k]) => step === '*' || k === step).map(([k, v]) => ({ path: at(ref, k), node: inside(v) }))
+    return keysOf(doc).filter(([, , n]) => step === '*' || n === step).map(([p, v]) => ({ path: at(ref, p), node: inside(v) }))
   }
 
   // A filter's operand at a node -> its values (those of the nodes a path
@@ -263,6 +280,13 @@ export async function query (tree, root, text) {
       const e = expression(text, at0 + 1, end - 1)
       const [before, rest] = [refs.length, text.slice(at0)]
       refs = await round('filter', kept => ({ filter: text.slice(at0, end), in: before, out: kept.length }), async () => {
+        if ('position' in e) {
+          // of the nodes selected under the same parent, in the order they
+          // came: nothing read, and a link's place among them is known here
+          const groups = new Map()
+          for (const ref of refs) { const p = parentOf(ref); (groups.get(p) ?? groups.set(p, []).get(p)).push(ref) }
+          return [...groups.values()].map(g => (e.position === 'last' ? g.at(-1) : g[e.position - 1])).filter(Boolean)
+        }
         const kept = []
         for (const ref of refs) {
           const why = await stopOf(ref)

@@ -66,8 +66,10 @@ given; `./x` is `x`.
   form that is not canonical.
 - A part may be `*`, for a URI that selects, and may carry filters,
   `[...]`: a query, read by `mycelium-xpath`. A part's name is checked as
-  any name part; a filter for its brackets and quotes only, and kept as
-  written. A filter without a name filters the position itself, in front
+  any name part; a filter is kept as written, and checked for its
+  brackets and quotes and for the URI's own rule: what is no quoted
+  value in it is lowercase, as a name part is (`public-key`, not
+  `publicKey`). A filter without a name filters the position itself, in front
   only: `[state='started']`.
 - `stepsOf(uri)` → its parts, split at the slashes outside filters, a
   filter with its part: `a/*[x='b/c']/d` gives `a`, `*[x='b/c']`, `d`.

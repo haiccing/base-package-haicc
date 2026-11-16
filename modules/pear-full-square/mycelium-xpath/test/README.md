@@ -13,6 +13,7 @@ Shared by the tests, not a test itself.
 - query: a document goes on below its node
 - query: a filter compares a leaf
 - query: a filter asks whether a leaf is there, by a path too
+- query: a position: the n-th of the nodes selected under the same parent, from 1; last()
 - query: and, or, not, several in a row
 - query: name(), starts-with(), contains()
 - query: it goes on after a filter

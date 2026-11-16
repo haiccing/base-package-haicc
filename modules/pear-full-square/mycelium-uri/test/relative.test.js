@@ -25,10 +25,14 @@ test('relative: no leading slash, . the position itself, ./ allowed in front', (
 })
 
 test('relative: a part may carry filters, kept as written', (t) => {
-  for (const u of ["swarms/*[state='started']", "requests/*[value/uri='main/host']/key", "users[starts-with(name,'s')]", '*[size>2 and publicKey="K1"][name]/nodes/*', "[readme='hello']", "a[b='x]y']"]) t.is(relative(u), u, u)
+  for (const u of ["swarms/*[state='started']", "requests/*[value/uri='main/host']/key", "users[starts-with(name,'s')]", '*[size>2 and public-key="K1"][name]/nodes/*', 'swarms/*[2]/tags[last()]', "[readme='hello']", "a[b='x]y']"]) t.is(relative(u), u, u)
   t.is(relative("./swarms[name='A B']"), "swarms[name='A B']", 'a value keeps its case and its spaces')
   t.exception(() => relative("Swarms[name='sam']"), /not canonical: Swarms\[name='sam'\] \(swarms\[name='sam'\]\)/, 'a name is checked as it is without a filter')
   t.exception(() => relative("a_b[x=1]"), /bad segment/)
+  t.exception(() => relative("swarms/*[publicKey='k1']"), /bad filter '\[publicKey='k1'\]' in .* \('K': a name in a filter is written as in a URI, lowercase: public-key; a value is quoted\)/, 'a name in a filter by the URI\'s rules: a capital is none')
+  t.exception(() => relative("swarms/*[a_b='k1']"), /bad filter .*'_'/, '_ is reserved there too')
+  t.exception(() => relative('swarms/*[name=Sam]'), /bad filter .*'S'/, 'a value not quoted')
+  t.is(relative("swarms/*[name='Sam_1' and note=\"A B\"]"), "swarms/*[name='Sam_1' and note=\"A B\"]", 'a quoted value is as it is written')
   t.exception(() => relative("a//b[x=1]"), /not canonical/)
   t.exception(() => relative("a/[x=1]"), /bad segment/, 'a filter without its part: in front only')
   t.exception(() => relative("a[x=1]b"), /a filter ends its part/)

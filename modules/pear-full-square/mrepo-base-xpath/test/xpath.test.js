@@ -55,12 +55,13 @@ test('query: what a URI selects, each a reference with what it is', async (t) =>
   t.alike((await query(exec, ['request/done/r1.json/value/uri'])).found, [{ at: 'done/r1.json/value/uri', kind: 'value', value: 'main/host' }], 'a file that is a document goes on below it')
   t.alike((await query(exec, ['main', 'swarms/swarm-1/owner/public-key'])).found, [{ at: 'swarms/swarm-1/owner/public-key', kind: 'value', value: 'k1' }], 'a data name in its URI form: publicKey is public-key')
   t.alike(at(await query(exec, ['main', "swarms/*[owner/public-key='k1']"])), [['swarms/swarm-1', 'node']], 'in a filter too')
-  t.alike(at(await query(exec, ['main', "swarms/*[owner/publicKey='k1']"])), [], 'not as it is stored')
+  await t.exception(query(exec, ['main', "swarms/*[owner/publicKey='k1']"]), /bad filter .*'K': a name in a filter is written as in a URI/, 'as it is stored: no valid URI, refused by the URI\'s own validation')
+  t.alike((await query(exec, ['main', 'swarms/*[2]'])).found.map(f => f.at), ['swarms/swarm-1'], 'a position: in the tree\'s order')
   await t.exception(query(exec, ['.']), /not a node: \. \(the mrepo itself; a layer first: main\)/)
   await t.exception(query(exec, ["main[x='1']"]), /not a layer: main\[x='1'\]/)
   await t.exception(query(exec, 'main/host'), /not a URI: its segments, an array/)
   await t.exception(query(exec, ['main', '/host']), /not a relative URI/)
-  await t.exception(query(exec, ['main', 'swarms/*[1]']), /a position: not in this phase/, 'what the engine refuses')
+  await t.exception(query(exec, ['main', 'swarms/*[count(*)>1]']), /not a function of this phase: count/, 'what the engine refuses')
 })
 
 test('query: filters read the documents', async (t) => {

@@ -2,8 +2,10 @@
 // to where its writer stands. `.` is the position itself; none given means
 // `.`; `./x` is `x`. Its name parts are our URIs' (lib/uri.js); one may be
 // `*`, for a URI that selects, and a part may carry filters, `[...]`: a
-// query (mycelium-xpath). A filter is checked for its brackets and quotes
-// only, and kept as written: what is in it is the query's to read.
+// query (mycelium-xpath). A filter is kept as written and checked for its
+// brackets and quotes, and for the URI's own rule: what is no quoted value
+// in it is lowercase, as a name part is. What it says is the query's to
+// read.
 //   relative(uri)     the URI in its canonical form; throws when it is not
 //                     one: a leading slash, a segment that is not a name,
 //                     a form that is not canonical (uppercase, empty parts)
@@ -60,6 +62,17 @@ export function stepsOf (uri) {
 }
 export const selects = uri => stepsOf(uri).some(s => s === '*' || s.includes('['))
 
+// A filter's text without its quoted values.
+function unquoted (filter) {
+  let out = ''
+  let quote = null
+  for (const c of filter) {
+    if (quote) { if (c === quote) quote = null } else if (c === '\'' || c === '"') quote = c
+    else out += c
+  }
+  return out
+}
+
 // A URI with filters in its canonical form: each part's name checked as a
 // name part is (or `*`; none, for a filter on the position itself, in
 // front only), its filters as written.
@@ -72,6 +85,10 @@ function filtered (u) {
     const n = name.toLowerCase()
     if (!(isSegment(n) || n === '*' || (n === '' && i === 0))) throw new Error(`bad segment '${step}' in ${u}`)
     if (filter && !filter.endsWith(']')) throw new Error(`bad segment '${step}' in ${u} (a filter ends its part)`)
+    // what is not a quoted value in a filter is written by the URI's
+    // rules: names lowercase, as a part's (a data name in its URI form)
+    const bad = unquoted(filter).match(/[^a-z0-9\-./*@()=<>!,\s[\]]/)
+    if (bad) throw new Error(`bad filter '${filter}' in ${u} ('${bad[0]}': a name in a filter is written as in a URI, lowercase: public-key; a value is quoted)`)
     out.push(n + filter)
   }
   return out.join('/')

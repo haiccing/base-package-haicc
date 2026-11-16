@@ -16,7 +16,7 @@ const root = {
       }
     },
     'swarm-2': { '.node.json': doc({ name: 'tom', size: 1, state: 'stopped' }), nodes: {} },
-    'swarm-3': { '.node.json': doc({ name: 'sue', size: 12, tags: ['a', 'b'] }) },
+    'swarm-3': { '.node.json': doc({ name: 'sue', size: 12, tags: ['a', 'b'], links: [{ uri: 'x', n: 1 }, { uri: 'y', n: 2 }] }) },
     remote: { '.link': 'elsewhere' }
   },
   requests: {
@@ -70,7 +70,9 @@ test('query: a document goes on below its node', async (t) => {
   t.alike((await run('requests/r1/value/uri')).found, [{ path: '/requests/r1/value/uri', value: 'main/host' }], 'a file that is a document')
   t.alike(paths(await run('requests/r1/*')), ['/requests/r1/key', '/requests/r1/value'], '* of a node without children: its document\'s keys')
   t.alike((await run('requests/*/value/response/ok')).found.map(f => f.value), [true, false])
-  t.alike((await run('swarms/swarm-3/tags/1')).found, [{ path: '/swarms/swarm-3/tags/1', value: 'b' }], 'a list by its indexes')
+  t.alike((await run('swarms/swarm-3/tags')).found, [{ path: '/swarms/swarm-3/tags[1]', value: 'a' }, { path: '/swarms/swarm-3/tags[2]', value: 'b' }], 'a list is a child that repeats: its key names every item, in order, each path its position')
+  t.alike((await run('swarms/swarm-3/links/uri')).found.map(f => [f.path, f.value]), [['/swarms/swarm-3/links[1]/uri', 'x'], ['/swarms/swarm-3/links[2]/uri', 'y']], 'and goes on inside each item')
+  t.alike(paths(await run('swarms/swarm-3/*')), ['/swarms/swarm-3/name', '/swarms/swarm-3/size', '/swarms/swarm-3/tags[1]', '/swarms/swarm-3/tags[2]', '/swarms/swarm-3/links[1]', '/swarms/swarm-3/links[2]'], '*: every entry, a list\'s items each')
   t.alike(paths(await run('swarms/swarm-1/*')), ['/swarms/swarm-1/nodes'], 'a child comes before the document')
   t.alike(paths(await run('swarms/swarm-1/owner/name/deeper')), [], 'nothing below a leaf')
   t.alike(paths(await run('requests/r3/anything')), [], 'a text has nothing below')
@@ -90,7 +92,8 @@ test('query: a filter compares a leaf', async (t) => {
   t.alike(await swarms("[size='3']"), ['swarm-1'], 'a number and a text: as text')
   t.alike(await swarms('[ size = 12 ]'), ['swarm-3'], 'spaces')
   t.alike(await swarms("[name>'sam']"), [], 'an order is of numbers')
-  t.alike(await swarms("[tags/*='b']"), ['swarm-3'], 'any of several')
+  t.alike(await swarms("[tags='b']"), ['swarm-3'], 'a list: any of its items')
+  t.alike(await swarms("[links/uri='y' and links/n=1]"), ['swarm-3'], 'a path through a list: any of them')
 })
 
 test('query: a filter asks whether a leaf is there, by a path too', async (t) => {
@@ -103,6 +106,27 @@ test('query: a filter asks whether a leaf is there, by a path too', async (t) =>
   t.alike(paths(await run("requests/*[.='a [note], not json']")), ['/requests/r3'], 'a file\'s own text; brackets inside a value')
   t.alike(paths(await run("[readme='hello']")), ['/'], 'at the start: the root filtered')
   t.alike(paths(await run("[readme='bye']")), [])
+})
+
+test('query: a position: the n-th of the nodes selected under the same parent, from 1; last()', async (t) => {
+  t.alike((await run('swarms/swarm-3/tags[2]')).found, [{ path: '/swarms/swarm-3/tags[2]', value: 'b' }], 'in a list: its order')
+  t.alike((await run('swarms/swarm-3/tags[last()]')).found.map(f => f.value), ['b'])
+  t.alike((await run('swarms/swarm-3/links[2]/uri')).found, [{ path: '/swarms/swarm-3/links[2]/uri', value: 'y' }], 'and on from it; a path found is a query for the same')
+  t.alike((await run('swarms/swarm-3/tags[3]')).found, [], 'beyond the last: nothing')
+  t.alike(paths(await run('swarms/*[1]')), ['/swarms/swarm-1'], 'in the tree: the order its children come in')
+  t.alike(paths(await run('swarms/*[last()]')), ['/swarms/remote'])
+  t.alike(paths(await run('swarms/*/nodes/*[1]')), ['/swarms/swarm-1/nodes/node-1'], 'under each parent, not of the whole set')
+  t.alike(paths(await run('swarms/*/nodes/*[last()]')), ['/swarms/swarm-1/nodes/node-2'])
+  t.alike(paths(await run("swarms/*[state='stopped'][1]")), ['/swarms/swarm-2'], 'after a filter: of what it kept')
+  t.alike(paths(await run("swarms/*[2][state='stopped']")), ['/swarms/swarm-2'], 'before one: the second, if it holds')
+  t.alike(paths(await run("swarms/*[1][state='stopped']")), [])
+  t.alike(paths(await run('swarms/*[4]')), ['/swarms/remote'], 'a link has its place among them: nothing of it read')
+  const { tree, asked } = treeOf()
+  await query(tree, root, 'swarms/*[2]')
+  t.alike(asked.document, [], 'a position reads no document')
+  t.alike((await run("swarms/swarm-3/links[uri='y']/n")).found.map(f => f.value), [2], 'a list\'s items filtered as any nodes')
+  t.alike((await run("swarms/swarm-3/tags[.='b']")).found.map(f => f.path), ['/swarms/swarm-3/tags[2]'])
+  t.alike(paths(await run("swarms/swarm-3/*[name()='tags']")), ['/swarms/swarm-3/tags[1]', '/swarms/swarm-3/tags[2]'], 'name(): the item\'s name, without its position')
 })
 
 test('query: and, or, not, several in a row', async (t) => {
@@ -212,7 +236,8 @@ test('query: what is not a query, and what is not of this phase', async (t) => {
   await refused('swarms/* | requests/*', /the union \(\|\): not in this phase/)
   await refused('child::swarms', /an axis written out \(::\): not in this phase/)
   await refused('swarms/../requests', /the parent \(\.\.\): a query looks forward only/)
-  await refused('swarms/*[1]', /a position: not in this phase/)
+  await refused('swarms/*[1 and name]', /a position stands alone in its filter/)
+  await refused('swarms/*[0]', /a position stands alone in its filter/)
   await refused('swarms/*[position()<3]', /not a function of this phase: position/)
   await refused('swarms[count(*)>2]', /not a function of this phase: count/)
   await refused("swarms/*[nodes/*[state='started']]", /a filter inside a filter: not in this phase/)
