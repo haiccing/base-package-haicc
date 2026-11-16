@@ -24,6 +24,13 @@ unique URI. Only the link: nothing local to a machine.
 /main/host/.shortcuts.json     [{ "mrepo": "local/host" }]
 ```
 
+Where it leads on this machine is in the registry, a layer of the mrepo
+that deployed it, an entry by the linked mrepo's unique URI:
+
+```
+/registry/local/host/.node.json     { "uri": "local/host", "at": "host", "folder": "../local/host", ... }
+```
+
 ## Unique URIs
 
 Every mrepo has a unique URI, `<swarm>/<node>`, in its runtime layer

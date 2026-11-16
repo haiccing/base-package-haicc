@@ -2,11 +2,7 @@
 // reference, and where it stopped at a shortcut (README.md beside it).
 import { query as select } from 'mycelium-xpath'
 import { segmented, joined, stepsOf, isName, unslashed, uriFormOf, ROOT } from 'mycelium-uri'
-import { MAIN, SHORTCUTS, linkOf } from '../shortcut/index.js'
-
-// A node is a folder holding its document under this name: hidden (no URI
-// has a name starting with a dot), and what keeps the folder in git.
-export const NODE = '.node.json'
+import { MAIN, SHORTCUTS, NODE, linkOf } from '../shortcut/index.js'
 // A layer's own config, at its root: not among its children.
 const LAYER = 'layer.json'
 
@@ -46,7 +42,7 @@ export async function query (exec, uri) {
       if (layer !== MAIN || ref.path === '/' || ref.node.type !== 'tree') return null
       if (!links.has(ref.path)) {
         const list = await hidden(ref.node, SHORTCUTS, ref.path)
-        links.set(ref.path, Array.isArray(list) && list.length ? linkOf(exec, unslashed(ref.path), list[0]) : null)
+        links.set(ref.path, Array.isArray(list) && list.length ? await linkOf(exec, unslashed(ref.path), list[0]) : null)
       }
       return links.get(ref.path)
     }

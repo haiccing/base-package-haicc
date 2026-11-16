@@ -27,10 +27,24 @@ export const shortcutsAt = async (exec, position) => {
   return Array.isArray(list) ? list : []
 }
 
-// A position's folder in the shadow structure of main, relative to the
-// mrepo's own folder: host -> main/host. What is linked at the position
-// sits there: an mrepo, its inbox and outbox folders inside.
-export const shadowOf = position => join(MAIN, ...(position === ROOT ? [] : position.split('/')))
+// A node is a folder holding its document under this name: hidden (no URI
+// has a name starting with a dot), and what keeps the folder in git.
+export const NODE = '.node.json'
+
+// The registry: a layer of the mrepo that deploys, an entry a mrepo it
+// deployed, a node by that mrepo's unique URI (registry/local/host): what
+// this machine knows of it: where it is (folder: relative to this mrepo's
+// own folder), the position that links to it (at), the package it came
+// from, what runs it. main holds the link only.
+export const REGISTRY = 'registry'
+export const entryOf = uri => `${REGISTRY}/${uri}/${NODE}`
+// The entry of an mrepo, by its unique URI: null when it has none here.
+// log: none (one read; its callers say what they found)
+export async function registered (exec, uri) {
+  const bytes = await exec.find(entryOf(uri))
+  if (bytes === null) return null
+  try { return JSON.parse(bytes.toString()) } catch (err) { throw new Error(`not a document: ${entryOf(uri)}`, { cause: err }) }
+}
 
 // The swarm of a unique URI: its first part; local when it has none.
 export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? uri.split('/')[0] : 'local')
@@ -40,11 +54,13 @@ export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? ur
 export const uriOf = (parent, name) => `${swarmOf(parent)}/${name}`
 
 // A shortcut as a command is sent on to it: its entry (the first source:
-// one in use for now) and where it leads: the linked mrepo's folder,
-// relative to this mrepo's (the shadow of main) and absolute, when the
-// context names this mrepo's folder.
-// log: none (nothing read: a value made from its arguments)
-export const linkOf = (exec, position, entry) => {
+// one in use for now) and where it leads on this machine, read from the
+// registry: the linked mrepo's folder, relative to this mrepo's and
+// absolute (when the context names this mrepo's folder); none when the
+// registry has no entry for it: not reachable from here.
+// log: none (one read; its callers say what they found)
+export async function linkOf (exec, position, entry) {
   const dir = exec.runtime?.dir ?? exec.dir ?? null
-  return { at: position, ...entry, folder: shadowOf(position), dir: dir ? join(dir, shadowOf(position)) : null }
+  const folder = (await registered(exec, entry.mrepo))?.folder ?? null
+  return { at: position, ...entry, folder, dir: dir && folder ? join(dir, folder) : null }
 }

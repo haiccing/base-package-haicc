@@ -30,6 +30,7 @@ function execution (files = {}) {
     node: async u => (kind(u) ? { type: kind(u), p: u } : null),
     children: async n => (n.type === 'blob' ? null : [...new Set(Object.keys(files).filter(f => f.startsWith(n.p + '/')).map(f => f.slice(n.p.length + 1).split('/')[0]))].sort().map(name => [name, { type: kind(`${n.p}/${name}`), p: `${n.p}/${name}` }])),
     bytes: async n => Buffer.from(JSON.stringify(files[n.p])),
+    find: async p => (p in files ? Buffer.from(JSON.stringify(files[p])) : null),
     log: function (level, event, data = {}) { (this.entries ??= []).push({ level, event, ...data }) },
     step: async function (event, data, fn, level = 'verbose') { const r = await fn(); (this.entries ??= []).push({ level, event, ...(typeof data === 'function' ? data(r) : data) }); return r },
     run: async (command, opts) => { executed.push(command); return { executed: command, at: opts?.at } },
@@ -42,11 +43,12 @@ const HOST = {
   'main/notes.txt': 'a text',
   'main/host/.node.json': {},
   'main/host/.shortcuts.json': [{ mrepo: 'local/host' }],
+  'registry/local/host/.node.json': { uri: 'local/host', at: 'host', folder: '../local/host' },
   'main/swarms/.node.json': {},
   'main/swarms/swarm-1/.node.json': { state: 'started' },
   'main/swarms/swarm-2/.node.json': { state: 'stopped' }
 }
-const LINK = { at: 'host', mrepo: 'local/host', folder: 'main/host', dir: '/work/mrepos/boot/main/host' }
+const LINK = { at: 'host', mrepo: 'local/host', folder: '../local/host', dir: '/work/mrepos/local/host' }
 
 test('what it provides: one protocol, haicc, its config and its action', (t) => {
   t.alike(Object.keys(mounted.protocols), ['haicc'], 'the package provides the haicc protocol, and no other')
@@ -89,7 +91,7 @@ test('goto at a shortcut: the command sent on to the mrepo linked there, with wh
   const { exec, executed, sent } = execution(HOST)
   const command = ['haicc', 'node-1', 'service/start']
   t.is(await act('goto', exec, { uri: ['main', 'host'], args: command }), null, 'nothing returned here: the request waits for the linked mrepo\'s response')
-  t.alike(sent, [{ to: LINK, command }], 'where it leads: the linked mrepo, its folder in the shadow of main; the command as it was, a haicc of its own included: commands chain')
+  t.alike(sent, [{ to: LINK, command }], 'where it leads: the linked mrepo, its folder as the registry says it; the command as it was, a haicc of its own included: commands chain')
   t.is(await act('goto', exec, { uri: ['main', 'host/swarms/*'], args: ['service/start'] }), null, 'a URI through the shortcut: sent on too')
   t.alike(sent[1], { to: LINK, command: ['haicc', 'swarms/*', 'service/start'] }, 'what is left of the URI a goto there, in front of the command')
   t.alike(executed, [], 'nothing of it executed here')

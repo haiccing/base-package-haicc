@@ -13,6 +13,7 @@ function context (files) {
     node: async u => (kind(u) ? { type: kind(u), p: u } : null),
     children: async n => (n.type === 'blob' ? null : [...new Set(Object.keys(files).filter(f => f.startsWith(n.p + '/')).map(f => f.slice(n.p.length + 1).split('/')[0]))].sort().map(name => [name, { type: kind(`${n.p}/${name}`), p: `${n.p}/${name}` }])),
     bytes: async n => Buffer.from(JSON.stringify(files[n.p])),
+    find: async p => (p in files ? Buffer.from(JSON.stringify(files[p])) : null),
     log: function (level, event, data = {}) { (this.entries ??= []).push({ level, event, ...data }) },
     step: async function (event, data, fn, level = 'verbose') { const r = await fn(); (this.entries ??= []).push({ level, event, ...(typeof data === 'function' ? data(r) : data) }); return r },
     run: async (command, opts) => { seen.ran.push(command); seen.at.push(opts?.at); return { ran: command } },
@@ -29,11 +30,13 @@ const FILES = () => ({
   'main/swarms/swarm-1/.node.json': { state: 'started', size: 3 },
   'main/swarms/swarm-2/.node.json': { state: 'stopped', size: 1 },
   'main/swarms/swarm-3/.node.json': { state: 'started', size: 9 },
+  'registry/local/host/.node.json': { uri: 'local/host', at: 'host', folder: '../local/host' },
+  'registry/swarm-9/far/.node.json': { uri: 'swarm-9/far', at: 'links/far', folder: '../swarm-9/far' },
   'main/links/.node.json': {},
   'main/links/far/.node.json': {},
   'main/links/far/.shortcuts.json': [{ mrepo: 'swarm-9/far' }]
 })
-const HOST = { at: 'host', mrepo: 'local/host', folder: 'main/host', dir: '/work/mrepos/boot/main/host' }
+const HOST = { at: 'host', mrepo: 'local/host', folder: '../local/host', dir: '/work/mrepos/local/host' }
 
 test('goto: at the root executed here; at a shortcut sent on; no command', async (t) => {
   const { exec, seen } = context(FILES())
