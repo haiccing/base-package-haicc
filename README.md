@@ -11,27 +11,24 @@ linked in it.
 
 ## Links
 
+- [goto](modules/pear-full-square/mrepo-base-haicc/external/goto/)
+- [howto](howto/)
 - [test](test/)
 - [test-reports](test-reports/)
 - [modules](modules/)
 
-## Commands
-
-```
-haicc . boot/deploy host haiccing/base-component-haicc
-haicc host service/initialise
-haicc host haicc swarms/swarm-1 boot/deploy node-1
-```
-
-`haicc` alone is `haicc/goto`, the protocol's default action.
-
 ## Config
 
-In `protocol.js`, the package's: `goto` at any position, and the
-protocol's default action. The protocol is not behind the service's door:
-the command that follows is checked where it is executed. `command:
-true`: the words after its URI are a command, passed on as written, so a
-flag list among them is that command's, not goto's.
+The `haicc` protocol's, in `protocol.js`; no state, not behind the
+service's door: the command that follows is checked where it is
+executed.
+
+| action | offered at | arguments |
+|---|---|---|
+| `goto`, the default: `haicc` alone | any position (`**`) | the command that follows, passed on as written |
+
+`command: true`: the words after its URI are a command, so a flag list
+among them is that command's, not goto's.
 
 ## Package
 

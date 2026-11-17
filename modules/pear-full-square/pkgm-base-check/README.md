@@ -60,4 +60,4 @@ The package itself:
 
 ## Tests
 
-- `npm test`: packages and modules written for it, well formed and broken.
+- `brittle-bare test/*.test.js` (Bare installed): packages and modules written for it, well formed and broken.

@@ -42,4 +42,4 @@ names the mrepo it leads to by that URI.
 
 ## Tests
 
-- `npm test`: URIs resolved on a context written for it.
+- `brittle-bare test/*.test.js` (Bare installed): URIs resolved on a context written for it.
