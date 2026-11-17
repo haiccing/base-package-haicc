@@ -9,10 +9,10 @@ a URI selects, and the boot protocol to place and remove the shortcuts of
 the mrepos it deploys. The query itself is `mycelium-xpath`'s: this
 module hands it the mrepo as a tree.
 
-| | |
-|---|---|
-| [internal/](internal/) | its methods |
-| [test/](test/) | its tests |
+## Links
+
+- [internal](internal/)
+- [test](test/)
 
 ## Shortcuts
 

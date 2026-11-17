@@ -9,11 +9,11 @@ another mrepo, the command is sent there unchanged. The command can be a
 can be addressed at a position and can pass commands on to the mrepos
 linked in it.
 
-| | |
-|---|---|
-| [test/](test/) | its tests: its protocol as mounted, and the generic ones |
-| [test-reports/](test-reports/) | the report of its last pre-release |
-| [modules/](modules/) | its code, assembled: ours and the third-party code |
+## Links
+
+- [test](test/)
+- [test-reports](test-reports/)
+- [modules](modules/)
 
 ## Commands
 
@@ -24,6 +24,14 @@ haicc host haicc swarms/swarm-1 boot/deploy node-1
 ```
 
 `haicc` alone is `haicc/goto`, the protocol's default action.
+
+## Config
+
+In `protocol.js`, the package's: `goto` at any position, and the
+protocol's default action. The protocol is not behind the service's door:
+the command that follows is checked where it is executed. `command:
+true`: the words after its URI are a command, passed on as written, so a
+flag list among them is that command's, not goto's.
 
 ## Package
 

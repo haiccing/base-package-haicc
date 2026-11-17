@@ -1,7 +1,7 @@
 // goto on a context written here: its shortcuts by path; what it runs
 // and what it sends on, kept.
 import test from 'brittle'
-import { goto, CONFIG } from '../index.js'
+import { goto } from '../index.js'
 
 function context (files) {
   const seen = { ran: [], at: [], sent: [] }
@@ -89,10 +89,3 @@ test('goto: on from one shortcut at a time; what is left of the URI goes with th
   t.alike(exec.entries.filter(e => e.event === 'sent on').map(e => [e.at, e.mrepo]), [['host', 'local/host'], ['host', 'local/host'], ['links/far', 'swarm-9/far']])
 })
 
-test('the config: goto at any position, the default action', (t) => {
-  t.is(CONFIG.default, 'goto')
-  t.alike(CONFIG.actions.goto.uris, ['**'])
-  t.alike(CONFIG.actions.goto.args, ['command'], 'its argument, named: the command that follows')
-  t.absent(CONFIG.gated, 'not behind the service\'s door')
-  t.ok(CONFIG.description && CONFIG.actions.goto.description)
-})

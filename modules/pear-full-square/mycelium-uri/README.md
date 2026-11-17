@@ -6,18 +6,18 @@ Generic: no git, no dependencies. A URI is absolute and `/`-separated,
 without scheme, query or fragment; its canonical form is lowercase. A
 URI in a request is relative: the same segments, no leading slash.
 
-| | |
-|---|---|
-| [lib/](lib/) | its parts, a file each |
-| [test/](test/) | its tests, what each checks |
+## Links
+
+- [lib](lib/)
+- [test](test/)
 
 ## Design
 
-URIs are case-insensitive, and the canonical form is lowercase. Inside our
-repositories every name is lowercase, files included. External content may
-keep its own case (`README.md`), and a URI in any case finds it through
-the boundary's lookup (`sameName`). Every URI starts with a
-branch name, from the root: `/main/x/y`, `/overlay/config/x/y`.
+The rules a URI follows are the base family's URI documentation
+(`haiccing/base-docs-uri`). Here, how they are kept: one validator, at
+the boundary, for names and URIs alike; a URI in any case finds external
+content through the boundary's lookup (`sameName`), the canonical form
+lowercase.
 
 ## API
 
@@ -57,9 +57,9 @@ reproduces every call inside it.
 
 ## Relative
 
-A URI as it is written in a request has no leading slash: it is relative
-to where its writer stands. `.` is the position itself, and so is none
-given; `./x` is `x`.
+How a URI is written, relative, its parts, a part that selects, data
+names: the base family's URI documentation (`haiccing/base-docs-uri`).
+Here, the functions.
 
 - `relative(uri)` → its canonical form. Throws on a leading slash, saying
   the URI as it is written now, on a segment that is not a name, and on a

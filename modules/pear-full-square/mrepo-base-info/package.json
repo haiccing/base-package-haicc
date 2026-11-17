@@ -1,0 +1,11 @@
+{
+  "name": "mrepo-base-info",
+  "version": "0.1.0",
+  "description": "Module: the mrepo info protocol, an mrepo's pages extracted from its packages and read by keywords from the top down.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "bare ../../node_modules/brittle/cmd.js test/*.test.js"
+  },
+  "license": "MIT"
+}

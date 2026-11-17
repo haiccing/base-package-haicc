@@ -8,10 +8,10 @@ from. A script that works on data at one position keeps working when the
 structure is moved: only the position it is sent to changes. Offered by
 `haiccing/base-package-haicc`.
 
-| | |
-|---|---|
-| [external/](external/) | the haicc protocol's actions |
-| [test/](test/) | its tests |
+## Links
+
+- [external](external/)
+- [test](test/)
 
 ## Examples
 
@@ -22,14 +22,6 @@ haicc host haicc swarms/swarm-1 boot/deploy node-1
 haicc host/swarms/swarm-1 boot/deploy node-1
 haicc "swarms/*[state='started']" crud/read .
 ```
-
-## Config
-
-`CONFIG`, in `internal/config.js`: `goto` at any position, and the
-protocol's default action. The protocol is not behind the service's door:
-the command that follows is checked where it is executed. `command:
-true`: the words after its URI are a command, passed on as written, so a
-flag list among them is that command's, not goto's.
 
 ## Tests
 

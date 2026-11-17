@@ -1,5 +1,5 @@
 // The package's test runner (generated: tools/lib/dispatcher.js; docs:
-// haiccing/package-docs-package, test/README.md). A test set, from this
+// haiccing/base-docs-package, test/README.md). A test set, from this
 // point the whole lifecycle, through the package's dispatcher (main.js:
 // each unit its own process, its results read from brittle's summary).
 //   bare test/run.js [<set>]   a set (validate by default): each unit's report

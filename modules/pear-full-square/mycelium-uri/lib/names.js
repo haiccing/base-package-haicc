@@ -1,4 +1,4 @@
-// Names, by the rules (rules.md: URIs, Data names). The one validator for
+// Names, by the rules (base-docs-uri: Names, Data names). The one validator for
 // names: used where input enters (network handlers, command-line
 // arguments, external files); inside, names are valid.
 //

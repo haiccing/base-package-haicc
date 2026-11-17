@@ -58,7 +58,7 @@ export async function query (exec, uri) {
       },
       stop: linkAt,
       // a document's key is a data name: in a URI it takes its URI form
-      // (rules.md: publicKey is public-key), in a filter too
+      // (the URI documentation, base-docs-uri: publicKey is public-key), in a filter too
       name: uriFormOf,
       step: (event, data, fn) => exec.step(event, data, fn)
     }

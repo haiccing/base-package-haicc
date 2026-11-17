@@ -7,12 +7,12 @@
   "main": "main.js",
   "modules": [
     "pear-full-square/mrepo-base-haicc",
-    "pear-full-square/mrepo-base-help",
+    "pear-full-square/mrepo-base-info",
     "pear-full-square/pkgm-base-check"
   ],
   "template": {
-    "repository": "haiccing/package-docs-package",
-    "commit": "6f78874fff7d626052336394f35071995a040d47"
+    "repository": "haiccing/base-docs-package",
+    "commit": "d6d99cffc82361d9c15ae86fd723045537ba63b3"
   },
   "scripts": {
     "test": "bare test/run.js"

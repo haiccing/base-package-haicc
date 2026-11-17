@@ -35,9 +35,9 @@ carries modules of ours.
 - **Its pin**: `template.commit` in its `package.json`, the commit of the
   package template it was brought to. The template itself has none.
 - **Sets**: `validate`, `validate-in-situ` and `full`, each with a
-  description and its tests by name. `validate` and `full` hold `help`,
+  description and its tests by name. `validate` and `full` hold `info`,
   `code`, `mrepo` and `package`; `full` also `modules` where modules are
-  carried; `validate-in-situ` holds `help-in-situ` and `mrepo-in-situ`.
+  carried; `validate-in-situ` holds `info-in-situ` and `mrepo-in-situ`.
 - **Every test has its folder**: each test a set names is `test/<name>/`,
   the generic ones too, with its `run.js` and its `README.md`.
 - **A test of its own** also has a `*.test.js` and is named in `validate`

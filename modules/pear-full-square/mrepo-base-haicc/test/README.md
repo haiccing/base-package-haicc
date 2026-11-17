@@ -8,4 +8,3 @@ The tests of mrepo-base-haicc, a section per file, each test by its name.
 - goto: a position inside main: the command executed there, the current root moved
 - goto: a URI that selects: the command executed at each position, a list of what each gave
 - goto: on from one shortcut at a time; what is left of the URI goes with the command
-- the config: goto at any position, the default action

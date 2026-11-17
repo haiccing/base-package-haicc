@@ -14,16 +14,16 @@ const details = async d => (await checkOwn(d)).map(p => p.detail).sort()
 const generic = name => ({ [`test/${name}/run.js`]: '', [`test/${name}/README.md`]: `# ${name}\n` })
 const unit = name => ({ ...generic(name), [`test/${name}/${name}.test.js`]: '' })
 const sets = (own = [], modules = true) => ({
-  'test/validate.json': { description: 'On its own.', tests: [...own, 'help', 'code', 'mrepo', 'package'] },
-  'test/validate-in-situ.json': { description: 'Where it is deployed.', tests: ['help-in-situ', 'mrepo-in-situ'] },
-  'test/full.json': { description: 'Every test.', tests: [...own, 'help', 'code', 'mrepo', 'package', ...(modules ? ['modules'] : [])] },
-  ...Object.assign({}, ...['help', 'code', 'mrepo', 'package', 'modules', 'help-in-situ', 'mrepo-in-situ'].map(generic))
+  'test/validate.json': { description: 'On its own.', tests: [...own, 'info', 'code', 'mrepo', 'package'] },
+  'test/validate-in-situ.json': { description: 'Where it is deployed.', tests: ['info-in-situ', 'mrepo-in-situ'] },
+  'test/full.json': { description: 'Every test.', tests: [...own, 'info', 'code', 'mrepo', 'package', ...(modules ? ['modules'] : [])] },
+  ...Object.assign({}, ...['info', 'code', 'mrepo', 'package', 'modules', 'info-in-situ', 'mrepo-in-situ'].map(generic))
 })
 const base = {
   'README.md': '# p\n',
   'test-reports/README.md': '# test-reports/\n',
   LICENSE: 'MIT\n',
-  'package.json': { name: 'p', description: 'Package: p.', license: 'MIT', type: 'module', main: 'main.js', modules: ['org/m'], template: { repository: 'haiccing/package-docs-package', commit: 'a'.repeat(40) } },
+  'package.json': { name: 'p', description: 'Package: p.', license: 'MIT', type: 'module', main: 'main.js', modules: ['org/m'], template: { repository: 'haiccing/base-docs-package', commit: 'a'.repeat(40) } },
   'modules/org/m/package.json': { name: 'm' }
 }
 const PROTOCOL = 'export const protocols = { p: { actions: { a: {} } }, q: { actions: {} } }\nexport const actions = {}\n'
@@ -31,7 +31,7 @@ const PROTOCOL = 'export const protocols = { p: { actions: { a: {} } }, q: { act
 test('a package well formed: a folder for every test, a test of its own, whatever its name: none', async (t) => {
   await within({ ...base, 'protocol.js': PROTOCOL, ...sets(['anything']), ...unit('anything') }, async d => {
     t.alike(await provides(d), { template: false, docs: false, protocols: ['p', 'q'], run: false, hooks: false, list: false, modules: true }, 'what it provides, read from its files')
-    t.alike(testFolders(d), ['anything', 'code', 'help', 'help-in-situ', 'modules', 'mrepo', 'mrepo-in-situ', 'package'], 'its test folders, the generic ones among them')
+    t.alike(testFolders(d), ['anything', 'code', 'info', 'info-in-situ', 'modules', 'mrepo', 'mrepo-in-situ', 'package'], 'its test folders, the generic ones among them')
     t.alike(ownTests(d), ['anything'], 'its tests of its own: the name is the package\'s')
     t.alike(await details(d), [])
   })
@@ -52,9 +52,9 @@ test('it tests what it provides: protocols, a program, hooks, a list, and no tes
 test('every test has its folder: a generic test named in a set without one', async (t) => {
   const files = { ...base, ...sets(['x']), ...unit('x') }
   delete files['test/code/run.js']; delete files['test/code/README.md']
-  delete files['test/help/README.md']
+  delete files['test/info/README.md']
   await within(files, async d => {
-    t.alike(await details(d), ['test/help: no README.md', 'the code test: no folder (test/code/)'], 'no folder: said once, whatever the sets naming it; a folder without its README')
+    t.alike(await details(d), ['test/info: no README.md', 'the code test: no folder (test/code/)'], 'no folder: said once, whatever the sets naming it; a folder without its README')
   })
 })
 
@@ -69,7 +69,7 @@ test('every package has a test of its own: where nothing is specific, a dummy th
 })
 
 test('the template itself: no test of its own asked, its folder documenting one left alone, no pin', async (t) => {
-  await within({ ...base, 'package.json': { name: 'package-docs-package', description: 'Docs package: the template.', license: 'MIT', type: 'module', docs: true, modules: ['org/m'] }, ...sets(), 'test/name/README.md': '# name\n' }, async d => {
+  await within({ ...base, 'package.json': { name: 'base-docs-package', description: 'Docs package: the template.', license: 'MIT', type: 'module', docs: true, modules: ['org/m'] }, ...sets(), 'test/name/README.md': '# name\n' }, async d => {
     t.alike(await details(d), [])
   })
 })
@@ -79,10 +79,10 @@ test('a package that breaks each: its files, its sets, a test that is not a unit
     'package.json': { name: 'p', type: 'commonjs' },
     'run.js': '',
     'modules/org/m/package.json': { name: 'm' },
-    'test/validate.json': { tests: ['help', 'code', 'gone', 'lone'] },
+    'test/validate.json': { tests: ['info', 'code', 'gone', 'lone'] },
     'test/full.json': { description: 'Every test.', tests: 'all' },
     'test/lone/notes.txt': 'x',
-    ...generic('help'),
+    ...generic('info'),
     ...generic('code')
   }, async d => {
     t.alike(await details(d), [

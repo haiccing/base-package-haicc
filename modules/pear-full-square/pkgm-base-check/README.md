@@ -8,11 +8,11 @@ in its `validate-in-situ`. In the development repository,
 `tools/code-check.js` runs the code rules over all the carried modules and
 the package check over every package.
 
-| | |
-|---|---|
-| [internal/](internal/) | the rules and the checks |
-| [validate/](validate/) | the tests every package carrying it runs on itself |
-| [test/](test/) | its own tests |
+## Links
+
+- [internal](internal/)
+- [validate](validate/)
+- [test](test/)
 
 ## Rules
 
