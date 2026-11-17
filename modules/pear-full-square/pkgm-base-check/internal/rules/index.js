@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'bare-fs'
 import { join, dirname, resolve, relative, sep } from 'bare-path'
 
 const SPEC = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(['"])([^'"\n]+)\1/g
-const TRANSIENT = /(?<![\w/-])(docs\/(design|guides|rules)|steps\/\d)[\w./-]*/g
+const TRANSIENT = /(?<![\w/-])(docs\/(design|guides|rules)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*/g
 
 // --- logging and handling ---
 // What is decided in the code is said there, in a remark on the line, or

@@ -28,6 +28,12 @@ test('a module that breaks each: structure, imports, references', (t) => {
     t.alike(checkModule(d, { ours: ['other'] }).map(p => `${p.file} ${p.check}`).sort(), ['index.js imports', 'index.js imports', 'index.js transient', 'internal/m structure'].sort())
     t.alike(checkPackage(d).map(p => p.check), ['transient'], 'a package\'s own code: references')
   } finally { rmSync(d, { recursive: true, force: true }) }
+  const e = mkdtempSync(join(tmpdir(), 'check-'))
+  try {
+    const dev = ['dev', 'env', '3', 'y'].join('-') // (written so, or this file's own check would find it)
+    write(e, { 'index.js': `// written from github.com/x/${dev}\nexport const a = 1\n` })
+    t.alike(checkPackage(e).map(p => [p.check, p.detail]), [['transient', dev]], 'a link to a development repository: transient')
+  } finally { rmSync(e, { recursive: true, force: true }) }
 })
 
 // The samples written so that this file keeps the rules it tests: a print,

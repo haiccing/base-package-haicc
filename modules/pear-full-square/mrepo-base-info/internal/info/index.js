@@ -86,7 +86,7 @@ export function check (text) {
   const words = r.summary.split('\n').filter(l => !l.trim().startsWith('|')).join(' ').split(/\s+/).filter(Boolean).length
   if (words > 100) out.push(['summary', `${words} words`])
   for (const s of r.sections) if (!/^`?[\w.-]+`?$/.test(s.title) && (s.title.split(/\s+/).length > 3 || /[:;,.()`]/.test(s.title))) out.push(['sections', s.title])
-  const transient = String(text).match(/(?<![\w/-])(docs\/(design|guides|rules|readme)|steps\/\d)[\w./-]*/gi) ?? []
+  const transient = String(text).match(/(?<![\w/-])(docs\/(design|guides|rules|readme)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*/gi) ?? []
   if (transient.length) out.push(['transient', [...new Set(transient)].join(', ')])
   if (r.table.length) out.push(['menu', 'links, not a menu (## Links)'])
   if (r.menu && r.first !== MENU) out.push(['menu', `## ${MENU} is not its first section`])

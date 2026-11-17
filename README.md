@@ -40,5 +40,3 @@ flag list among them is that command's, not goto's.
 - `main.js`: the dispatcher, the bundle's main, generated.
 - No structure of its own: `main`, where the shortcuts are, is
   the runtime package's.
-
-Written from [splectrum/splectrum-dev-env-3-mycelium](https://github.com/splectrum/splectrum-dev-env-3-mycelium).

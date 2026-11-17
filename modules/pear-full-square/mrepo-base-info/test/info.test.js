@@ -31,6 +31,8 @@ test('the rules: the README rules, and the menu\'s form', (t) => {
   t.alike(check('# old\n\nThe old form.\n\n| [sub/](sub/) | below |\n'), [['menu', 'links, not a menu (## Links)']], 'links without a menu: the old form')
   t.alike(check('# late\n\nLate.\n\n## Usage\n\nU.\n\n## Links\n\n- [sub](sub/)\n'), [['menu', '## Links is not its first section']])
   t.alike(check('# none\n\n'), [['oneliner', 'none']])
+  const dev = ['dev', 'env', '3', 'y'].join('-') // (written so, or this file's own check would find it)
+  t.alike(check(`# linked\n\nLinked.\n\nWritten from [x/${dev}](https://github.com/x/${dev}).\n`), [['transient', dev]], 'a link to a development repository: transient')
 })
 
 test('keywords: a word, a section\'s title, an included package by its name without the prefix', (t) => {

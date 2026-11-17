@@ -17,7 +17,7 @@ Checks a module of ours, or a package's own code, against the code rules.
 |---|---|
 | `structure` | a method directory has its `index.js` and its README |
 | `imports` | an import stays in its module, or names another module |
-| `transient` | no reference to a development repository's notes |
+| `transient` | no reference to a development repository: its notes, a link to it (`dev-env-<n>`) |
 | `console` | nothing printed; a print that is meant says why |
 | `catch` | an error caught is used; one taken without looking says what is expected |
 | `cause` | an error thrown in a catch carries the one caught |
