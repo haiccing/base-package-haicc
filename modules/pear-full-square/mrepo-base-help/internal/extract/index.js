@@ -77,6 +77,8 @@ function validate (index, out, sources) {
     const { path, paths } = sources[uri]
     if (paths) {
       for (const h of parse(text).links) {
+        // a link out of its package, a sibling (an included package): not its to check
+        if (!posix.normalize(posix.join('/in', posix.dirname(path), h)).startsWith('/in/')) continue
         const target = posix.normalize(posix.join(posix.dirname(path), h)).replace(/\/$/, '')
         if (!paths.has(target) && ![...paths].some(f => f.startsWith(target + '/'))) problems.push({ uri, check: 'links', detail: `${h}: nothing there` })
       }

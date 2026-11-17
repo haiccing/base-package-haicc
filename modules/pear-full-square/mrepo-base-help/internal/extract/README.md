@@ -20,7 +20,9 @@ The action `extract`, in `external/`, writes them.
 ## Layout
 
 - `/index.json`: `{ <uri>: { title, oneliner, links } }`.
-- `/problems.json`: `[{ uri, check, detail }]`, none expected.
+- `/problems.json`: `[{ uri, check, detail }]`, none expected. A link
+  out of its package, a sibling (an included package), is not checked
+  here.
 
 ## Also exported
 
