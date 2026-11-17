@@ -23,7 +23,7 @@ const base = {
   'README.md': '# p\n',
   'test-reports/README.md': '# test-reports/\n',
   LICENSE: 'MIT\n',
-  'package.json': { name: 'p', description: 'Package: p.', license: 'MIT', type: 'module', main: 'main.js', modules: ['org/m'], template: { repository: 'haiccing/package-docs-template', commit: 'a'.repeat(40) } },
+  'package.json': { name: 'p', description: 'Package: p.', license: 'MIT', type: 'module', main: 'main.js', modules: ['org/m'], template: { repository: 'haiccing/package-docs-package', commit: 'a'.repeat(40) } },
   'modules/org/m/package.json': { name: 'm' }
 }
 const PROTOCOL = 'export const protocols = { p: { actions: { a: {} } }, q: { actions: {} } }\nexport const actions = {}\n'
@@ -69,7 +69,7 @@ test('every package has a test of its own: where nothing is specific, a dummy th
 })
 
 test('the template itself: no test of its own asked, its folder documenting one left alone, no pin', async (t) => {
-  await within({ ...base, 'package.json': { name: 'package-docs-template', description: 'Docs package: the template.', license: 'MIT', type: 'module', docs: true, modules: ['org/m'] }, ...sets(), 'test/name/README.md': '# name\n' }, async d => {
+  await within({ ...base, 'package.json': { name: 'package-docs-package', description: 'Docs package: the template.', license: 'MIT', type: 'module', docs: true, modules: ['org/m'] }, ...sets(), 'test/name/README.md': '# name\n' }, async d => {
     t.alike(await details(d), [])
   })
 })

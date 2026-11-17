@@ -16,7 +16,7 @@ export const SETS = {
 }
 
 // The package template: every other package is pinned to a commit of it.
-export const TEMPLATE = 'package-docs-template'
+export const TEMPLATE = 'package-docs-package'
 
 const json = f => JSON.parse(readFileSync(f, 'utf8'))
 const dirs = d => existsSync(d) ? readdirSync(d).sort().filter(n => statSync(join(d, n)).isDirectory()) : []

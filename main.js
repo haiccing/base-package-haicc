@@ -2,7 +2,7 @@
 // run(target, { dryRun }): every entry, by path. Started as the program
 // (bare <package>.bundle [target] ..., or bare main.js from its folder):
 // the target (a known path; else /run, every argument run.js's). Imported:
-// nothing runs. Docs: haiccing/package-docs-template, test/README.md.
+// nothing runs. Docs: haiccing/package-docs-package, test/README.md.
 import os from './modules/node_modules/bare-os/index.js'
 import { URL } from './modules/node_modules/bare-url/index.js'
 import { spawn } from './modules/node_modules/bare-subprocess/index.js'

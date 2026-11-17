@@ -45,7 +45,7 @@ function placeOf (pkg, help, path) {
 }
 const folderOf = p => posix.dirname(p) === '/' ? '/' : posix.dirname(p)
 
-// The rules on one README's text (haiccing/package-docs-template,
+// The rules on one README's text (haiccing/package-docs-package,
 // "READMEs"): [[check, detail]...]. Mechanical: shape, length, references.
 export function check (text) {
   const r = parse(text)
