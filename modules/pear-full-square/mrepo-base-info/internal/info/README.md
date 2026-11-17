@@ -14,9 +14,11 @@ Reads a README and its menus, checks it against the README rules, and makes an m
 
 ## Arguments
 
-- `packages`: in deploy order, the mrepo's own last, each `{ pkg, files,
-  paths }`: its READMEs, `package.json`, list and third-party record, by
-  path in its bundle.
+- `packages`: in deploy order, the mrepo's own last of its list, each
+  `{ pkg, files, paths, documented? }`: its READMEs, `package.json`, list
+  and third-party record, by path in its bundle. `documented`: a package
+  documented beyond the list (`documents` in it), after the list, walked
+  at its keyword below the top as an included package is.
 
 ## Also exported
 

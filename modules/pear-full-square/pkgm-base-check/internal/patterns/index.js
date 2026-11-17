@@ -16,7 +16,8 @@ export const PATTERNS = {
   layer: 'a layer of its own in mrepo/, beyond the packages and the runtime',
   hooks: 'mrepo/runtime/hooks/: commands run on a status transition',
   service: 'mrepo/runtime/service.json: a service-managed mrepo',
-  'continuation-script': 'scripts/: commands to go on with after a deploy'
+  'continuation-script': 'scripts/: commands to go on with after a deploy',
+  documents: '"documents" in its list: every package the sources offer documented, beyond the list'
 }
 
 const json = f => JSON.parse(readFileSync(f, 'utf8'))
@@ -39,6 +40,7 @@ export function patternsOf (pkg) {
   if (has('mrepo/runtime/hooks')) out.push('hooks')
   if (has('mrepo/runtime/service.json')) out.push('service')
   if (has('scripts')) out.push('continuation-script')
+  if (list && json(join(pkg, 'mrepo', 'packages', 'layer.json')).documents !== undefined) out.push('documents')
   return out
 }
 

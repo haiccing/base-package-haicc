@@ -101,6 +101,16 @@ test('extract: what does not fit is a problem, never resolved silently', (t) => 
   t.ok(missing.some(p => p.check === 'included' && p.detail.startsWith('no ## Included packages')) && index.x, 'no included packages: said, and taken from its list')
 })
 
+test('extract: a package documented beyond the list, at its keyword below the top; the mrepo\'s own still the last of its list', (t) => {
+  const z = { pkg: 'org/base-package-z', documented: true, files: { '/README.md': B(page('base-package-z', 'The z protocol.', [['test', 'test/']])), '/test/README.md': B(page('test/', 'Its tests.')), '/lost/README.md': B(page('lost', 'No menu leads here.')) } }
+  const out = extract([...mrepo(), z])
+  const index = J(out['/index.json'])
+  t.is(index['.'][0].page, 'packages/org/base-component-y/README.md', 'the top: the list\'s last, not the documented')
+  t.alike(index['.'][0].below, ['mrepo', 'x', 'z', 'modules', 'third-party'], 'the documented below the top, after the included')
+  t.is(index['z/test'][0].page, 'packages/org/base-package-z/test/README.md', 'walked as an included package is')
+  t.ok(J(out['/problems.json']).some(p => p.page === 'packages/org/base-package-z/lost'), 'its pages checked: one no menu leads to, said')
+})
+
 test('the actions: extract writes the layer, get reads it by keywords', async (t) => {
   const dir = mkdtempSync(join(os.tmpdir(), 'info-'))
   try {

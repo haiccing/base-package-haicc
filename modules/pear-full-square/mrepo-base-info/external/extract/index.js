@@ -32,7 +32,7 @@ export async function extractAction (exec, { uri }) {
     const files = {}
     for (const k of Object.keys(b.files)) if (WANTED(k)) files[k] = b.read(k)
     exec.log('debug', 'bundle', { package: pkg, files: Object.keys(files).length })
-    return { pkg, files, paths: Object.keys(b.files) }
+    return { pkg, files, paths: Object.keys(b.files), documented: Boolean(listed[pkg].documented) }
   }))
   const files = await exec.step('extract', r => ({ files: Object.keys(r).length }), async () => extract(read))
   if (await exec.find(`/${LAYER}/layer.json`) === null) files['/layer.json'] = Buffer.from(JSON.stringify(CONFIG, null, 2) + '\n')

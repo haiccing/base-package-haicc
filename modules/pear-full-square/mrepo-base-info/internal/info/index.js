@@ -100,7 +100,8 @@ const family = name => name.split('-').slice(0, name.startsWith('mrepo-') || nam
 // The info layer from an mrepo's packages, in deploy order, the mrepo's
 // own last: each { pkg, files: { path: bytes } (its READMEs, its
 // package.json, its list, its third-party.json), paths: [its bundle's
-// files] }. -> the files to write, by path in the layer: each page once at
+// files], documented?: true when it is documented only, beyond the
+// list (documents: sources) }. -> the files to write, by path in the layer: each page once at
 // its source's place, the two pages made here, index.json (keyword -> its
 // choices, one a page or a section that keyword reaches: [{ page,
 // section?, see?, oneliner, below, generated? }]), problems.json ([{
@@ -110,7 +111,8 @@ export function extract (packages, { alone = false } = {}) {
   const index = {}
   const problems = []
   const byName = Object.fromEntries(packages.map(p => [p.pkg.split('/').pop(), p]))
-  const own = packages[packages.length - 1]
+  // the mrepo's own: the last of its list (the documented come after it)
+  const own = packages.filter(p => !p.documented).pop()
   // each module once: its first carrier in deploy order; a copy that
   // differs, a problem
   const carrier = {}
@@ -195,6 +197,17 @@ export function extract (packages, { alone = false } = {}) {
     }
   }
   if (own) top(own)
+  // documented beyond its list (documents: sources): each at its keyword
+  // below the top, as an included package is
+  const first = index[TOP]?.[0]
+  if (first) {
+    for (const q of packages.filter(x => x.documented && x !== own)) {
+      const k = packageKeyword(q.pkg)
+      if (!q.files['/README.md']) { problems.push({ keyword: k, check: 'readme', detail: `${q.pkg}: none` }); continue }
+      below(first, k)
+      walk(k, { p: q, path: '/README.md', at: `/packages/${q.pkg}/README.md` })
+    }
+  }
   const head = index[TOP]?.[0] ?? null
   // modules: every module once, by its name, families as headings
   const modules = Object.keys(carrier).sort((a, b) => a.split('/')[1] < b.split('/')[1] ? -1 : 1)
