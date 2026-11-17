@@ -89,3 +89,28 @@ test('goto: on from one shortcut at a time; what is left of the URI goes with th
   t.alike(exec.entries.filter(e => e.event === 'sent on').map(e => [e.at, e.mrepo]), [['host', 'local/host'], ['host', 'local/host'], ['links/far', 'swarm-9/far']])
 })
 
+
+test('goto: an mrepo by its registry reference: on as at the position the registry records it is linked', async (t) => {
+  const files = { ...FILES(), 'main/registry/.node.json': {}, 'main/registry/local/.node.json': {}, 'main/registry/local/host/.node.json': { uri: 'local/host', at: 'host' } }
+  const { exec, seen } = context(files)
+  t.is(await goto(exec, { uri: ['main', 'registry/local/host'], args: ['service/start'] }), null, 'registry/local/host: the host, where it is linked')
+  t.alike(seen.sent, [{ to: HOST, command: ['service/start'] }], 'sent on at its shortcut, the command unchanged')
+  await goto(exec, { uri: ['main', 'registry/local/host/swarms/swarm-1'], args: ['crud/read', '.'] })
+  t.alike(seen.sent[1], { to: HOST, command: ['haicc', 'swarms/swarm-1', 'crud/read', '.'] }, 'what follows the reference: below it, in the mrepo')
+  t.alike(await goto(exec, { uri: ['main', 'registry/local'], args: ['crud/read', '.'] }), { ran: ['crud/read', '.'] }, 'a registry node that is no record: a position like any other')
+})
+
+test('haicc/script: the lines, each a simple command, run where the URI points; the request waits for them', async (t) => {
+  const { script } = await import('../index.js'); const { parse, words } = await import('mrepo-base-request')
+  t.alike(words(`crud/create swarms/swarm-1 '{"kind":"swarm"}'`), ['crud/create', 'swarms/swarm-1', '{"kind":"swarm"}'], 'split as the shell splits: a quoted part one word, its quotes off')
+  t.alike(words('a "b \\"c\\" d" e'), ['a', 'b "c" d', 'e'], 'in double quotes, a backslash keeps the next character')
+  t.exception(() => words("a 'b"), /a quote not closed/)
+  t.alike(parse('\n# the swarm\nservice/initialise\n\n  service/start  \n').map(l => [l.n, l.words]), [[3, ['service/initialise']], [5, ['service/start']]], 'blank lines and comments skipped; each line its number')
+  t.exception(() => parse(' \n# only\n'), /missing argument: script/)
+  const waited = []
+  const exec = { runtime: { dir: '/x', uri: 'local/host' }, resumed: null, log: () => {}, wait: job => { waited.push(job); return null }, find: async p => (p === '/runtime/hooks/initialise.haicc' ? Buffer.from('info/extract\n') : null) }
+  t.is(await script(exec, { uri: ['main', '.'], args: ['service/initialise\nservice/start'] }), null, 'the request waits for its lines')
+  t.is(waited.length, 1, 'one job: the lines, run through the mrepo\'s own inbox')
+  t.alike(await script({ ...exec, resumed: { output: [{ line: 'service/start', output: 1 }] } }, { uri: ['main', '.'], args: ['x'] }), [{ line: 'service/start', output: 1 }], 'resumed: what each line gave')
+  await t.exception(script({ ...exec, resumed: { error: 'line 2: service/start: not now' } }, { uri: ['main', '.'], args: ['x'] }), /line 2: service\/start: not now/, 'resumed with a failure: the line that failed said')
+})

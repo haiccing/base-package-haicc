@@ -2,7 +2,7 @@
 // node position the URI selects, or sent on where it reaches a shortcut
 // (README.md beside it).
 import { segmented, joined, selects, positionOf, ROOT } from 'mycelium-uri'
-import { query, MAIN } from 'mrepo-base-xpath'
+import { query, MAIN, REGISTRY } from 'mrepo-base-xpath'
 
 export async function goto (exec, { uri, args = [] }) {
   if (!args.length) throw new Error('missing argument: command')
@@ -14,6 +14,20 @@ export async function goto (exec, { uri, args = [] }) {
     return exec.run(args, { at: positionOf(uri) })
   }
   if (whole !== MAIN && !whole.startsWith(`${MAIN}/`)) throw new Error(`not a position in main: ${whole} (main, main/<position>)`)
+  // An mrepo by its registry reference, registry/<swarm>/<name>: where the
+  // registry records it is linked, then on as at that position; what
+  // follows the reference, below it there.
+  const ref = whole.match(/^main\/registry\/([a-z][a-z0-9-]*)\/([a-z][a-z0-9-]*)(\/.*)?$/)
+  if (ref && !selects(whole)) {
+    const bytes = await exec.find(`${MAIN}/${REGISTRY}/${ref[1]}/${ref[2]}/.node.json`)
+    let at = null
+    // catch: a node there that is no record says nothing about where it is linked
+    try { at = bytes === null ? null : JSON.parse(bytes.toString()).at ?? null } catch {}
+    if (at) {
+      exec.log('verbose', 'registry', { mrepo: `${ref[1]}/${ref[2]}`, at })
+      return goto(exec, { uri: [MAIN, `${at}${ref[3] ?? ''}`], args })
+    }
+  }
   const { found, stopped } = await query(exec, uri)
   // where the command goes: the positions selected, and where the query
   // stopped at a shortcut with some of it left

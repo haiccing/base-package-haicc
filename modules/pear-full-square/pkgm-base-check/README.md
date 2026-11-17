@@ -5,8 +5,9 @@ The checks a package runs on itself: its code, the integrity of its mrepo side, 
 Every package carrying it gets four units from its dispatcher: `/test/code`,
 `/test/mrepo` and `/test/package` in its `validate`, `/test/mrepo-in-situ`
 in its `validate-in-situ`. In the development repository,
-`tools/code-check.js` runs the code rules over all the carried modules and
-the package check over every package.
+`tools/code-check.js` runs the code rules over all the carried modules,
+the test page check over every module, and the package check over every
+package.
 
 ## Links
 
@@ -25,6 +26,9 @@ The code rules:
   another module's test helpers by name, `<module>/test/<file>`.
 - **No transient references**: nothing points at the development
   repository's `docs/` or `steps/`.
+- **A test page that says what is tested**: a module's `test/README.md`
+  has a section a file of `test/` that declares tests, and in it each
+  test by its name, nothing else (`internal/tests`).
 
 The mrepo side:
 
@@ -60,4 +64,4 @@ The package itself:
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): packages and modules written for it, well formed and broken.
+- `brittle-bare test/*.test.js` (Bare installed): packages, modules and test pages written for it, well formed and broken; the patterns and their how-tos; each test by its name in [test/](test/).

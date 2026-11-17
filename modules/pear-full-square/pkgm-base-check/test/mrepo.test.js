@@ -89,23 +89,23 @@ test('hooks: in their place, on a transition, each a command', (t) => {
   try {
     write(d, {
       ...good,
-      'mrepo/runtime/hooks/boot/activate-p.json': ['protocol/activate', '.', 'p'],
-      'mrepo/runtime/hooks/initialise/extract.json': ['help/extract']
+      'mrepo/runtime/hooks/boot.haicc': '# boot\nprotocol/activate . p\n',
+      'mrepo/runtime/hooks/initialise.haicc': 'info/extract\n'
     })
     t.alike(checkStructure(d), [], 'well formed: none')
     write(d, {
-      'mrepo/runtime/hooks/reboot/x.json': ['a/b'],
-      'mrepo/runtime/hooks/boot/deep/x.json': ['a/b'],
-      'mrepo/runtime/hooks/start/named.json': { command: 'a/b' },
-      'mrepo/runtime/hooks/stop/empty.json': [],
-      'mrepo/runtime/hooks/shutdown/odd.json': ['Not A Command']
+      'mrepo/runtime/hooks/reboot.haicc': 'a/b\n',
+      'mrepo/runtime/hooks/start/x.haicc': 'a/b\n',
+      'mrepo/runtime/hooks/stop.json': ['a/b'],
+      'mrepo/runtime/hooks/shutdown.haicc': '# nothing\n',
+      'mrepo/runtime/hooks/initialise.haicc': 'Not A Command\n'
     })
     t.alike(checkStructure(d).map(p => p.detail).sort(), [
-      'mrepo/runtime/hooks/boot/deep/x.json: not a hook\'s place (hooks/<transition>/<name>.json)',
-      'mrepo/runtime/hooks/reboot/x.json: no transition reboot (boot, initialise, start, stop, shutdown)',
-      'mrepo/runtime/hooks/shutdown/odd.json: not a command (its parts: <protocol>/<action> <URI> <arguments>)',
-      'mrepo/runtime/hooks/start/named.json: not a command (its parts: <protocol>/<action> <URI> <arguments>)',
-      'mrepo/runtime/hooks/stop/empty.json: not a command (its parts: <protocol>/<action> <URI> <arguments>)'
+      'mrepo/runtime/hooks/initialise.haicc: not a command: Not A Command (<protocol>/<action> <URI> <arguments>)',
+      'mrepo/runtime/hooks/reboot.haicc: no transition reboot (boot, initialise, start, stop, shutdown)',
+      'mrepo/runtime/hooks/shutdown.haicc: no command in it',
+      'mrepo/runtime/hooks/start/x.haicc: not a hook\'s place (hooks/<transition>.haicc, a file a transition)',
+      'mrepo/runtime/hooks/stop.json: not a hook\'s place (hooks/<transition>.haicc, a file a transition)'
     ])
   } finally { rmSync(d, { recursive: true, force: true }) }
 })

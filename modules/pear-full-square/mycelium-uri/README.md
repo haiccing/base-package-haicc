@@ -53,7 +53,7 @@ reproduces every call inside it.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the unit tests
+- `brittle-bare test/*.test.js` (Bare installed): names and data names, a URI validated, parsed and formatted, joined and split, relative URIs and their filters, a URI as data; each test by its name in [test/](test/).
 
 ## Relative
 

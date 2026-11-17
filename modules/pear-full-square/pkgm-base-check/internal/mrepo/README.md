@@ -7,7 +7,8 @@ Checks the integrity of a package's mrepo side: its structure, its protocols, wh
 - `checkStructure(pkg)`: its `mrepo/` part; among it, that its list of
   packages ends with the package itself (the last package of a list
   defines the mrepo), and that its hooks are in their place,
-  `runtime/hooks/<transition>/<name>.json`, each a command.
+  `runtime/hooks/<transition>.haicc`, a file a transition, each line a
+  command.
 - `checkProtocol(pkg)`: its `protocol.js`, imported; asynchronous. Among
   it, that every action is a documented method: the function mounted is
   the one `external/<action>/` of a carried module exports, its README

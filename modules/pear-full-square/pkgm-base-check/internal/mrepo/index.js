@@ -38,19 +38,21 @@ export function checkStructure (pkg) {
   const ls = leaves(root)
   for (const n of readdirSync(root).sort()) if (!statSync(join(root, n)).isDirectory() && n !== 'README.md') at(`mrepo/${n}: a file outside a layer`)
   for (const c of contributions(root, ls)) if (c.endsWith('.json')) { try { json(join(root, c)) } catch (err) { at(`mrepo/${c}: ${err.message}`) } }
-  // its hooks: runtime/hooks/<transition>/<name>.json, each a command, its
-  // parts (what it drops into the runtime layer for a status transition)
+  // its hooks: runtime/hooks/<transition>.haicc, a file a transition, its
+  // lines simple commands (what it drops into the runtime layer)
   const hooksDir = join(root, 'runtime', 'hooks')
   if (existsSync(hooksDir)) {
     const walk = rel => readdirSync(join(hooksDir, rel)).sort().flatMap(n => statSync(join(hooksDir, rel, n)).isDirectory() ? walk(rel ? `${rel}/${n}` : n) : [rel ? `${rel}/${n}` : n])
     for (const f of walk('')) {
-      const [transition, name, ...more] = f.split('/')
-      if (more.length || !name || !name.endsWith('.json')) { at(`mrepo/runtime/hooks/${f}: not a hook's place (hooks/<transition>/<name>.json)`); continue }
+      const [file, ...more] = f.split('/')
+      const transition = file.replace(/\.haicc$/, '')
+      if (more.length || !file.endsWith('.haicc')) { at(`mrepo/runtime/hooks/${f}: not a hook's place (hooks/<transition>.haicc, a file a transition)`); continue }
       if (!TRANSITIONS.includes(transition)) { at(`mrepo/runtime/hooks/${f}: no transition ${transition} (${TRANSITIONS.join(', ')})`); continue }
-      let command = null
-      // catch: not JSON: said where JSON is checked
-      try { command = json(join(hooksDir, f)) } catch { continue } // (said where JSON is checked)
-      if (!Array.isArray(command) || !command.length || command.some(p => typeof p !== 'string' || !p) || !/^[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)?$/.test(command[0])) at(`mrepo/runtime/hooks/${f}: not a command (its parts: <protocol>/<action> <URI> <arguments>)`)
+      // its lines: each a simple command, <protocol>/<action> first; blank
+      // lines and # comments none; at least one
+      const lines = readFileSync(join(hooksDir, f), 'utf8').split('\n').map(l => l.trim()).filter(l => l && !l.startsWith('#'))
+      if (!lines.length) at(`mrepo/runtime/hooks/${f}: no command in it`)
+      for (const l of lines) if (!/^[a-z][a-z0-9-]*(\/[a-z][a-z0-9-]*)?(\s|$)/.test(l)) at(`mrepo/runtime/hooks/${f}: not a command: ${l} (<protocol>/<action> <URI> <arguments>)`)
     }
   }
   for (const l of ls) {

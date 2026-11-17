@@ -41,7 +41,7 @@ test('it tests what it provides: protocols, a program, hooks, a list, and no tes
   await within({ ...base, 'protocol.js': PROTOCOL, ...sets() }, async d => {
     t.alike(await details(d), ['it provides the p protocol, the q protocol: no test of its own'], 'protocols untested: said, each named')
   })
-  await within({ ...base, 'run.js': '', 'mrepo/runtime/hooks/boot/x.json': ['a/b'], 'mrepo/packages/layer.json': { packages: ['org/p'] }, ...sets() }, async d => {
+  await within({ ...base, 'run.js': '', 'mrepo/runtime/hooks/boot.haicc': 'a/b', 'mrepo/packages/layer.json': { packages: ['org/p'] }, ...sets() }, async d => {
     t.alike(await details(d), ['it provides a program (run.js), hooks, an mrepo of its own (its list of packages): no test of its own'], 'what it brings named')
   })
   await within({ ...base, 'protocol.js': 'export const protocols = (', ...sets(['x']), ...unit('x') }, async d => {

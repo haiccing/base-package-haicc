@@ -8,3 +8,4 @@ The rules and the checks, run by the package tests and the development tool.
 - [rules](rules/)
 - [mrepo](mrepo/)
 - [package](package/)
+- [tests](tests/)

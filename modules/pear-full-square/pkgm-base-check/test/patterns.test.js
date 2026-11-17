@@ -14,8 +14,8 @@ const HOWTO = p => `# a how-to\n\nDoes it.\n\nPattern: ${p}\n\n## Steps\n\n\`\`\
 test('patterns: read from a package\'s files', (t) => {
   const made = []
   try {
-    const protocol = tree({ 'package.json': {}, 'protocol.js': '', 'mrepo/links/layer.json': {}, 'mrepo/runtime/hooks/boot/a.json': [] }); made.push(protocol)
-    const component = tree({ 'package.json': {}, 'mrepo/packages/layer.json': {}, 'mrepo/runtime/service.json': {}, 'scripts/start.json': [] }); made.push(component)
+    const protocol = tree({ 'package.json': {}, 'protocol.js': '', 'mrepo/links/layer.json': {}, 'mrepo/runtime/hooks/boot.haicc': 'a/b' }); made.push(protocol)
+    const component = tree({ 'package.json': {}, 'mrepo/packages/layer.json': {}, 'mrepo/runtime/service.json': {}, 'scripts/start.sh': 'true' }); made.push(component)
     const docs = tree({ 'package.json': { docs: true }, 'mrepo/main/layer.json': {} }); made.push(docs)
     const app = tree({ 'package.json': {}, 'run.js': '' }); made.push(app)
     t.alike(patternsOf(protocol), ['package', 'protocol-package', 'layer', 'hooks'], 'a protocol package with a layer and hooks')

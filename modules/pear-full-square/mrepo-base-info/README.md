@@ -46,3 +46,7 @@ haicc host info/extract
   nothing, a README no menu leads to, the old form, the included
   packages against the list, a module's copies that differ, two versions
   of a third-party module.
+
+## Tests
+
+- `brittle-bare test/*.test.js` (Bare installed): a README read and its rules, keywords, the extraction from the top down and what does not fit, the actions on an execution written for them, the template's bundle extracted; each test by its name in [test/](test/).

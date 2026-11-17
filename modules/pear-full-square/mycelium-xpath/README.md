@@ -74,4 +74,4 @@ position: the XPath documentation.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the unit tests
+- `brittle-bare test/*.test.js` (Bare installed): the query, step by step: names, filters, positions, functions, where it stops, async children and documents; select, exact or matched; each test by its name in [test/](test/).

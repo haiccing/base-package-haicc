@@ -32,3 +32,10 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 
 - patterns: read from a package's files
 - how-tos: each naming its pattern; a pattern without one, a problem
+
+## `tests.test.js`
+
+- names: quoted, escaped, a template a pattern; a method named test is none
+- a page read: a section a file, an entry over several lines one
+- a page that says what is tested: none
+- a page that drifted: each difference a problem; no page, one

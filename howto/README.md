@@ -5,3 +5,4 @@ What can be done with the haicc protocol: a how-to each, its steps as typed comm
 ## Links
 
 - [hop](hop/)
+- [script](script/)

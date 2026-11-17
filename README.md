@@ -12,6 +12,7 @@ linked in it.
 ## Links
 
 - [goto](modules/pear-full-square/mrepo-base-haicc/external/goto/)
+- [script](modules/pear-full-square/mrepo-base-haicc/external/script/)
 - [howto](howto/)
 - [test](test/)
 - [test-reports](test-reports/)
@@ -26,9 +27,12 @@ executed.
 | action | offered at | arguments |
 |---|---|---|
 | `goto`, the default: `haicc` alone | any position (`**`) | the command that follows, passed on as written |
+| `script` | any position (`**`): where its lines run | the lines, one argument |
 
 `command: true`: the words after its URI are a command, so a flag list
-among them is that command's, not goto's.
+among them is that command's, not goto's. `haicc/file <URI> <name>` is
+the terminal's, not the protocol's: the `haicc` command reads the
+install's script file and sends it as `haicc/script`.
 
 ## Package
 
