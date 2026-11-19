@@ -25,6 +25,5 @@ package's files. A how-to names the pattern it covers in one line,
 
 `PATTERNS`: each pattern and what makes a package implement it; one
 entry, `<org>-component`, stands for every platform's component
-pattern. One is named by its how-to only, not yet read from files:
-`element-set`. `componentPattern(org)`: a platform's component pattern's
+pattern. `componentPattern(org)`: a platform's component pattern's
 name.

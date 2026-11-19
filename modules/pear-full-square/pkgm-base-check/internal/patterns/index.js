@@ -20,7 +20,6 @@ export const PATTERNS = {
   documents: '"documents" in its list: every package the sources offer documented, beyond the list',
   program: 'a hook that starts a placed package\'s program beside the mrepo (runtime/start)',
   platform: '"platform": "<org>" in its package.json: an mrepo that deploys its components, its organisation\'s, with the boot protocol and lays their packages on top of them (a dual install)',
-  'element-set': 'a splectral package with UI elements only, each called by name in a component\'s renderer',
   '<org>-component': 'a list of a platform\'s organisation: a component on that platform, its packages laid on top of an mrepo the platform deployed'
 }
 
