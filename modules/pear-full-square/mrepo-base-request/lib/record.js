@@ -30,9 +30,9 @@ export const wrap = (topic, inner) => record(topic, inner, inner?.key ?? null)
 export const complete = (core, result, log = []) => ({ ...core, value: { ...core.value, ...(result.ok ? { output: result.value } : { error: result.error }), ...(result.ok && result.continuation ? { continuation: result.continuation } : {}), ...(log.length ? { log } : {}) } })
 // A continuation: a script to continue with, answered beside an output:
 // { at, script }: the position it is run for, from the root as the one
-// who answers sees it (`.` itself), and the script, shell text calling
-// haicc; at most CEILING bytes. Run by who asked, the terminal, with sh:
-// HAICC_AT the position; not by an mrepo.
+// who answers sees it (`.` itself), and the script, its lines, each a
+// simple command; at most CEILING bytes. Sent on by who asked, the
+// terminal, as haicc/script at the position; not by an mrepo.
 export const CEILING = 65536
 export function continuationOf (script, at = '.') {
   if (typeof script !== 'string' || !script.trim()) throw new Error('not a continuation: its script, shell text')

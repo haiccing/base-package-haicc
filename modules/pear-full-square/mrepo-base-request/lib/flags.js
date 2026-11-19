@@ -21,7 +21,10 @@ export const FLAGS = {
   layer: /^[a-z0-9]+(-[a-z0-9]+)*(\/[a-z0-9]+(-[a-z0-9]+)*)*$/,
   // a script to answer with, as a continuation (an action that has
   // scripts: boot/deploy, a script of the package deployed): its name
-  continuation: /^[a-z0-9]+(-[a-z0-9]+)*$/
+  continuation: /^[a-z0-9]+(-[a-z0-9]+)*$/,
+  // a routing directive: boot/deploy's child deployed into a container,
+  // on the container's own haicc install (the pair deploy); no value
+  container: null
 }
 // The layer a request stands at when no flag says another.
 export const LAYER = 'main'

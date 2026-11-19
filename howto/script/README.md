@@ -20,18 +20,17 @@ crud/read .
 # at a position inside it: the lines run from swarms/swarm-1
 haicc host haicc/script swarms/swarm-1 '
 crud/read .
-boot/deploy node-1 base-component-haicc
+boot/deploy node-1 haiccing/base-component-haicc
 '
 # a heredoc: a line that holds JSON keeps its quotes
 haicc host haicc/script . <<'END'
 # the swarm's node, then a node in it
 crud/create swarms/swarm-2 '{"kind":"swarm"}'
-boot/deploy swarms/swarm-2/node-1 base-component-haicc
+boot/deploy swarms/swarm-2/node-1 haiccing/base-component-haicc
 END
 # a script kept in the install, by its name: <home>/scripts/check.haicc
+# (the folder is yours to make: mkdir -p ~/.haicc/scripts)
 haicc host haicc/file . check
-# a package's, installed under its org and package
-haicc host haicc/file swarms/swarm-2 haiccing/base-component-haicc/node
 # what the install keeps
 haicc scripts
 ```
@@ -44,4 +43,7 @@ haicc scripts
   written relative to where it runs is run elsewhere by pointing there.
 - **The install's scripts** (`haicc/file`): `<home>/scripts/<name>.haicc`,
   a package's at `<org>/<package>/<name>.haicc`; read by the terminal,
-  sent as `haicc/script`. A name, never a path.
+  sent as `haicc/script`. A name, never a path. The folder is the user's
+  to make and fill: nothing installs a package's scripts there yet (a
+  package's own scripts run as a deploy's continuation,
+  `--flags continuation=<name>`).

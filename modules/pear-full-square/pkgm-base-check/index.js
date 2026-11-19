@@ -8,6 +8,6 @@
 //               provides (/test/package)
 export { checkModule, checkPackage, checkText, jsFiles } from './internal/rules/index.js'
 export { checkStructure, checkProtocol, checkCarried, leaves, contributions } from './internal/mrepo/index.js'
-export { PATTERNS, patternsOf, howtosOf, checkPatterns } from './internal/patterns/index.js'
+export { PATTERNS, patternsOf, platformsOf, componentPattern, howtosOf, checkPatterns } from './internal/patterns/index.js'
 export { checkTestPage, testNames, pageSections } from './internal/tests/index.js'
 export { checkOwn, provides, checkFiles, checkSets, checkTests, testFolders, ownTests, GENERIC, SETS, TEMPLATE } from './internal/package/index.js'

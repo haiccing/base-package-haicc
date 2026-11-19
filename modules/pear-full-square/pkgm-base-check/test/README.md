@@ -30,7 +30,7 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 
 ## `patterns.test.js`
 
-- patterns: read from a package's files
+- patterns: read from a package's files; a program started by a hook; a platform and its component
 - how-tos: each naming its pattern; a pattern without one, a problem
 
 ## `tests.test.js`
