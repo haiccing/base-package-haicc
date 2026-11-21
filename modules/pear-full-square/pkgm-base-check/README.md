@@ -4,10 +4,9 @@ The checks a package runs on itself: its code, the integrity of its mrepo side, 
 
 Every package carrying it gets four units from its dispatcher: `/test/code`,
 `/test/mrepo` and `/test/package` in its `validate`, `/test/mrepo-in-situ`
-in its `validate-in-situ`. In the development repository,
-`tools/code-check.js` runs the code rules over all the carried modules,
-the test page check over every module, and the package check over every
-package.
+in its `validate-in-situ`. Where the packages are built, a code check
+runs the code rules over all the carried modules, the test page check
+over every module, and the package check over every package.
 
 ## Links
 

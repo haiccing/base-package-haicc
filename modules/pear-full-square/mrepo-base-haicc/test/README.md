@@ -9,4 +9,5 @@ The tests of mrepo-base-haicc, a section per file, each test by its name.
 - goto: a URI that selects: the command executed at each position, a list of what each gave
 - goto: on from one shortcut at a time; what is left of the URI goes with the command
 - goto: an mrepo by its registry reference: on as at the position the registry records it is linked
+- goto: a registry reference by a unique URI that is a path: the shortest there that is a record, what follows below it
 - haicc/script: the lines, each a simple command, run where the URI points; the request waits for them

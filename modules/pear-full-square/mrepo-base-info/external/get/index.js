@@ -17,6 +17,10 @@ const said = text => {
   return out.join('\n').replace(/\n{3,}/g, '\n\n').trim()
 }
 
+// The package a page is from, by its path in the info layer
+// (packages/<org>/<package>/...): [<org>/<package>], or none.
+const packageOf = page => { const m = /^packages\/([^/]+\/[^/]+)\//.exec(String(page)); return m ? [m[1]] : [] }
+
 // The keywords asked: where the URI is, as typed (info/get boot/deploy, no
 // dot), then the arguments, as one path or several words; none, or the
 // position itself: the top. The prefix of a request from outside, main,
@@ -38,12 +42,18 @@ export async function get (exec, { uri = ['.'], args = [] }) {
     throw new Error(`no ${k} here: nearest ${near}, below it ${there.join(', ') || 'nothing'}`)
   }
   const out = []
+  const same = new Map()
   for (const c of choices) {
     const text = (await exec.read(`/${LAYER}/${c.page}`)).toString()
     const r = parse(text)
     const page = c.section ? r.sections.find(s => s.title === c.section)?.text ?? '' : said(text)
     const below = c.below.map(b => ({ keyword: b, oneliner: index[b]?.[0]?.oneliner ?? '', choices: index[b]?.length ?? 0 }))
-    out.push({ title: c.section ?? r.title, oneliner: c.oneliner, page, below, ...(c.see ? { see: c.see } : {}), ...(c.generated ? { generated: true } : {}) })
+    const choice = { title: c.section ?? r.title, oneliner: c.oneliner, page, below, packages: packageOf(c.page), ...(c.see ? { see: c.see } : {}), ...(c.generated ? { generated: true } : {}) }
+    // the same page in several packages (a template's, say): one choice, its packages all named
+    const key = JSON.stringify([choice.title, choice.oneliner, choice.page, below.map(b => b.keyword.split('/').pop())])
+    if (same.has(key)) { same.get(key).packages.push(...choice.packages); continue }
+    same.set(key, choice)
+    out.push(choice)
   }
   exec.log('verbose', 'found', { keyword: k, choices: out.length, below: out.reduce((n, c) => n + c.below.length, 0) })
   return { keyword: k, choices: out }

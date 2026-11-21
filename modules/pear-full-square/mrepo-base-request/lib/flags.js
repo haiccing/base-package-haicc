@@ -6,26 +6,16 @@
 //   haicc host --flags log=debug -- crud/read swarms/*
 // A flag stands alone (its value true) or carries a value, key=value, no
 // space. In a request's form they are a map: { log: 'debug' }.
-// Which flags there are is an enumeration, FLAGS: a flag's name, and the
-// values it takes (a list of them; a pattern its value is written to;
-// null: it stands alone). One that is not among them, or
-// a value its flag does not take, is ignored, with a warning in the
-// request's log: sorted() says which.
+// Which flags there are: the folders of flags/, each its declaration
+// (its kind, its scope, the values it takes: a list, a pattern, or null,
+// it stands alone). This file names none of them. One that is not among
+// them, or a value its flag does not take: said (sorted), and the command
+// not run (lib/command.js, problems).
+import { FLAGS } from '../flags/index.js'
+
+export { FLAGS }
 export const WORD = '--flags'
 export const END = '--'
-export const FLAGS = {
-  // how much the request's log holds: info without the flag
-  log: ['info', 'verbose', 'debug'],
-  // the layer a command's own URI is read at: main without the flag
-  // (a layer's name, its parts joined by /: request, request/done)
-  layer: /^[a-z0-9]+(-[a-z0-9]+)*(\/[a-z0-9]+(-[a-z0-9]+)*)*$/,
-  // a script to answer with, as a continuation (an action that has
-  // scripts: boot/deploy, a script of the package deployed): its name
-  continuation: /^[a-z0-9]+(-[a-z0-9]+)*$/,
-  // a routing directive: boot/deploy's child deployed into a container,
-  // on the container's own haicc install (the pair deploy); no value
-  container: null
-}
 // The layer a request stands at when no flag says another.
 export const LAYER = 'main'
 
@@ -52,18 +42,27 @@ export function sorted (written = {}) {
   const flags = {}
   const ignored = []
   for (const [flag, value] of Object.entries(written ?? {})) {
-    if (!(flag in FLAGS)) ignored.push({ flag, value, why: `no flag: ${flag} (${Object.keys(FLAGS).sort().join(', ')})` })
-    else if (FLAGS[flag] === null ? value !== true : !takes(FLAGS[flag], value)) ignored.push({ flag, value, why: FLAGS[flag] === null ? `${flag} takes no value` : `${flag}=${value === true ? '' : value}: not ${Array.isArray(FLAGS[flag]) ? `one of ${FLAGS[flag].join(', ')}` : 'a value it takes'}` })
+    const spec = Object.hasOwn(FLAGS, flag) ? FLAGS[flag].values : undefined
+    if (spec === undefined) ignored.push({ flag, value, why: `no flag: ${flag} (${Object.keys(FLAGS).sort().join(', ')})` })
+    else if (spec === null ? value !== true : !takes(spec, value)) ignored.push({ flag, value, why: spec === null ? `${flag} takes no value` : FLAGS[flag].tail ? `${flag}: its text follows it (${WORD} ${flag} <text>)` : `${flag}=${value === true ? '' : value}: not ${Array.isArray(spec) ? `one of ${spec.join(', ')}` : 'a value it takes'}` })
     else flags[flag] = value
   }
   return { flags, ignored }
 }
 
+// The flags that hold down a chain: those a command sent on takes with it.
+export function chained (flags = {}) {
+  return Object.fromEntries(Object.entries(flags ?? {}).filter(([flag]) => !Object.hasOwn(FLAGS, flag) || FLAGS[flag].scope === 'chain'))
+}
+
+// The rewrite flags of a map, by name, with their declarations.
+export const rewrites = (flags = {}) => Object.keys(flags ?? {}).filter(flag => Object.hasOwn(FLAGS, flag) && FLAGS[flag].kind === 'rewrite').map(flag => [flag, FLAGS[flag]])
+
 // A command's parts with its flag list taken out. The list follows the
 // command's URI (its first word, when no URI is written): the flags are
 // that step's. It is closed by -- or by the end of the command, nothing
-// else: every word in between is a flag (one there is none of is ignored,
-// with a warning: sorted).
+// else: every word in between is a flag (one there is none of: said,
+// sorted).
 //   a command of its own       its arguments go on after the --; a list
 //                              after its arguments is taken the same way
 //   a command that passes on   (command: true; haicc's goto) the list
@@ -72,10 +71,25 @@ export function sorted (written = {}) {
 //                              left as written: a list among them is its
 //                              own
 // -> { parts, flags, listed: whether a list was written }
+//   a tail flag (feedback)     every word after it is its value, joined
+//                              by spaces, to the end of the command (a --
+//                              among them too); after the URI of a command
+//                              that passes on, to the -- that closes the
+//                              list: written there, it is not the last
 export function split (parts, { command = false } = {}) {
   const i = command ? ([1, 2].find(k => parts[k] === WORD) ?? -1) : parts.indexOf(WORD, 1)
   if (i < 0) return { parts, flags: {}, listed: false }
   const end = parts.indexOf(END, i)
   const to = end < 0 ? parts.length : end
-  return { parts: [...parts.slice(0, i), ...parts.slice(to + 1)], flags: flagsOf(parts.slice(i + 1, to)), listed: true }
+  const k = parts.slice(i + 1, to).findIndex(isTail)
+  if (k < 0) return { parts: [...parts.slice(0, i), ...parts.slice(to + 1)], flags: flagsOf(parts.slice(i + 1, to)), listed: true }
+  // the tail: its text, from the word after it (or its own value, written key=value)
+  const at = i + 1 + k
+  const last = command ? to : parts.length
+  const [flag, ...own] = parts[at].split('=')
+  const text = [...(own.length ? [own.join('=')] : []), ...parts.slice(at + 1, last)].join(' ').trim()
+  return { parts: [...parts.slice(0, i), ...(command ? parts.slice(to + 1) : [])], flags: { ...flagsOf(parts.slice(i + 1, at)), [flag]: text || true }, listed: true }
 }
+
+// A word that is a tail flag: every word after it its value.
+const isTail = word => { const flag = word.split('=')[0]; return Object.hasOwn(FLAGS, flag) && FLAGS[flag].tail === true }

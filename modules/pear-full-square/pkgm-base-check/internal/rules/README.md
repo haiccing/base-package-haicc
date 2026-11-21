@@ -6,8 +6,9 @@ Checks a module of ours, or a package's own code, against the code rules.
 
 - `checkModule(dir, { ours })`: a module's folder; `ours`, our modules'
   names.
-- `checkPackage(dir)`: a package's own code, its `modules/` aside: the
-  references only, as it reaches its modules by path.
+- `checkPackage(dir)`: a package's own files, its `modules/` and
+  `test-reports/` aside (its code, its READMEs, its scripts, its
+  config): the references only, as it reaches its modules by path.
 
 ## Returns
 
@@ -17,7 +18,7 @@ Checks a module of ours, or a package's own code, against the code rules.
 |---|---|
 | `structure` | a method directory has its `index.js` and its README |
 | `imports` | an import stays in its module, or names another module |
-| `transient` | no reference to a development repository: its notes, a link to it (`dev-env-<n>`) |
+| `transient` | nothing of where it was made: its notes, a link to it (`dev-env-<n>`), a mention of it (the words) |
 | `console` | nothing printed; a print that is meant says why |
 | `catch` | an error caught is used; one taken without looking says what is expected |
 | `cause` | an error thrown in a catch carries the one caught |

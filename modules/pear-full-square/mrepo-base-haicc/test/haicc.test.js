@@ -100,6 +100,16 @@ test('goto: an mrepo by its registry reference: on as at the position the regist
   t.alike(await goto(exec, { uri: ['main', 'registry/local'], args: ['crud/read', '.'] }), { ran: ['crud/read', '.'] }, 'a registry node that is no record: a position like any other')
 })
 
+test('goto: a registry reference by a unique URI that is a path: the shortest there that is a record, what follows below it', async (t) => {
+  const files = { ...FILES(), 'main/registry/.node.json': {}, 'main/registry/haiccing/.node.json': {}, 'main/registry/haiccing/base-package-crud/.node.json': {}, 'main/registry/haiccing/base-package-crud/howto/.node.json': {}, 'main/registry/haiccing/base-package-crud/howto/query/.node.json': {}, 'main/registry/haiccing/base-package-crud/howto/query/boot/.node.json': { uri: 'haiccing/base-package-crud/howto/query/boot', at: 'host' } }
+  const { exec, seen } = context(files)
+  await goto(exec, { uri: ['main', 'registry/haiccing/base-package-crud/howto/query/boot'], args: ['crud/read', '.'] })
+  t.alike(seen.sent[0], { to: HOST, command: ['crud/read', '.'] }, 'a how-to\'s mrepo, by its path: where it is linked')
+  await goto(exec, { uri: ['main', 'registry/haiccing/base-package-crud/howto/query/boot/registry'], args: ['crud/read', '.'] })
+  t.alike(seen.sent[1], { to: HOST, command: ['haicc', 'registry', 'crud/read', '.'] }, 'what follows it: below it, in the mrepo')
+  t.alike(await goto(exec, { uri: ['main', 'registry/haiccing/base-package-crud'], args: ['crud/read', '.'] }), { ran: ['crud/read', '.'] }, 'a namespace\'s node: a position like any other')
+})
+
 test('haicc/script: the lines, each a simple command, run where the URI points; the request waits for them', async (t) => {
   const { script } = await import('../index.js'); const { parse, words } = await import('mrepo-base-request')
   t.alike(words(`crud/create swarms/swarm-1 '{"kind":"swarm"}'`), ['crud/create', 'swarms/swarm-1', '{"kind":"swarm"}'], 'split as the shell splits: a quoted part one word, its quotes off')

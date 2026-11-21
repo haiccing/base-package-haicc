@@ -9,7 +9,9 @@ import { extract, LAYER } from '../../internal/info/index.js'
 const CONFIG = { mode: 'atomic', description: 'Info: the pages of the packages the mrepo links, each once, addressed by keywords from the top down, and their index (extracted as the mrepo is made ready).' }
 // What extraction reads of a bundle: its READMEs, its package.json, its
 // list, its third-party code's record.
-const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/layer.json' || k === '/modules/third-party.json'
+// (a schema a package carries: its own, its modules')
+const SCHEMA = /^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/
+const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k)
 // A document that may not be there: null then; one that is there and is
 // no document is an error.
 // log: none (one read; the action says what it found)

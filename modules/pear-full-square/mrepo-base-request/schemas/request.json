@@ -1,0 +1,23 @@
+{
+  "type": "record",
+  "name": "pearFullSquare.mrepoBaseRequest.request",
+  "doc": "A request and its response, the form completed: what it asked (protocol, action, uri, args), then its output or its error, its log. Its arguments and its output the next level, single-object encoded: the action's own, or json",
+  "fields": [
+    { "name": "protocol", "type": ["null", "string"], "default": null },
+    { "name": "action", "type": ["null", "string"], "default": null },
+    { "name": "uri", "type": ["null", { "type": "array", "items": "string" }], "default": null },
+    { "name": "args", "type": ["null", "bytes"], "default": null },
+    { "name": "flags", "type": ["null", { "type": "map", "values": "pearFullSquare.myceliumValueAvro.json" }], "default": null },
+    { "name": "command", "type": "pearFullSquare.myceliumValueAvro.json", "doc": "the command as typed, null when the form came filled in" },
+    { "name": "output", "type": ["null", "bytes"], "default": null },
+    { "name": "error", "type": ["null", "string"], "default": null },
+    { "name": "continuation", "type": ["null", { "type": "record", "name": "pearFullSquare.mrepoBaseRequest.continuation", "fields": [{ "name": "at", "type": "string" }, { "name": "script", "type": "string" }] }], "default": null },
+    { "name": "log", "type": { "type": "array", "items": { "type": "record", "name": "pearFullSquare.mrepoBaseRequest.entry", "fields": [
+      { "name": "level", "type": "string" },
+      { "name": "event", "type": "string" },
+      { "name": "time", "type": ["null", { "type": "long", "logicalType": "timestamp-millis" }], "default": null },
+      { "name": "data", "type": { "type": "map", "values": "pearFullSquare.myceliumValueAvro.json" }, "default": {} }
+    ] } }, "default": [] },
+    { "name": "more", "type": { "type": "map", "values": "pearFullSquare.myceliumValueAvro.json" }, "default": {} }
+  ]
+}

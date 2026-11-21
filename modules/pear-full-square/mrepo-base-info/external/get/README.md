@@ -16,12 +16,19 @@ keywords where the URI is, no dot.
 ## Returns
 
 `{ keyword, choices }`: each choice a page the keyword reaches, `{
-title, oneliner, page, below, see?, generated? }`: its text without its
-menus (a section: its text), and each keyword below it, `{ keyword,
-oneliner, choices }`.
+title, oneliner, page, below, packages, see?, generated? }`: its text
+without its menus (a section: its text), each keyword below it, `{
+keyword, oneliner, choices }`, and the packages it is from,
+`[<org>/<package>...]`.
 
 ## Errors
 
 - No info extracted yet.
 - A keyword that is not there: the nearest one above it, and what is
   below that.
+
+## Design
+
+- **The same page once**: a page the same in several packages (a
+  template's generic page, say) is one choice, its packages all named;
+  pages that differ stay apart, each with its package.

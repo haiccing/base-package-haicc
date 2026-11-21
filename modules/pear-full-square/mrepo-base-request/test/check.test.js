@@ -1,5 +1,8 @@
 import test from 'brittle'
-import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { readdirSync } from 'bare-fs'
+import { join, dirname } from 'bare-path'
+import { fileURLToPath } from 'bare-url'
+import { check, matches, missing, hookOf, parse, words, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -183,13 +186,59 @@ test('flags: written after a command\'s URI, that step\'s; -- says where what fo
   t.alike(sorted({ layer: 'request/done' }), { flags: { layer: 'request/done' }, ignored: [] })
   t.is(sorted({ layer: true }).ignored[0].why, 'layer=: not a value it takes')
   // the enumeration: one that is not there, or a value its flag does not take, is ignored, and said
-  t.alike(Object.keys(FLAGS), ['log', 'layer', 'continuation', 'container'])
+  t.alike(Object.keys(FLAGS), ['log', 'layer', 'continuation', 'container', 'help', 'feedback'])
   t.alike(sorted({ log: 'verbose' }), { flags: { log: 'verbose' }, ignored: [] })
   const s = sorted({ log: 'loud', nope: true, other: 'x' })
   t.alike(s.flags, {}, 'ignored')
-  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, continuation, layer, log)', 'no flag: other (container, continuation, layer, log)'])
+  t.alike(s.ignored.map(i => i.why), ['log=loud: not one of info, verbose, debug', 'no flag: nope (container, continuation, feedback, help, layer, log)', 'no flag: other (container, continuation, feedback, help, layer, log)'])
   t.alike(sorted({ log: true }).ignored.map(i => i.why), ['log=: not one of info, verbose, debug'], 'a flag that takes a value, written alone')
   t.alike(sorted(undefined), { flags: {}, ignored: [] })
+})
+
+test('the flag unit: a folder a flag, each listed, its declaration; what holds down a chain; strict: what keeps a command from being run', (t) => {
+  const here = join(dirname(fileURLToPath(import.meta.url)), '..', 'flags')
+  const folders = readdirSync(here, { withFileTypes: true }).filter(d => d.isDirectory()).map(d => d.name).sort()
+  t.alike(Object.keys(FLAGS).sort(), folders, 'every folder of flags/ listed, each listed one a folder')
+  for (const [name, f] of Object.entries(FLAGS)) {
+    t.ok(['modifier', 'option', 'rewrite'].includes(f.kind) && ['chain', 'step', 'last'].includes(f.scope), `${name}: its kind and its scope`)
+    t.ok(f.values === null || Array.isArray(f.values) || f.values instanceof RegExp, `${name}: its values, a list, a pattern or none`)
+    if (f.kind === 'rewrite') t.ok(typeof f.protocol === 'string' && typeof f.rewrite === 'function', `${name}: a rewrite names its protocol and how it rewrites`)
+  }
+  t.alike(chained({ log: 'debug', help: true, layer: 'request', nope: true }), { log: 'debug', layer: 'request', nope: true }, 'held down a chain: all but a step\'s or the last command\'s (one there is none of: carried, said where it arrives)')
+  t.alike(rewrites({ log: 'debug', help: true }).map(([flag]) => flag), ['help'])
+  // help: the command it is on becomes help/annotate at the same URI, before the door
+  const both = { crud: { actions: { read: { uris: ['**'] } } }, help: { default: 'annotate', actions: { annotate: { uris: ['**'], args: ['command'] } } } }
+  const help = formOf(['crud/read', 'swarms', 'x', '--flags', 'help', 'log=debug'], both, OUTSIDE)
+  t.alike([help.protocol, help.action, help.uri, help.args, help.flags, help.rewritten, help.command], ['help', 'annotate', ['main', 'swarms'], ['crud/read', 'x'], { log: 'debug' }, 'help', ['crud/read', 'swarms', 'x', '--flags', 'help', 'log=debug']], 'help/annotate at its URI, its arguments the command\'s <protocol>/<action> and its own; the flag gone, the others kept; the command as typed')
+  t.is(check(help, { service: null, protocols: both, active: { help: {} } }), null, 'the door checks the rewritten command')
+  t.absent('flags' in formOf({ command: ['crud/read', 'x'], flags: { help: true } }, both, OUTSIDE), 'the last command\'s only: not carried down a chain')
+  // strict: nothing of the command run, said why
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'nope', 'log=loud'], both, OUTSIDE), both), ['no flag: nope (container, continuation, feedback, help, layer, log)', 'log=loud: not one of info, verbose, debug'], 'a flag that is none; a value its flag does not take: each said')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help=yes'], both, OUTSIDE), both), ['help takes no value'], 'a value its flag does not take')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help'], { crud: both.crud }, OUTSIDE), { crud: both.crud }), ['help: no protocol help here'], 'a rewrite whose protocol is not here: not rewritten, said')
+  const haicc = { ...both, haicc: { default: 'goto', actions: { goto: { command: true, uris: ['**'] } } } }
+  t.alike(problems(formOf(['haicc', 'host', '--flags', 'help', '--', 'crud/read', 'x'], haicc, OUTSIDE), haicc), ['help: on the last command only (it rewrites the command it is on)'], 'a rewrite on a command that passes on: not the last')
+  t.alike(formOf(['haicc', 'host', 'crud/read', 'x', '--flags', 'help'], haicc, OUTSIDE).args, ['crud/read', 'x', '--flags', 'help'], 'written after the last command\'s URI: that command\'s, passed on as written')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'log=debug'], both, OUTSIDE), both), [], 'nothing in the way')
+  // feedback: a rewrite, last, a tail: every word after it its text; the command becomes haici/feedback at the same URI
+  const fb = { ...both, haici: { default: 'feedback', actions: { feedback: { uris: ['**'], args: ['text', 'command', 'arguments?'] } } } }
+  t.ok(FLAGS.feedback.tail === true && FLAGS.feedback.kind === 'rewrite' && FLAGS.feedback.scope === 'last' && FLAGS.feedback.protocol === 'haici', 'feedback: a rewrite, last, a tail, its protocol haici')
+  const f = formOf(['crud/read', 'swarms', 'x', '--flags', 'log=debug', 'feedback', 'the', 'list', 'is', 'empty'], fb, OUTSIDE)
+  t.alike([f.protocol, f.action, f.uri, f.args, f.flags, f.rewritten], ['haici', 'feedback', ['main', 'swarms'], ['the list is empty', 'crud/read', 'x'], { log: 'debug' }, 'feedback'], 'haici/feedback at its URI, its arguments the text, then the command\'s <protocol>/<action> and its own; the flags before it kept')
+  t.alike(f.command, ['crud/read', 'swarms', 'x', '--flags', 'log=debug', 'feedback', 'the', 'list', 'is', 'empty'], 'the command as typed')
+  t.is(check(f, { service: null, protocols: fb, active: { haici: {} } }), null, 'the door checks the rewritten command')
+  t.alike(formOf(['crud/read', 'x', '--flags', 'feedback', 'a', '--', 'b', '--flags', 'nope', 'c=d'], fb, OUTSIDE).args, ['a -- b --flags nope c=d', 'crud/read'], 'the tail: every word after it its text, a -- and words that look like flags too')
+  t.alike(formOf(['crud/read', 'x', '--flags', 'feedback=first', 'and', 'more'], fb, OUTSIDE).args[0], 'first and more', 'written feedback=<word>: that word the text\'s first')
+  t.alike(formOf(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE).flags, { help: true, feedback: 'y' }, 'the flags before it its list\'s (two rewrites: neither applied)')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'feedback'], fb, OUTSIDE), fb), ['feedback: its text follows it (--flags feedback <text>)'], 'no text after it: not run, said')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'help', 'feedback', 'y'], fb, OUTSIDE), fb), ['one rewrite at a time: help, feedback'], 'two rewrites: not run')
+  t.alike(problems(formOf(['crud/read', 'x', '--flags', 'feedback', 'y'], both, OUTSIDE), both), ['feedback: no protocol haici here'], 'its protocol not here: not rewritten, said')
+  const fbh = { ...fb, haicc: haicc.haicc }
+  const on = formOf(['haicc', 'host', '--flags', 'feedback', 'y', 'z', '--', 'crud/read', 'x'], fbh, OUTSIDE)
+  t.alike([on.args, problems(on, fbh)], [['crud/read', 'x'], ['feedback: on the last command only (it rewrites the command it is on)']], 'on a command that passes on: its -- closes it, the next command follows; not the last, not run')
+  t.alike(formOf(['haicc', 'host', 'crud/read', 'x', '--flags', 'feedback', 'y'], fbh, OUTSIDE).args, ['crud/read', 'x', '--flags', 'feedback', 'y'], 'written after the last command\'s URI: that command\'s, passed on as written')
+  t.absent('flags' in formOf({ command: ['crud/read', 'x'], flags: { feedback: 'y' } }, fb, OUTSIDE), 'the last command\'s only: not carried down a chain')
+  t.alike(notRun({ command: ['crud/read', 'x', '--flags', 'nope'] }, ['no flag: nope']), { run: false, command: 'crud/read x --flags nope', why: ['no flag: nope'] }, 'what a command not run answers: not run, the command as typed, why')
 })
 
 test('the log: three levels of detail, info without asking; an error and a warning always', (t) => {

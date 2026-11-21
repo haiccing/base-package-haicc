@@ -13,4 +13,5 @@ A README's menus and the old form; the rules; the keywords' form; an mrepo of th
 - extract: what does not fit is a problem, never resolved silently
 - extract: a package documented beyond the list, at its keyword below the top; the mrepo's own still the last of its list
 - the actions: extract writes the layer, get reads it by keywords
+- get: the same page in several packages one choice, its packages all named; pages that differ apart
 - the template, extracted from its bundle: its keywords, nothing against its own rules

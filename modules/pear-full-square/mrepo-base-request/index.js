@@ -28,16 +28,17 @@ import { existsSync, readFileSync } from 'bare-fs'
 import { join } from 'bare-path'
 import { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX } from './lib/boxes.js'
 import { record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
-import { FLAGS, LAYER, flagsOf, sorted, layerOf } from './lib/flags.js'
+import { FLAGS, LAYER, flagsOf, sorted, layerOf, chained, rewrites } from './lib/flags.js'
 import { layer, AUTHOR } from './lib/layer.js'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
-import { interpret, formOf, layerFor, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
+import { interpret, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
 import { hookOf, hookAt, HOOKS, TRANSITIONS } from './lib/hooks.js'
 import { words, parse, send, run as runLines } from './lib/lines.js'
 
 export { follow } from './lib/follow.js'
-export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { encodeRecord, decodeRecord, logHandler, REQUEST } from './lib/typed.js'
+export { MREPOS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -189,6 +190,17 @@ export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at
     const filled = formOf(form, ctx.protocols ?? {}, at ?? (origin === 'internal' ? OWN : OUTSIDE))
     if (filled !== form) { form = filled; core = { ...core, value: form } }
   } catch (err) { why = err.message }
+  // what its flags keep from being run: nothing of it is (strict); the
+  // request completes, not failed, saying so, each reason a warning
+  const unrun = !why && form && typeof form === 'object' ? problems(form, ctx.protocols ?? {}) : []
+  if (unrun.length) {
+    const { log, entries } = logger()
+    for (const reason of unrun) log('warn', 'request.flag', { reason })
+    const done = complete(core, { ok: true, value: notRun(form, unrun) }, entries)
+    await layer(ctx, DONE).put(name, wrap(`/${DONE}`, done), `Not run ${name}`)
+    await sendBack(ctx, name, done)
+    return { name, notRun: unrun }
+  }
   if (!why) {
     try { why = check(form, await runtimeData(ctx), origin === 'internal' ? { internal: true } : { state: false }) } catch (err) { why = `runtime: ${err.message}` }
   }
@@ -201,6 +213,10 @@ export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at
   await layer(ctx, PENDING).put(name, wrap(`/${PENDING}`, core), `${origin === 'internal' ? 'Internal' : 'Request'} ${name}: ${form.protocol} ${form.action} ${joined(form.uri)}`)
   return { name, queued: true }
 }
+
+// A command its flags keep from being run: what it answers. `run: false`,
+// the command as typed, the reasons.
+export const notRun = (form, why) => ({ run: false, command: Array.isArray(form.command) ? form.command.join(' ') : (form.command ?? `${form.protocol}/${form.action}`), why })
 
 // Whether a request is internal: no record of it in the inbox (the inbox
 // keeps every record it was given; a preloaded request is internal too).

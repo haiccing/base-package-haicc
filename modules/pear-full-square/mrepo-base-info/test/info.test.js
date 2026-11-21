@@ -32,7 +32,9 @@ test('the rules: the README rules, and the menu\'s form', (t) => {
   t.alike(check('# late\n\nLate.\n\n## Usage\n\nU.\n\n## Links\n\n- [sub](sub/)\n'), [['menu', '## Links is not its first section']])
   t.alike(check('# none\n\n'), [['oneliner', 'none']])
   const dev = ['dev', 'env', '3', 'y'].join('-') // (written so, or this file's own check would find it)
-  t.alike(check(`# linked\n\nLinked.\n\nWritten from [x/${dev}](https://github.com/x/${dev}).\n`), [['transient', dev]], 'a link to a development repository: transient')
+  t.alike(check(`# linked\n\nLinked.\n\nWritten from [x/${dev}](https://github.com/x/${dev}).\n`), [['transient', dev]], 'a link to where it was made: transient')
+  const words = ['Development', 'repository'].join(' ') // (written so, or this file's own check would find it)
+  t.alike(check(`# said\n\nSaid.\n\nBuilt in the ${words}.\n`), [['transient', words]], 'a mention of where it was made, in words: transient')
 })
 
 test('keywords: a word, a section\'s title, an included package by its name without the prefix', (t) => {
@@ -56,7 +58,9 @@ const protocol = {
     [`${MOD}/README.md`]: B(page('mod-base-x', 'The x module.', [['external', 'external/']])),
     [`${MOD}/external/README.md`]: B(page('external/', 'Its actions.', [['run', 'run/']])),
     [`${MOD}/external/run/README.md`]: B(page('run', 'Runs x.', [], '\n## Signature\n\n`run(exec, form)`.\n')),
-    '/modules/third-party.json': B(JSON.stringify({ modules: [{ name: 'brittle', version: '3.0.0', license: 'Apache-2.0' }] }))
+    '/modules/third-party.json': B(JSON.stringify({ modules: [{ name: 'brittle', version: '3.0.0', license: 'Apache-2.0' }] })),
+    '/schemas/answer.json': B(JSON.stringify({ type: 'record', name: 'org.basePackageX.answer', fields: [{ name: 'said', type: 'string' }] })),
+    [`${MOD}/schemas/thing.json`]: B(JSON.stringify({ type: 'record', name: 'org.modBaseX.thing', fields: [{ name: 'n', type: 'long' }, { name: 'j', type: 'pearFullSquare.myceliumValueAvro.json' }] }))
   }
 }
 const docs = { pkg: 'org/package-docs-mrepo', files: { '/README.md': B(page('package-docs-mrepo', 'The mrepo, documented.')), '/lost/README.md': B(page('lost', 'No menu leads here.')) } }
@@ -74,7 +78,7 @@ const mrepo = (top = component()) => [protocol, docs, top]
 test('extract: the keywords from the top down; a jump, a category, sections; a module once', (t) => {
   const out = extract(mrepo())
   const index = J(out['/index.json'])
-  t.alike(index['.'][0].below, ['mrepo', 'x', 'modules', 'third-party'], 'the top: its menu (a link to nothing not among it), its included packages, the two made here; mrepo once')
+  t.alike(index['.'][0].below, ['mrepo', 'x', 'modules', 'third-party', 'schemas'], 'the top: its menu (a link to nothing not among it), its included packages, the three made here; mrepo once')
   t.is(index['.'][0].page, 'packages/org/base-component-y/README.md', 'the top page: the mrepo\'s own package\'s README')
   t.alike(index.mrepo.map(c => c.page), ['packages/org/base-component-y/mrepo/README.md', 'packages/org/package-docs-mrepo/README.md'], 'mrepo: two choices, its own folder and the documentation package')
   t.alike(index.x[0].below, ['x/run', 'x/howto', 'x/test', 'x/modules', 'x/config'], 'a protocol package: its menu, then its sections')
@@ -86,7 +90,9 @@ test('extract: the keywords from the top down; a jump, a category, sections; a m
   t.ok(out['/modules/org/mod-base-x/external/run/README.md'] && !Object.keys(out).some(p => p.startsWith('/packages/org/base-package-x/modules/org')), 'its pages written once, at the module\'s place')
   t.ok(out['/modules/README.md'].toString().includes('- [mod-base-x](mod-base-x/)'), 'modules: a page made here')
   t.ok(out['/third-party/README.md'].toString().includes('| [brittle]() | 3.0.0 | Apache-2.0 | 2 packages |'), 'third-party: a page made here, each module once')
-  t.ok(index.modules[0].generated && index['third-party'][0].generated, 'both marked as made here')
+  const schemas = out['/schemas/README.md'].toString()
+  t.ok(/\| `org\/base-package-x\/answer` \| `[0-9a-f]{16}` \| `said` \| 1 packages \|/.test(schemas) && schemas.includes('| `org/mod-base-x/thing` |'), 'schemas: a page made here, each once by its URI, its fingerprint, its fields: the package\'s own, its modules\'')
+  t.ok(index.modules[0].generated && index['third-party'][0].generated && index.schemas[0].generated, 'all marked as made here')
 })
 
 test('extract: what does not fit is a problem, never resolved silently', (t) => {
@@ -106,7 +112,7 @@ test('extract: a package documented beyond the list, at its keyword below the to
   const out = extract([...mrepo(), z])
   const index = J(out['/index.json'])
   t.is(index['.'][0].page, 'packages/org/base-component-y/README.md', 'the top: the list\'s last, not the documented')
-  t.alike(index['.'][0].below, ['mrepo', 'x', 'z', 'modules', 'third-party'], 'the documented below the top, after the included')
+  t.alike(index['.'][0].below, ['mrepo', 'x', 'z', 'modules', 'third-party', 'schemas'], 'the documented below the top, after the included')
   t.is(index['z/test'][0].page, 'packages/org/base-package-z/test/README.md', 'walked as an included package is')
   t.ok(J(out['/problems.json']).some(p => p.page === 'packages/org/base-package-z/lost'), 'its pages checked: one no menu leads to, said')
 })
@@ -139,14 +145,28 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
     t.alike([(await extractAction(exec, { uri: ['.'] })).changed, writes.length], [false, n], 'again: nothing changed, nothing written')
     await t.exception(extractAction(exec, { uri: ['main', 'x'] }), /info extract: the whole mrepo only/)
     const top = await get(exec, {})
-    t.alike([top.keyword, top.choices[0].title, top.choices[0].below.map(b => b.keyword)], ['.', 'base-component-y', ['mrepo', 'x', 'modules', 'third-party']], 'nothing asked: the top page and its keywords')
+    t.alike([top.keyword, top.choices[0].title, top.choices[0].below.map(b => b.keyword)], ['.', 'base-component-y', ['mrepo', 'x', 'modules', 'third-party', 'schemas']], 'nothing asked: the top page and its keywords')
     t.absent(top.choices[0].page.includes('## Links'), 'the page without its menus: they are its keywords')
     const run = await get(exec, { args: ['x/run'] })
     t.alike([run.choices[0].title, run.choices[0].oneliner, run.choices[0].below], ['run', 'Runs x.', [{ keyword: 'x/run/signature', oneliner: '`run(exec, form)`.', choices: 1 }]], 'an action: its page, its sections below')
-    t.alike((await get(exec, { args: ['x', 'run', 'signature'] })).choices[0], { title: 'Signature', oneliner: '`run(exec, form)`.', page: '`run(exec, form)`.', below: [] }, 'a section, the keywords as words')
+    t.alike((await get(exec, { args: ['x', 'run', 'signature'] })).choices[0], { title: 'Signature', oneliner: '`run(exec, form)`.', page: '`run(exec, form)`.', below: [], packages: [] }, 'a section, the keywords as words')
     t.is((await get(exec, { args: ['mrepo'] })).choices.length, 2, 'a keyword with two meanings: both choices')
+    t.alike((await get(exec, { args: ['x'] })).choices[0].packages, ['org/base-package-x'], 'each choice: the package it is from')
     await t.exception(get(exec, { args: ['x/nothing'] }), /no x\/nothing here: nearest x, below it run, howto, test, modules, config/, 'a keyword that is not there: the nearest, and what is below it')
   } finally { rmSync(dir, { recursive: true, force: true }) }
+})
+
+test('get: the same page in several packages one choice, its packages all named; pages that differ apart', async (t) => {
+  const generic = '# test-reports/\n\nThe proof.\n'
+  const files = {
+    '/info/index.json': B(JSON.stringify({ 'z/test-reports': [{ page: 'packages/org/a/test-reports/README.md', oneliner: 'The proof.', below: [] }, { page: 'packages/org/b/test-reports/README.md', oneliner: 'The proof.', below: [] }, { page: 'packages/org/c/test-reports/README.md', oneliner: 'Its own.', below: [] }] })),
+    '/info/packages/org/a/test-reports/README.md': B(generic),
+    '/info/packages/org/b/test-reports/README.md': B(generic),
+    '/info/packages/org/c/test-reports/README.md': B('# test-reports/\n\nIts own.\n')
+  }
+  const exec = { read: async p => { if (!(p in files)) throw new Error(`nothing at ${p}`); return files[p] }, find: async p => files[p] ?? null, log () {} }
+  const r = await get(exec, { args: ['z', 'test-reports'] })
+  t.alike(r.choices.map(c => [c.oneliner, c.packages]), [['The proof.', ['org/a', 'org/b']], ['Its own.', ['org/c']]], 'the same page once, both packages named; the one that differs apart')
 })
 
 // the template's bundle, as a runtime reads it
@@ -159,7 +179,7 @@ test('the template, extracted from its bundle: its keywords, nothing against its
   for (const k of Object.keys(b.files)) if (k.endsWith('/README.md') || k === '/package.json' || k === '/modules/third-party.json') files[k] = b.read(k)
   const out = extract([{ pkg: 'haiccing/base-docs-package', files, paths: Object.keys(b.files) }])
   const index = J(out['/index.json'])
-  for (const k of ['mrepo', 'test', 'test/info', 'test-reports', 'name', 'example', 'example/hello', 'example/hello/notes/mrepo', 'readmes', 'a-new-package', 'modules', 'third-party']) t.ok(index[k], `${k}`)
+  for (const k of ['mrepo', 'test', 'test/info', 'test-reports', 'name', 'example', 'example/hello', 'example/hello/notes/mrepo', 'readmes', 'a-new-package', 'modules', 'third-party', 'schemas']) t.ok(index[k], `${k}`)
   const own = J(out['/problems.json']).filter(p => (p.page ?? '').startsWith('packages/'))
   for (const p of own) t.comment(`${p.page}: ${p.check}: ${p.detail}`)
   t.is(own.length, 0, 'its own pages: no problem (the modules it carries are theirs)')

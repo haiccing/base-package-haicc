@@ -6,7 +6,7 @@ import { readFileSync, readdirSync, statSync, existsSync } from 'bare-fs'
 import { join, dirname, resolve, relative, sep } from 'bare-path'
 
 const SPEC = /(?:\bfrom\s*|\bimport\s*\(\s*|\bimport\s+|\brequire\s*\(\s*)(['"])([^'"\n]+)\1/g
-const TRANSIENT = /(?<![\w/-])(docs\/(design|guides|rules)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*/g
+const TRANSIENT = /(?<![\w/-])(docs\/(design|guides|rules)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*|\bdev(?:elopment)?[ -]repo(?:sitor(?:y|ies))?\b/gi
 
 // --- logging and handling ---
 // What is decided in the code is said there, in a remark on the line, or
@@ -166,11 +166,25 @@ export function checkModule (dir, { ours = [] } = {}) {
   return problems
 }
 
-// The rules on a package's own code (its entry points, its test runners):
-// references only; it reaches its modules by path, as it must.
+// A package's own text files, its modules and its test reports aside:
+// its code, its READMEs, its scripts, its config (anything not binary).
+function textFiles (dir) {
+  const out = []
+  for (const n of readdirSync(dir).sort()) {
+    if (n === 'node_modules' || n === '.git') continue
+    const p = join(dir, n)
+    if (statSync(p).isDirectory()) out.push(...textFiles(p))
+    else if (!readFileSync(p).includes(0)) out.push(p)
+  }
+  return out
+}
+
+// The rules on a package's own files (its entry points, its test runners,
+// its READMEs, its scripts): references only; it reaches its modules by
+// path, as it must. Self-contained: nothing of where it was made.
 export function checkPackage (dir) {
   const problems = []
-  for (const file of jsFiles(dir).filter(f => !relative(dir, f).startsWith('modules'))) {
+  for (const file of textFiles(dir).filter(f => { const r = relative(dir, f).split(sep)[0]; return r !== 'modules' && r !== 'test-reports' })) {
     const refs = [...new Set(readFileSync(file, 'utf8').match(TRANSIENT) ?? [])]
     if (refs.length) problems.push({ file: relative(dir, file).split(sep).join('/'), check: 'transient', detail: refs.join(', ') })
   }

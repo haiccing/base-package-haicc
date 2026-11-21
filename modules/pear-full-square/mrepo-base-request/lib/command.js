@@ -23,7 +23,7 @@
 // starts after the -- that closes it; the words of that command are left
 // as written: a list among them is its own.
 import { relative, ROOT } from 'mycelium-uri'
-import { split, layerOf, WORD, END } from './flags.js'
+import { split, layerOf, sorted, chained, rewrites, WORD, END } from './flags.js'
 
 export { ROOT }
 export const MAIN = 'main'
@@ -56,11 +56,11 @@ export function interpret (command, protocols = {}, at = OWN) {
   return { protocol, action, uri: [...at, relative(second)], args, ...(Object.keys(flags).length ? { flags } : {}) }
 }
 
-// The flags a request carries: those that came with it (a command sent on
-// brings the sender's: a flag holds through a chain until changed), under
-// those written with its own command.
+// The flags a request carries: those that came with it that hold down a
+// chain (a command sent on brings the sender's: such a flag holds until
+// changed), under those written with its own command.
 const carried = (value, own) => {
-  const flags = { ...(value.flags ?? {}), ...(own ?? {}) }
+  const flags = { ...chained(value.flags), ...(own ?? {}) }
   return Object.keys(flags).length ? { flags } : {}
 }
 
@@ -73,10 +73,40 @@ const carried = (value, own) => {
 export function formOf (value, protocols = {}, at = OWN) {
   if (typeof value === 'string' || Array.isArray(value)) value = { command: value }
   if (!value || typeof value !== 'object') return value
-  if (value.command !== undefined && value.protocol === undefined) { const form = interpret(value.command, protocols, at); return layered({ ...value, ...form, ...carried(value, form.flags) }, protocols) }
+  if (value.command !== undefined && value.protocol === undefined) { const form = interpret(value.command, protocols, at); return layered(rewritten({ ...value, ...form, ...carried(value, form.flags) }, protocols), protocols) }
   if (value.protocol === undefined) return value
   if (Array.isArray(value.uri)) throw new Error('not a URI: one segment, as it is written')
   return layered({ ...value, uri: [...at, relative(value.uri)] }, protocols)
+}
+
+// What keeps a command from being run, by its flags (strict: nothing of it
+// is run; the request completes, not failed, saying so): a flag that is
+// none, or a value its flag does not take; a rewrite on a command that
+// passes its words on (it is not the last), a rewrite whose protocol is not
+// here, more than one rewrite. -> the reasons; [] when none
+export function problems (form, protocols = {}) {
+  const why = sorted(form?.flags).ignored.map(i => i.why)
+  const found = rewrites(form?.flags)
+  if (found.length > 1) why.push(`one rewrite at a time: ${found.map(([flag]) => flag).join(', ')}`)
+  for (const [flag, f] of found) {
+    if (passesOn(form, protocols)) why.push(`${flag}: on the last command only (it rewrites the command it is on)`)
+    else if (!protocols?.[f.protocol]) why.push(`${flag}: no protocol ${f.protocol} here`)
+  }
+  return why
+}
+
+// A rewrite flag applied (when nothing keeps the command from being run):
+// the command it is on becomes the request its flag says, before the door,
+// which checks the rewritten one; the flag gone from it; `rewritten` says
+// which. The command stays in the form as typed. rewrite(form, value): the
+// flag's value given with the form (a tail flag's: its text).
+function rewritten (form, protocols) {
+  const found = rewrites(form.flags)
+  if (!found.length || problems(form, protocols).length) return form
+  const [flag, f] = found[0]
+  const { [flag]: gone, ...rest } = form.flags
+  const { flags, ...plain } = form
+  return { ...plain, ...f.rewrite(form, form.flags[flag]), ...(Object.keys(rest).length ? { flags: rest } : {}), rewritten: flag }
 }
 
 // main is the default layer of a request that stands there: a flag changes

@@ -2,6 +2,7 @@
 // mrepo's info layer: its pages addressed by keywords, from the top down
 // (README.md beside it).
 import { posix } from 'bare-path'
+import { registry } from 'mycelium-value-avro'
 
 // The layer the pages are extracted into.
 export const LAYER = 'info'
@@ -10,7 +11,7 @@ export const MENU = 'Links'
 export const INCLUDED = 'Included packages'
 // The top keyword; the two pages made at extraction.
 export const TOP = '.'
-export const GENERATED = ['modules', 'third-party']
+export const GENERATED = ['modules', 'third-party', 'schemas']
 
 // The first sentence: up to the first full stop followed by a space or the
 // end, outside code spans (`package.json`).
@@ -86,7 +87,7 @@ export function check (text) {
   const words = r.summary.split('\n').filter(l => !l.trim().startsWith('|')).join(' ').split(/\s+/).filter(Boolean).length
   if (words > 100) out.push(['summary', `${words} words`])
   for (const s of r.sections) if (!/^`?[\w.-]+`?$/.test(s.title) && (s.title.split(/\s+/).length > 3 || /[:;,.()`]/.test(s.title))) out.push(['sections', s.title])
-  const transient = String(text).match(/(?<![\w/-])(docs\/(design|guides|rules|readme)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*/gi) ?? []
+  const transient = String(text).match(/(?<![\w/-])(docs\/(design|guides|rules|readme)|steps\/\d)[\w./-]*|[\w.-]*dev-env-\d[\w.-]*|\bdev(?:elopment)?[ -]repo(?:sitor(?:y|ies))?\b/gi) ?? []
   if (transient.length) out.push(['transient', [...new Set(transient)].join(', ')])
   if (r.table.length) out.push(['menu', 'links, not a menu (## Links)'])
   if (r.menu && r.first !== MENU) out.push(['menu', `## ${MENU} is not its first section`])
@@ -95,6 +96,14 @@ export function check (text) {
 
 // A module's place: /modules/<org>/<module>/... -> { module, rest }.
 const moduleOf = path => { const m = path.match(/^\/modules\/([^/]+)\/([^/]+)(\/.*)$/); return m && m[1] !== 'node_modules' ? { module: `${m[1]}/${m[2]}`, rest: m[3] } : null }
+// A schema as a row: its URI (its name's), its fingerprint, its fields;
+// named types it refers to found among those read before it.
+function schemaRow (schema, reg) {
+  const { fingerprint, uri } = reg.add(schema)
+  const t = reg.type(fingerprint)
+  const fields = (t.underlyingType ?? t).fields?.map(f => `\`${f.name}\``).join(', ') ?? `\`${JSON.stringify(t.schema())}\``
+  return { fingerprint, uri, name: (t.underlyingType ?? t).name ?? null, fields }
+}
 const family = name => name.split('-').slice(0, name.startsWith('mrepo-') || name.startsWith('pkgm-') ? 2 : 1).join('-')
 
 // The info layer from an mrepo's packages, in deploy order, the mrepo's
@@ -108,6 +117,8 @@ const family = name => name.split('-').slice(0, name.startsWith('mrepo-') || nam
 // keyword?, page?, check, detail }]).
 export function extract (packages, { alone = false } = {}) {
   const out = {}
+  // (the schemas read, in memory: what each is)
+  const reg = registry()
   const index = {}
   const problems = []
   const byName = Object.fromEntries(packages.map(p => [p.pkg.split('/').pop(), p]))
@@ -243,6 +254,25 @@ export function extract (packages, { alone = false } = {}) {
   if (head) {
     below(head, 'third-party')
     choose('third-party', { page: 'third-party/README.md', oneliner: 'The third-party code in this mrepo\'s packages, each module once.', below: [], generated: true })
+  }
+  // schemas: each once, by its URI, from the packages' schemas (their own,
+  // their modules'): its fingerprint, its fields, who carries it
+  const schemas = {}
+  for (const p of packages) {
+    for (const [path, b] of Object.entries(p.files)) {
+      if (!/^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/.test(path)) continue
+      let row
+      // catch: not a schema: a problem, said with where
+      try { row = schemaRow(JSON.parse(b.toString()), reg) } catch (err) { problems.push({ page: `packages/${p.pkg}${path}`, check: 'schema', detail: err.message }); continue }
+      const e = schemas[row.fingerprint] ??= { ...row, packages: [] }
+      e.packages.push(p.pkg.split('/').pop())
+    }
+  }
+  const srows = Object.values(schemas).sort((a, b) => String(a.uri) < String(b.uri) ? -1 : 1)
+  out['/schemas/README.md'] = Buffer.from(`# schemas\n\nThe schemas this mrepo's packages carry, each once, by its URI and its fingerprint.\n\nGenerated at extraction from the packages' \`schemas/\` and their modules'. A binary record names its schema by its fingerprint (\`mycelium-value-avro\`): this says what each is; \`crud/read\` decodes one.\n\n## Schemas\n\n| schema | fingerprint | fields | carried by |\n|---|---|---|---|\n${srows.map(e => `| \`${e.uri ?? e.name}\` | \`${e.fingerprint}\` | ${e.fields} | ${e.packages.length} packages |`).join('\n')}\n`)
+  if (head) {
+    below(head, 'schemas')
+    choose('schemas', { page: 'schemas/README.md', oneliner: 'The schemas this mrepo\'s packages carry, each once, by its URI and its fingerprint.', below: [], generated: true })
   }
   // every README of a package reached from the top, or from its module's
   for (const p of packages) {
