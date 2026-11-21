@@ -98,15 +98,14 @@ export function problems (form, protocols = {}) {
 // A rewrite flag applied (when nothing keeps the command from being run):
 // the command it is on becomes the request its flag says, before the door,
 // which checks the rewritten one; the flag gone from it; `rewritten` says
-// which. The command stays in the form as typed. rewrite(form, value): the
-// flag's value given with the form (a tail flag's: its text).
+// which. The command stays in the form as typed.
 function rewritten (form, protocols) {
   const found = rewrites(form.flags)
   if (!found.length || problems(form, protocols).length) return form
   const [flag, f] = found[0]
   const { [flag]: gone, ...rest } = form.flags
   const { flags, ...plain } = form
-  return { ...plain, ...f.rewrite(form, form.flags[flag]), ...(Object.keys(rest).length ? { flags: rest } : {}), rewritten: flag }
+  return { ...plain, ...f.rewrite(form), ...(Object.keys(rest).length ? { flags: rest } : {}), rewritten: flag }
 }
 
 // main is the default layer of a request that stands there: a flag changes

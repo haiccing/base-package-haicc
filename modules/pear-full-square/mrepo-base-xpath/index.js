@@ -4,7 +4,7 @@
 //               shortcut: where a node's sources are recorded and where
 //               they lead (the links layer; the boot mrepo's registry):
 //               shortcutOf, shortcutsAt, linkOf, linked, linkPath,
-//               registryOf, swarmOf, namespaceOf, uriOf, IDENTITY, SHORTCUTS, LINKS,
+//               registryOf, swarmOf, uriOf, IDENTITY, SHORTCUTS, LINKS,
 //               REGISTRY, LOCAL, NODE, MAIN
 export { query } from './internal/query/index.js'
-export { shortcutOf, shortcutsAt, linkOf, linked, linkPath, registryOf, swarmOf, namespaceOf, uriOf, IDENTITY, SHORTCUTS, LINKS, REGISTRY, LOCAL, NODE, MAIN } from './internal/shortcut/index.js'
+export { shortcutOf, shortcutsAt, linkOf, linked, linkPath, registryOf, swarmOf, uriOf, IDENTITY, SHORTCUTS, LINKS, REGISTRY, LOCAL, NODE, MAIN } from './internal/shortcut/index.js'

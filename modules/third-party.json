@@ -1,8 +1,5 @@
 {
-  "platforms": [
-    "linux-x64",
-    "linux-arm64"
-  ],
+  "platform": "linux-x64",
   "omitted": [
     "bare-cov"
   ],
@@ -34,13 +31,6 @@
       "license": "MIT",
       "resolved": "https://registry.npmjs.org/available-typed-arrays/-/available-typed-arrays-1.0.7.tgz",
       "integrity": "sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ=="
-    },
-    {
-      "name": "avsc",
-      "version": "5.8.0",
-      "license": "MIT",
-      "resolved": "git+ssh://git@github.com/bare-for-pear/avsc.git#deedf716c9d529dfaac38de4676ab3cba2073468",
-      "integrity": null
     },
     {
       "name": "b4a",

@@ -34,12 +34,10 @@ the link's record, by the key the shortcut names:
 
 ## Unique URIs
 
-Every mrepo has a unique URI, a path, `<namespace>/<name>`, in its
-runtime layer (`/runtime/mrepo.json`). What the boot mrepo creates is
-`local/<name>`: `local/host`; `local` is the namespace of what is in
-none. A swarm's node, deployed at `swarms/<swarm>/<name>`, is
-`<swarm>/<name>`; a how-to's mrepo, below a `howtos` node, the path
-below it (`haiccing/base-package-crud/howto/query/boot`). A shortcut
+Every mrepo has a unique URI, `<swarm>/<node>`, in its runtime layer
+(`/runtime/mrepo.json`). What the boot mrepo creates is `local/<name>`:
+`local/host`; `local` is the swarm of what is in none. A swarm's node,
+deployed at `swarms/<swarm>/<name>`, is `<swarm>/<name>`. A shortcut
 names the mrepo it leads to by that URI.
 
 ## Tests

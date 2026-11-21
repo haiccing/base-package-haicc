@@ -44,7 +44,7 @@ export function sorted (written = {}) {
   for (const [flag, value] of Object.entries(written ?? {})) {
     const spec = Object.hasOwn(FLAGS, flag) ? FLAGS[flag].values : undefined
     if (spec === undefined) ignored.push({ flag, value, why: `no flag: ${flag} (${Object.keys(FLAGS).sort().join(', ')})` })
-    else if (spec === null ? value !== true : !takes(spec, value)) ignored.push({ flag, value, why: spec === null ? `${flag} takes no value` : FLAGS[flag].tail ? `${flag}: its text follows it (${WORD} ${flag} <text>)` : `${flag}=${value === true ? '' : value}: not ${Array.isArray(spec) ? `one of ${spec.join(', ')}` : 'a value it takes'}` })
+    else if (spec === null ? value !== true : !takes(spec, value)) ignored.push({ flag, value, why: spec === null ? `${flag} takes no value` : `${flag}=${value === true ? '' : value}: not ${Array.isArray(spec) ? `one of ${spec.join(', ')}` : 'a value it takes'}` })
     else flags[flag] = value
   }
   return { flags, ignored }
@@ -71,25 +71,10 @@ export const rewrites = (flags = {}) => Object.keys(flags ?? {}).filter(flag => 
 //                              left as written: a list among them is its
 //                              own
 // -> { parts, flags, listed: whether a list was written }
-//   a tail flag (feedback)     every word after it is its value, joined
-//                              by spaces, to the end of the command (a --
-//                              among them too); after the URI of a command
-//                              that passes on, to the -- that closes the
-//                              list: written there, it is not the last
 export function split (parts, { command = false } = {}) {
   const i = command ? ([1, 2].find(k => parts[k] === WORD) ?? -1) : parts.indexOf(WORD, 1)
   if (i < 0) return { parts, flags: {}, listed: false }
   const end = parts.indexOf(END, i)
   const to = end < 0 ? parts.length : end
-  const k = parts.slice(i + 1, to).findIndex(isTail)
-  if (k < 0) return { parts: [...parts.slice(0, i), ...parts.slice(to + 1)], flags: flagsOf(parts.slice(i + 1, to)), listed: true }
-  // the tail: its text, from the word after it (or its own value, written key=value)
-  const at = i + 1 + k
-  const last = command ? to : parts.length
-  const [flag, ...own] = parts[at].split('=')
-  const text = [...(own.length ? [own.join('=')] : []), ...parts.slice(at + 1, last)].join(' ').trim()
-  return { parts: [...parts.slice(0, i), ...(command ? parts.slice(to + 1) : [])], flags: { ...flagsOf(parts.slice(i + 1, at)), [flag]: text || true }, listed: true }
+  return { parts: [...parts.slice(0, i), ...parts.slice(to + 1)], flags: flagsOf(parts.slice(i + 1, to)), listed: true }
 }
-
-// A word that is a tail flag: every word after it its value.
-const isTail = word => { const flag = word.split('=')[0]; return Object.hasOwn(FLAGS, flag) && FLAGS[flag].tail === true }

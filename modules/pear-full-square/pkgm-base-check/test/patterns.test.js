@@ -22,8 +22,6 @@ test('patterns: read from a package\'s files; a program started by a hook; a pla
     t.alike(patternsOf(component), ['package', 'component', 'mrepo-definition', 'service', 'continuation-script'], 'a component: its list, a service, a script')
     t.alike(patternsOf(docs), ['package', 'documentation-package'], 'a documentation package: its layers are pages, not a layer it brings')
     t.alike(patternsOf(app), ['package', 'app'])
-    const solution = tree({ 'package.json': {}, 'mrepo/packages/layer.json': {}, 'scripts/solution.haicc': 'boot/deploy host haiccing/base-component-haicc\n' }); made.push(solution)
-    t.alike(patternsOf(solution), ['package', 'component', 'mrepo-definition', 'continuation-script', 'solution'], 'a solution: a list and its script, solution')
     // a platform declaring its organisation; a component of it, its hooks starting its renderer
     const org = tree({ 'haiccing/p/package.json': { platform: 'splectral' }, 'haiccing/p/protocol.js': '', 'splectral/c/package.json': {}, 'splectral/c/mrepo/packages/layer.json': {}, 'splectral/c/mrepo/runtime/hooks/start.haicc': '# start\nruntime/start . a/b\n' }); made.push(org)
     const platforms = platformsOf([join(org, 'haiccing', 'p'), join(org, 'splectral', 'c')])

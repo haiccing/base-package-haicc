@@ -7,10 +7,8 @@ import { ROOT } from 'mycelium-uri'
 // The layer positions are in: where the outside stands.
 export const MAIN = 'main'
 
-// An mrepo's identity, in its runtime layer: { uri }, its unique URI, a
-// path from its namespace down: <swarm>/<node>, a how-to's
-// <org>/<package>/howto/<name>/<mrepo> (local/<name> for what the boot
-// mrepo creates).
+// An mrepo's identity, in its runtime layer: { uri }, its unique URI,
+// <swarm>/<node> (local/<name> for what the boot mrepo creates).
 export const IDENTITY = '/runtime/mrepo.json'
 
 // A position's shortcuts, in main beside the node's document, hidden (a
@@ -63,13 +61,9 @@ export const registryOf = uri => `${MAIN}/${REGISTRY}/${uri}`
 export const LOCAL = 'local'
 export const swarmOf = uri => (typeof uri === 'string' && uri.includes('/') ? uri.split('/')[0] : LOCAL)
 
-// The namespace of a unique URI: all of it but its name, a path (a swarm,
-// a how-to's org/package/howto/name); local when it has none.
-export const namespaceOf = uri => (typeof uri === 'string' && uri.includes('/') ? uri.slice(0, uri.lastIndexOf('/')) : LOCAL)
-
 // The unique URI of an mrepo linked at a name, by the mrepo that links it:
-// in the same namespace.
-export const uriOf = (parent, name) => `${namespaceOf(parent)}/${name}`
+// in the same swarm.
+export const uriOf = (parent, name) => `${swarmOf(parent)}/${name}`
 
 // A shortcut as a command is sent on to it: its entry (the first source:
 // one in use for now) and where it leads on this machine, read from its

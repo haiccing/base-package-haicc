@@ -36,10 +36,7 @@ haicc host info/extract
 - **Several meanings**: a keyword may reach more than one page; `get`
   answers each, a choice.
 - **Made here**: `modules`, every module once, by its full name;
-  `third-party`, from the packages' `third-party.json`; `schemas`, every
-  schema the packages carry once (their `schemas/`, their modules'), by
-  its URI, its fingerprint and its fields: what a binary record's
-  fingerprint names (`crud/read` decodes one).
+  `third-party`, from the packages' `third-party.json`.
 
 ## Rules
 

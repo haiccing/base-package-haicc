@@ -15,7 +15,6 @@ module's test fails for a folder not listed).
 - [continuation](continuation/)
 - [container](container/)
 - [help](help/)
-- [feedback](feedback/)
 
 ## A declaration
 
@@ -28,17 +27,13 @@ module's test fails for a folder not listed).
   last command of a chain only: a rewrite).
 - `values`: a list, a pattern its value is written to, or `null` (it
   stands alone).
-- `tail`: every word after it, to the end of the command, is its value,
-  joined by spaces (a `--` among them too): the last flag written. On a
-  command that passes its words on, its `--` still closes it.
 - A rewrite: `protocol`, the protocol its command becomes a request of,
-  and `rewrite(form, value)`, the form it becomes.
+  and `rewrite(form)`, the form it becomes.
 
 ## Strict
 
-A flag that is not one, a value its flag does not take (a tail flag
-with no text after it), a rewrite on a command that is not the last, a
-rewrite whose protocol is not here, more than one rewrite:
+A flag that is not one, a value its flag does not take, a rewrite on a
+command that is not the last, a rewrite whose protocol is not here:
 nothing of the command is executed. The request completes, not failed:
 its output `{ run: false, command, why }`, the reasons, each a warning
 in its log (`request.flag`). The `haicc` command exits 1 for it.

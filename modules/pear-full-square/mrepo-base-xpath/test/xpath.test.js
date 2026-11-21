@@ -1,7 +1,7 @@
 // A URI resolved on a context written here: its files by path, read as a
 // repository's tree would be.
 import test from 'brittle'
-import { query, NODE, shortcutOf, shortcutsAt, linkOf, linked, linkPath, registryOf, swarmOf, namespaceOf, uriOf, IDENTITY, SHORTCUTS, LINKS, REGISTRY, MAIN } from '../index.js'
+import { query, NODE, shortcutOf, shortcutsAt, linkOf, linked, linkPath, registryOf, swarmOf, uriOf, IDENTITY, SHORTCUTS, LINKS, REGISTRY, MAIN } from '../index.js'
 
 // (an execution context standing in: the tree, a node its path here; a
 // file that may not be there; the log, kept; a step run as it is)
@@ -116,7 +116,4 @@ test('the paths: a shortcut\'s entry, a link\'s record, the registry\'s node, th
   t.is(swarmOf('boot'), 'local', 'no swarm: local')
   t.is(uriOf('local/boot', 'host'), 'local/host', 'what the boot mrepo creates: local/<name>')
   t.is(uriOf('swarm-1/node-1', 'x'), 'swarm-1/x')
-  t.is(namespaceOf('haiccing/base-package-crud/howto/query/boot'), 'haiccing/base-package-crud/howto/query', 'a namespace a path: all but the name')
-  t.is(namespaceOf('boot'), 'local', 'no namespace: local')
-  t.is(uriOf('haiccing/base-package-crud/howto/query/boot', 'host'), 'haiccing/base-package-crud/howto/query/host', 'what a how-to\'s boot deploys: beside it, in its namespace')
 })

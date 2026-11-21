@@ -10,9 +10,7 @@ import { fileURLToPath } from 'bare-url'
 import { extract } from '../internal/info/index.js'
 
 const root = join(dirname(fileURLToPath(import.meta.url)), '..', '..', '..', '..')
-// (a schema a package carries: its own, its modules')
-const SCHEMA = /^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/
-const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k)
+const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/layer.json' || k === '/modules/third-party.json'
 
 function files (dir, at = '') {
   return readdirSync(join(dir, at)).sort().flatMap(n => {
