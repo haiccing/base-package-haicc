@@ -88,15 +88,23 @@ export async function instantiate () {
     fs.writeFileSync(path.join(dir, key), b.read(key))
   }
   const platform = `${os.platform()}-${os.arch()}`
+  // an addon resolved for several platforms: a condition each (its os, its
+  // arch), this one chosen, as Bare chooses when it runs the bundle
+  const pick = v => {
+    if (typeof v === 'string' || !v) return v || null
+    for (const [k, w] of Object.entries(v)) if (k === os.platform() || k === os.arch() || k === 'default') { const r = pick(w); if (r) return r }
+    return null
+  }
   for (const [from, map] of Object.entries(b.resolutions)) {
     for (const to of Object.values(map)) {
-      if (!to?.addon || !from.startsWith('/modules/node_modules/')) continue
+      const addon = pick(to?.addon)
+      if (!addon || !from.startsWith('/modules/node_modules/')) continue
       const parts = from.slice('/modules/node_modules/'.length).split('/')
       const pkg = parts[0].startsWith('@') ? parts.slice(0, 2).join('/') : parts[0]
       const name = JSON.parse(b.read(`/modules/node_modules/${pkg}/package.json`)).name.replace('/', '+')
       const target = path.join(dir, 'modules', 'node_modules', pkg, 'prebuilds', platform, `${name}.bare`)
       fs.mkdirSync(path.dirname(target), { recursive: true })
-      fs.copyFileSync(path.join(path.dirname(file), to.addon.replace(/^\/\.\.\//, '')), target)
+      fs.copyFileSync(path.join(path.dirname(file), addon.replace(/^\/\.\.\//, '')), target)
     }
   }
   const mods = path.join(dir, 'modules')

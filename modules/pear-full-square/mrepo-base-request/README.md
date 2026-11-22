@@ -70,8 +70,9 @@ setting.
   an action that passes its words on (its config: `command: true`) the
   list is that step's and the next command starts after the `--` that
   closes it. A list is closed by `--` or by the end of the command,
-  nothing else: every word in between is a flag. The next command's
-  words are left as written.
+  nothing else: every word in between is a flag, but a tail flag's
+  (`feedback`): every word after it, to the end of the command, is its
+  text. The next command's words are left as written.
   `layer=<name>`: the layer the command's own URI is read at, `main`
   by default (`LAYER`, `layerOf`, `layerFor`); the URI of an action that
   passes on stays in `main`, a position.
@@ -79,13 +80,15 @@ setting.
   kind, its scope, the values it takes (`log`: `info`, `verbose`,
   `debug`); `sorted(flags)`: those, and the others, each with why.
   **Strict** (`problems(form, protocols)`): a flag that is none, a value
-  its flag does not take, a rewrite on a command that is not the last or
-  whose protocol is not here: nothing of the command is run; at the door
+  its flag does not take (a tail flag with no text), a rewrite on a
+  command that is not the last or whose protocol is not here, more than
+  one rewrite: nothing of the command is run; at the door
   the request completes, not failed, its output `{ run: false, command,
   why }` (`notRun`), each reason a warning in its log. **A rewrite**
-  (`help`): the command it is on becomes another request before the
-  door, which checks the rewritten one (`rewritten` in the form says
-  which flag).
+  (`help`, `feedback`): the command it is on becomes another request
+  before the door, which checks the rewritten one (`rewritten` in the
+  form says which flag): `help` makes it `help/annotate`, `feedback`
+  `haici/feedback`, at the same URI.
 - **A request's URI is relative**: no leading slash, as written where
   its writer stands. `.` is the position itself, and so is none given;
   `./x` is `x`. From outside the writer stands at `main` (`MAIN`), so the
