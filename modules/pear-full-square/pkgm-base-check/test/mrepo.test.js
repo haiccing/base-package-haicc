@@ -102,7 +102,7 @@ test('hooks: in their place, on a transition, each a command', (t) => {
     })
     t.alike(checkStructure(d).map(p => p.detail).sort(), [
       'mrepo/runtime/hooks/initialise.haicc: not a command: Not A Command (<protocol>/<action> <URI> <arguments>)',
-      'mrepo/runtime/hooks/reboot.haicc: no transition reboot (boot, initialise, start, stop, shutdown)',
+      'mrepo/runtime/hooks/reboot.haicc: no transition reboot (boot, commission, initialise, start, stop, shutdown, decommission)',
       'mrepo/runtime/hooks/shutdown.haicc: no command in it',
       'mrepo/runtime/hooks/start/x.haicc: not a hook\'s place (hooks/<transition>.haicc, a file a transition)',
       'mrepo/runtime/hooks/stop.json: not a hook\'s place (hooks/<transition>.haicc, a file a transition)'

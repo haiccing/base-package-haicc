@@ -40,14 +40,21 @@ The command that follows, its parts: `<protocol>/<action> <URI>
 
 - No command follows: `missing argument: command`.
 - The URI is not in `main`.
-- A position named that is not there: `no node there`. One that is no
-  position: a file, a value inside a document.
+- A position named that is not there: `no node there`; in an mrepo
+  that dispatches, also `no node of the swarm by that unique URI`. One
+  that is no position: a file, a value inside a document.
 - A URI that reaches a shortcut among other positions, or several: `not
   yet`. A command goes on from one shortcut at a time: a known issue,
   resolved when the query has its union.
 - Those of the command itself. One position failing fails the request.
 
 ## Design
+
+- **A node of the swarm, by its unique URI**: a URI that is no position
+  here and has a swarm and a name (`swarm-1/node-2`) is handed to
+  `dispatch/send`, where the mrepo has the `dispatch` protocol active: a
+  swarm's node. It is routed to that node directly, resolved by the
+  node's `rns`; what follows the unique URI goes on with the command.
 
 - **At a shortcut** the command is sent on: the hop takes its own
   `haicc <URI>` off. Where the URI runs on through the shortcut, what is

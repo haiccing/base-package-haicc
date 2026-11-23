@@ -36,6 +36,13 @@
       "integrity": "sha512-wvUjBtSGN7+7SjNpq/9M2Tg350UZD3q62IFZLbRAR1bSMlCo1ZaeW+BJ+D090e4hIIZLBcTDWe4Mh4jvUDajzQ=="
     },
     {
+      "name": "avsc",
+      "version": "5.8.0",
+      "license": "MIT",
+      "resolved": "git+ssh://git@github.com/bare-for-pear/avsc.git#deedf716c9d529dfaac38de4676ab3cba2073468",
+      "integrity": null
+    },
+    {
       "name": "b4a",
       "version": "1.9.0",
       "license": "Apache-2.0",

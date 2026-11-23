@@ -13,6 +13,7 @@ linked in it.
 
 - [goto](modules/pear-full-square/mrepo-base-haicc/external/goto/)
 - [script](modules/pear-full-square/mrepo-base-haicc/external/script/)
+- [mrepos](modules/pear-full-square/mrepo-base-haicc/external/mrepos/)
 - [howto](howto/)
 - [test](test/)
 - [test-reports](test-reports/)
@@ -28,6 +29,13 @@ executed.
 |---|---|---|
 | `goto`, the default: `haicc` alone | any position (`**`) | the command that follows, passed on as written |
 | `script` | any position (`**`): where its lines run | the lines, one argument |
+| `mrepos` | an xpath where the URI is (`**`), none: every one | none |
+
+`mrepos`: the install's registry, the work folder's `mrepos/`, consulted
+read only: each mrepo `{ uri, position, package, running }`, its
+position from the mrepo asked through the links, forward only (`haicc .
+haicc/mrepos local/docs`, `haicc . haicc/mrepos "local/*"`). Nothing is
+routed: the position is what a command names next.
 
 `command: true`: the words after its URI are a command, so a flag list
 among them is that command's, not goto's. `haicc/file <URI> <name>` is

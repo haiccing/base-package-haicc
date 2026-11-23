@@ -48,11 +48,12 @@ The shortcut as a command is sent on to it:
 - `LINKS`: `links`, the layer. `linkPath(key)`: a link's record there,
   `links/<key>.json`. `linked(exec, key)`: the record, `null` when
   there is none. `NODE`: `.node.json`.
-- `REGISTRY`: `registry`, the position of the mrepo registry in the
-  boot mrepo's `main`. `registryOf(uri)`: an mrepo's node there,
-  `main/registry/<swarm>/<name>`.
 - `IDENTITY`: `/runtime/mrepo.json`, an mrepo's own `{ uri }`.
-- `swarmOf(uri)`: the swarm of a unique URI, `local` when it has none.
-  `LOCAL`: `local`, the swarm of the mrepos in no swarm.
+- `swarmOf(uri)`: the swarm of a unique URI, its first segment, `local`
+  when it has none. `LOCAL`: `local`, the namespace of the mrepos in
+  none.
+- `namespaceOf(uri)`: the namespace of a unique URI, a path: all of it
+  but its name (`swarm-1`, `haiccing/base-package-crud/howto/query`),
+  `local` when it has none.
 - `uriOf(parent, name)`: the unique URI of an mrepo linked at a name, in
-  its parent's swarm.
+  its parent's namespace.

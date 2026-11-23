@@ -3,12 +3,18 @@
 //   /runtime/hooks/<transition>.haicc     lines, each a simple command,
 //                                         run where the mrepo is (`.`)
 //   boot                                 run by the runtime as it starts
+//   commission                           run by the runtime as it starts,
+//                                        after boot: once, its deploy
+//                                        waiting for it (the runtime starts
+//                                        at a deploy only)
 //   initialise, start, stop, shutdown    run by the service, each as it
 //                                        makes that transition
+//   decommission                         run at a teardown's start, before
+//                                        the runtime is stopped
 // Run through the mrepo's own inbox (lines.js), each line its own request.
 //   hookOf(reader, transition) -> its text, null when there is none
 //       reader: what reads the mrepo ({ find }: an execution; or { read })
-export const TRANSITIONS = ['boot', 'initialise', 'start', 'stop', 'shutdown']
+export const TRANSITIONS = ['boot', 'commission', 'initialise', 'start', 'stop', 'shutdown', 'decommission']
 export const HOOKS = '/runtime/hooks'
 export const hookAt = transition => `${HOOKS}/${transition}.haicc`
 

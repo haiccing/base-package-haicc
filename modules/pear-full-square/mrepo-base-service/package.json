@@ -1,0 +1,14 @@
+{
+  "name": "mrepo-base-service",
+  "version": "0.1.0",
+  "description": "Module: the mrepo service protocol, the service state and its actions.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "brittle": "4.5.0"
+  }
+}

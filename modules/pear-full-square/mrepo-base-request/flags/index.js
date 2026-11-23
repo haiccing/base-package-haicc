@@ -3,9 +3,8 @@
 // module's test; lib/flags.js reads the declarations and names no flag.
 import log from './log/index.js'
 import layer from './layer/index.js'
-import continuation from './continuation/index.js'
 import container from './container/index.js'
 import help from './help/index.js'
 import feedback from './feedback/index.js'
 
-export const FLAGS = { log, layer, continuation, container, help, feedback }
+export const FLAGS = { log, layer, container, help, feedback }

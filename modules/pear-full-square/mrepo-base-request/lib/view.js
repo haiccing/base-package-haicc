@@ -13,6 +13,9 @@ import { join } from 'bare-path'
 import { existsSync, readFileSync } from 'bare-fs'
 
 export const MREPOS = 'mrepos'
+// The install's scripts, in its work folder: a package's, placed by its
+// deploy, at scripts/<org>/<package>/<name>.haicc; the user's by name.
+export const SCRIPTS = 'scripts'
 export const SETTING = 'mrepo.json'
 export const viewOf = (work, name) => join(work, MREPOS, name)
 export const gitdirOf = (work, name) => join(viewOf(work, name), '.git')

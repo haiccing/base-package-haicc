@@ -11,4 +11,5 @@ The parts of mrepo-base-request, a file each, imported by its `index.js`.
 | `hooks.js` | Hooks: the commands an mrepo runs on a status transition, as files its defining package dropped into its runtime layer, one folder a transition. |
 | `layer.js` | Records in a layer of the repository (a git branch): one JSON document a record, at the branch's root, `<name>.json.` |
 | `record.js` | A record: the base's minimum, { topic, timestamp, headers, value }; the headers left empty for now (their use to be planned). |
+| `typed.js` | A request record as AVRO, the cascade: the record (mycelium's), its value the form completed (`schemas/request.json`), in that its arguments and its output, the action's own when given, else `json`; a node's log, a record each (`logHandler`). |
 | `view.js` | A repository's folder: `<work>/mrepos/<name>/`, its git on disk (.git), and a layer's files at the path of its URI (/inbox at `<work>/mrepos/<name>/inbox).` |

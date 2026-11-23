@@ -12,7 +12,6 @@ module's test fails for a folder not listed).
 
 - [log](log/)
 - [layer](layer/)
-- [continuation](continuation/)
 - [container](container/)
 - [help](help/)
 - [feedback](feedback/)
@@ -20,7 +19,7 @@ module's test fails for a folder not listed).
 ## A declaration
 
 - `kind`: `modifier` (how the request is handled: its log), `option`
-  (what an action is asked to do differently: a layer, a script, a
+  (what an action is asked to do differently: a layer, a
   container), `rewrite` (the command it is on becomes another before
   the door: the door checks the rewritten one).
 - `scope`: `chain` (holds down a chain until changed: a command sent on

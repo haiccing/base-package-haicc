@@ -11,8 +11,9 @@ keeps what is executed here and what is sent on.
 - **What it provides**: one protocol, `haicc`, with a function for every
   action configured and no other.
 - **Its config, value by value**: `goto`, the default action, at any
-  position, its one argument the command that follows; no state, no
-  target: it is not behind the service's door.
+  position, its one argument the command that follows; `script`;
+  `mrepos`, its xpath where the URI is; no state, no target: it is not
+  behind the service's door.
 - **`goto` at the root**: the command that follows executed here, once,
   as it was given, its value returned.
 - **`goto` at a position inside `main`**: the command executed there,
@@ -26,6 +27,8 @@ keeps what is executed here and what is sent on.
 - **What it refuses**: no command, a position that is not there or is a
   file, a shortcut beside other positions, a URI that is not canonical
   or not in `main`. A refusal executes and sends nothing.
+- **`mrepos`**: the install's registry consulted, read only: an empty
+  one, no mrepos; no work folder, said.
 - **Nothing forgotten**: the last test fails when the config names an
   action that was not run here, or one that wrote nothing into the
   request's log as it ran.

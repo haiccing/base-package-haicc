@@ -4,6 +4,9 @@
 // here and what it sends on, kept. No mrepo is built. Every action the
 // config names must be run here: the last test fails when one was left out.
 import test from '../../modules/node_modules/brittle/index.js'
+import { mkdtempSync, rmSync } from '../../modules/node_modules/bare-fs/index.js'
+import { join } from '../../modules/node_modules/bare-path/index.js'
+import { tmpdir } from '../../modules/node_modules/bare-os/index.js'
 import * as mounted from '../../protocol.js'
 
 const ran = new Set()
@@ -56,13 +59,14 @@ test('what it provides: one protocol, haicc, its config and its action', (t) => 
   t.alike(Object.keys(mounted.actions.haicc).sort(), Object.keys(mounted.protocols.haicc.actions).sort(), 'a function for every action configured, and no other')
 })
 
-test('its config, value by value: goto, the default action, at any position; script', (t) => {
+test('its config, value by value: goto, the default action, at any position; script; mrepos', (t) => {
   const cfg = mounted.protocols.haicc
   t.is(cfg.package, 'haiccing/base-package-haicc', 'the package that brings it')
   t.ok(cfg.description, 'its description')
   t.is(cfg.default, 'goto', 'haicc alone is haicc/goto')
   t.alike(Object.keys(cfg).sort(), ['actions', 'default', 'description', 'package'], 'nothing else')
-  t.alike(Object.keys(cfg.actions), ['goto', 'script'], 'two actions')
+  t.alike(Object.keys(cfg.actions), ['goto', 'script', 'mrepos'], 'three actions')
+  t.alike([cfg.actions.mrepos.uris, 'args' in cfg.actions.mrepos], [['**'], false], 'mrepos: its xpath where the URI is, no argument')
   t.alike([cfg.actions.script.uris, cfg.actions.script.args], [['**'], ['script']], 'script at any position, its URI where the lines run: its argument the lines')
   const goto = cfg.actions.goto
   t.alike(goto.uris, ['**'], 'at any position: the root, a shortcut, deeper')
@@ -118,6 +122,17 @@ test('script: the request waits for its lines, run where the URI points; resumed
   t.is(jobs.length, 1, 'a job: its lines through the mrepo\'s own inbox')
   t.alike(await act('script', { ...waiting, resumed: { output: [{ line: 'service/start', output: 1 }] } }, { uri: ['main', '.'], args: ['x'] }), [{ line: 'service/start', output: 1 }], 'resumed: what each line gave')
   await t.exception(act('script', waiting, { uri: ['main', '.'], args: ['# nothing'] }), /missing argument: script/, 'no command among the lines: refused')
+})
+
+test('mrepos: the install\'s registry consulted, read only; none there: an empty list', async (t) => {
+  const work = mkdtempSync(join(tmpdir(), 'haicc-mrepos-'))
+  try {
+    const { exec } = execution(HOST)
+    const here = { ...exec, runtime: { ...exec.runtime, work, uri: 'local/boot' } }
+    t.alike(await act('mrepos', here, { uri: ['main', '.'] }), [], 'an empty registry: no mrepos')
+    t.alike(await act('mrepos', here, { uri: ['main', 'local/docs'] }), [], 'one asked by its unique URI, not there: none')
+    await t.exception(act('mrepos', { ...exec, runtime: { ...exec.runtime, work: null } }, { uri: ['main', '.'] }), /no work folder/, 'no work folder: said')
+  } finally { rmSync(work, { recursive: true, force: true }) }
 })
 
 test('every action the config names was run here', (t) => {

@@ -8,10 +8,11 @@ A README's menus and the old form; the rules; the keywords' form; an mrepo of th
 
 - a README read: its menu, its included packages, its sections; the old form
 - the rules: the README rules, and the menu's form
-- keywords: a word, a section's title, an included package by its name without the prefix
-- extract: the keywords from the top down; a jump, a category, sections; a module once
+- keywords: a word, a section's title, a package by its name without the prefix; in full form, its name fully qualified
+- extract: the keywords from the top down, split on package; a jump, a category, sections; a module once
 - extract: what does not fit is a problem, never resolved silently
-- extract: a package documented beyond the list, at its keyword below the top; the mrepo's own still the last of its list
+- extract: a package documented beyond the list, below its organisation; the mrepo's own still the last of its list
 - the actions: extract writes the layer, get reads it by keywords
-- get: the same page in several packages one choice, its packages all named; pages that differ apart
+- documents: store: every other package in the store documented, below its organisation; extract again adds what is new; clear removes the build
+- get: a short keyword several packages have: a choice each, kept apart, each written in its context
 - the template, extracted from its bundle: its keywords, nothing against its own rules

@@ -1,0 +1,9 @@
+{
+  "type": "record",
+  "name": "pearFullSquare.myceliumValueAvro.json",
+  "logicalType": "json",
+  "doc": "The declared json type: any JSON value (null, boolean, number, string, an array or a map of it), as its JSON text; in memory the value",
+  "fields": [
+    { "name": "text", "type": "string" }
+  ]
+}

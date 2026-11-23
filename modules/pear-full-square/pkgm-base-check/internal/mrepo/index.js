@@ -6,7 +6,7 @@ import { pathToFileURL } from 'bare-url'
 
 const MODES = ['atomic', 'replicated', 'non-atomic']
 // The status transitions a hook can hang on: boot (the runtime's), the rest the service's.
-const TRANSITIONS = ['boot', 'initialise', 'start', 'stop', 'shutdown']
+const TRANSITIONS = ['boot', 'commission', 'initialise', 'start', 'stop', 'shutdown', 'decommission']
 const json = f => JSON.parse(readFileSync(f, 'utf8'))
 
 // The leaves of a structure: each folder holding a layer.json, by its path.

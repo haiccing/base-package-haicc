@@ -1,0 +1,15 @@
+{
+  "name": "p2p-replicate",
+  "id": "370ef936-ebda-4a97-80d3-ff41571baea6",
+  "description": "Replication for the p2p layer: a store over any stream, accounting per peer and resource, holding a resource whole",
+  "type": "module",
+  "exports": "./index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "brittle": "4.5.0",
+    "p2p-store": "*"
+  }
+}

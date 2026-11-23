@@ -1,0 +1,14 @@
+{
+  "name": "mrepo-base-protocol",
+  "version": "0.1.0",
+  "description": "Module: the mrepo protocol protocol, activate and deactivate.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "brittle": "4.5.0"
+  }
+}

@@ -13,7 +13,7 @@ which. One launch of the `haicc` command for all of them.
 ```sh
 # at the host: its lines as if typed after haicc host
 haicc host haicc/script . '
-service/initialise
+service/stop
 service/start
 crud/read .
 '
@@ -45,5 +45,5 @@ haicc scripts
   a package's at `<org>/<package>/<name>.haicc`; read by the terminal,
   sent as `haicc/script`. A name, never a path. The folder is the user's
   to make and fill: nothing installs a package's scripts there yet (a
-  package's own scripts run as a deploy's continuation,
-  `--flags continuation=<name>`).
+  package's own scripts are sent from its folder,
+  `haicc . haicc/script <position> < <its scripts/<name>.haicc>`).

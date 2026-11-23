@@ -3,8 +3,11 @@
 Writes the mrepo's info layer from its linked packages' bundles, replacing what is there.
 
 Each linked package's bundle is read for its READMEs, its `package.json`,
-its list and its third-party record. Run by a hook, where the help is
-extracted.
+its list and its third-party record; where its list documents the store
+(`"documents": "store"`), every other package in the store too, through
+its packages manifest's mapping, read only. Run by a hook, where the
+help is extracted (`initialise`); run again, it adds what is new and
+changes nothing else (idempotent).
 
 ## Signature
 
@@ -20,16 +23,25 @@ What it writes, in the `info` layer:
 
 - each page once: `packages/<org>/<package>/...`,
   `modules/<org>/<module>/...`;
-- `modules/README.md` and `third-party/README.md`, made here;
-- `index.json`: each keyword and its choices, `[{ page, section?, see?,
-  oneliner, below, generated? }]`;
+- split on package: each package's own index beside its pages,
+  `packages/<org>/<package>/index.json`, its short keywords and their
+  choices, `[{ page, section?, see?, oneliner, below, generated? }]`
+  (`.` its README); a package's keywords are its own, kept apart;
+- `index.json`: the mrepo's own keywords: the top, each organisation,
+  `modules`, `third-party`, `schemas`;
+- `packages.json`: the packages, the contexts, `{ oneliner, own?,
+  documented? }`; `keywords.json`: a short keyword and the packages that
+  have it;
+- `modules/README.md`, `third-party/README.md`, `schemas/README.md` and
+  each organisation's page, made here;
 - `problems.json`: `[{ keyword?, page?, check, detail }]`;
 - `layer.json`, when the layer has none.
 
 ## Errors
 
 - A URI that is not the mrepo itself.
-- The packages manifest is no document.
+- The packages manifest is no document; it documents the store and
+  names none.
 
 ## Design
 

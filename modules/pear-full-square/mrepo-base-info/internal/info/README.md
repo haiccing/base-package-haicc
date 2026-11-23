@@ -8,9 +8,14 @@ Reads a README and its menus, checks it against the README rules, and makes an m
   table, first }`.
 - `check(text)`: `[[check, detail]...]`, the README rules and the menu's
   form.
-- `extract(packages, { alone })`: the files of the layer, by path;
-  `alone`, a package on its own, its included packages not there.
-- `keyword(words)`, `packageKeyword(pkg)`: a keyword's form.
+- `extract(packages, { alone })`: the files of the layer, by path,
+  split on package (`external/extract`); `alone`, a package on its own,
+  its included packages not there.
+- `built(exec)`: what an extraction wrote in the layer, as its own
+  documents name it, by path (`external/clear` removes it).
+- `keyword(words)`, `packageKeyword(pkg)`: a keyword's form;
+  `packageKey(pkg)`, a package's keywords in full form, its name
+  fully qualified (`haiccing/base-package-boot`).
 
 ## Arguments
 
@@ -18,7 +23,7 @@ Reads a README and its menus, checks it against the README rules, and makes an m
   `{ pkg, files, paths, documented? }`: its READMEs, `package.json`, list
   and third-party record, by path in its bundle. `documented`: a package
   documented beyond the list (`documents` in it), after the list, walked
-  at its keyword below the top as an included package is.
+  below its organisation as an included package is.
 
 ## Also exported
 
