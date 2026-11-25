@@ -6,5 +6,5 @@
 //               shortcutOf, shortcutsAt, linkOf, linked, linkPath,
 //               swarmOf, namespaceOf, uriOf, IDENTITY, SHORTCUTS, LINKS,
 //               LOCAL, NODE, MAIN
-export { query, readingOf, READING } from './internal/query/index.js'
+export { query } from './internal/query/index.js'
 export { shortcutOf, shortcutsAt, linkOf, linked, linkPath, swarmOf, namespaceOf, uriOf, IDENTITY, SHORTCUTS, LINKS, LOCAL, NODE, MAIN } from './internal/shortcut/index.js'

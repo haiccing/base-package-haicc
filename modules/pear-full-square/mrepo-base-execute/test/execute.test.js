@@ -199,7 +199,7 @@ test('the request\'s log: info unasked (its audit, its metrics), the action\'s e
       // a flag that is not one, or a value its flag does not take, past the door (put straight in execution; at the door it is not run): ignored, with a warning
       const odd = await one({ log: 'loud', nope: true })
       t.is(odd.output, 'logged', 'the request done all the same')
-      t.alike(odd.log.filter(e => e.event === 'request.flag').map(e => [e.level, e.flag, e.ignored]), [['warn', 'log', 'log=loud: not one of info, verbose, debug'], ['warn', 'nope', 'no flag: nope (container, feedback, help, layer, log, logical, physical)']])
+      t.alike(odd.log.filter(e => e.event === 'request.flag').map(e => [e.level, e.flag, e.ignored]), [['warn', 'log', 'log=loud: not one of info, verbose, debug'], ['warn', 'nope', 'no flag: nope (container, feedback, help, layer, log, physical)']])
       t.absent(odd.log.some(e => e.level === 'verbose'), 'at info, the flag ignored')
     })
   } finally { rmSync(work, { recursive: true, force: true }) }

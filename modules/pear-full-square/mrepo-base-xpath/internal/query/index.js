@@ -11,18 +11,6 @@ import { MAIN, SHORTCUTS, NODE, linkOf } from '../shortcut/index.js'
 // reading when none is said); 'logical': a topic as its records, how it is
 // stored hidden.
 export const CONFIG = '.layer.json'
-// An mrepo's setting for it: how its topics are read where a command says
-// nothing: its runtime config /runtime/xpath.json, { "reading": "logical" }
-// (its defining package's); none: physical.
-export const READING = '/runtime/xpath.json'
-// log: none (one read of a setting; the query it is for says how it was read: batch, mode)
-export async function readingOf (exec) {
-  // catch: no setting there: none
-  const bytes = await exec.find(READING).catch(() => null)
-  if (!bytes) return undefined
-  // catch: a setting that does not read: none
-  try { return JSON.parse(bytes.toString()).reading } catch { return undefined }
-}
 // query: a request's URI as its result, the one way an mrepo is queried:
 // an iterator over what it selects in this
 // mrepo (mycelium-xpath's XPathResult under it: a node set, logical; its
