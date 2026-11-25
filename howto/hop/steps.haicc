@@ -1,0 +1,21 @@
+# scene: the host in service, a node in it and a swarm's node beside it, each made ready (its info extracted)
+. boot/deploy host haiccing/base-component-haicc
+host boot/deploy node-1 haiccing/base-component-haicc
+host haicc node-1 service/initialise
+host crud/create swarms/swarm-1 '{"kind":"swarm"}'
+host boot/deploy swarms/swarm-1/node-1 haiccing/base-component-haicc
+host haicc swarms/swarm-1/node-1 service/initialise
+# step: at the host: sent on at its shortcut in the boot mrepo
+host info/get
+# expect: "keyword":"."
+# expect: base-component-haicc
+# step: chained through two shortcuts: the boot mrepo, the host, its node
+host haicc node-1 info/get
+# expect: "keyword":"."
+# step: at a position inside the host, a swarm's node, then on at its shortcut there
+host haicc swarms/swarm-1/node-1 info/get
+# expect: "keyword":"."
+# step: below a shortcut, a URI does not run through: the hop says the way
+. crud/read host/swarms
+# expect: error:
+# expect: haicc host

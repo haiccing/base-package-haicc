@@ -6,4 +6,4 @@
 export { get } from './external/get/index.js'
 export { extractAction } from './external/extract/index.js'
 export { clear } from './external/clear/index.js'
-export { parse, check, extract, keyword, packageKeyword, packageKey, built, LAYER, TOP, MENU, INCLUDED, GENERATED } from './internal/info/index.js'
+export { parse, check, extract, keyword, packageKeyword, packageKey, built, LAYER, TOP, MENU, INCLUDED, GENERATED, WANTED, STEPS, withSteps } from './internal/info/index.js'

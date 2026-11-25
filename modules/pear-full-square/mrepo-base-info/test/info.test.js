@@ -8,7 +8,7 @@ import Bundle from 'bare-bundle'
 import { readFileSync, existsSync, mkdtempSync, mkdirSync, writeFileSync, rmSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { parse, check, extract, keyword, packageKeyword, packageKey } from '../internal/info/index.js'
+import { parse, check, extract, keyword, packageKeyword, packageKey, withSteps, WANTED } from '../internal/info/index.js'
 import { extractAction } from '../external/extract/index.js'
 import { get } from '../external/get/index.js'
 import { clear } from '../external/clear/index.js'
@@ -129,6 +129,18 @@ test('extract: a package documented beyond the list, below its organisation; the
   t.is(idx(out, 'org/base-package-z').test[0].page, 'packages/org/base-package-z/test/README.md', 'walked as an included package is, in its own index')
   t.ok(J(out['/packages.json'])['org/base-package-z'].documented, 'marked documented')
   t.ok(J(out['/problems.json']).some(p => p.page === 'packages/org/base-package-z/lost'), 'its pages checked: one no menu leads to, said')
+})
+
+test('a how-to\'s page with its steps: its ## Steps filled from the script beside it, a fact once', (t) => {
+  const script = '# step: one\n. crud/read .\n# expect: "uri"\n'
+  t.is(withSteps('# a\n\nDoes.\n\n## Steps\n\nIn the script.\n\n## Notes\n\n- n\n', script), '# a\n\nDoes.\n\n## Steps\n\n```haicc\n# step: one\n. crud/read .\n# expect: "uri"\n```\n\n## Notes\n\n- n\n', 'its section\'s text replaced by the script')
+  t.is(withSteps('# a\n\nDoes.\n\n## Notes\n\n- n\n', script), '# a\n\nDoes.\n\n## Steps\n\n```haicc\n# step: one\n. crud/read .\n# expect: "uri"\n```\n\n## Notes\n\n- n\n', 'none: made before the notes')
+  t.is(withSteps('# a\n\nDoes.\n', script), '# a\n\nDoes.\n\n## Steps\n\n```haicc\n# step: one\n. crud/read .\n# expect: "uri"\n```\n', 'nor notes: last')
+  t.ok(WANTED('/howto/x/steps.haicc') && !WANTED('/steps.haicc') && !WANTED('/howto/x/other.haicc'), 'what extraction reads: a how-to\'s script')
+  const files = { '/package.json': Buffer.from('{}'), '/README.md': Buffer.from('# p\n\nA package.\n\n## Links\n\n- [howto](howto/)\n'), '/howto/README.md': Buffer.from('# howto/\n\nIts how-tos.\n\n## Links\n\n- [x](x/)\n'), '/howto/x/README.md': Buffer.from('# x\n\nDoes x.\n\n## Steps\n\nThe script.\n'), '/howto/x/steps.haicc': Buffer.from(script) }
+  const out = extract([{ pkg: 'haiccing/p', files, paths: Object.keys(files) }], { alone: true })
+  t.ok(out['/packages/haiccing/p/howto/x/README.md'].toString().includes('```haicc\n# step: one'), 'extracted: the page in the layer holds its script')
+  t.alike(JSON.parse(out['/problems.json'].toString()), [], 'no problem')
 })
 
 test('the actions: extract writes the layer, get reads it by keywords', async (t) => {

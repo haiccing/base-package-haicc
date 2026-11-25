@@ -9,6 +9,38 @@ export const LAYER = 'info'
 // The two menus: the folders below, the packages an mrepo includes.
 export const MENU = 'Links'
 export const INCLUDED = 'Included packages'
+// What extraction reads of a package's files (its bundle's): its READMEs,
+// its package.json, its list, its third-party code's record, the schemas
+// it carries, and its how-tos' scripts (each at howto/<name>/steps.haicc, beside its page).
+export const STEPS = 'steps.haicc'
+// (a schema a package carries: its own, its modules')
+const SCHEMA = /^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/
+export const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/.layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k) || (k.startsWith('/howto/') && k.endsWith(`/${STEPS}`))
+
+// A how-to's page with its steps: its section ## Steps (made before ##
+// Notes, or last, where it has none) holds the script as it is, a fact
+// once: what the page shows is what a run runs. Any other page as it is.
+export function withSteps (text, script) {
+  const lines = String(text).replace(/\r/g, '').split('\n')
+  let code = false
+  const heads = []
+  lines.forEach((l, i) => { if (l.startsWith('```')) code = !code; else if (!code && l.startsWith('## ')) heads.push([i, l.slice(3).trim()]) })
+  const block = ['## Steps', '', '```haicc', ...String(script).replace(/\r/g, '').replace(/\n+$/, '').split('\n'), '```', '']
+  const at = heads.findIndex(([, t]) => t === 'Steps')
+  if (at !== -1) {
+    const end = heads[at + 1]?.[0] ?? lines.length
+    return [...lines.slice(0, heads[at][0]), ...block, ...lines.slice(end)].join('\n').replace(/\n+$/, '\n')
+  }
+  const notes = heads.find(([, t]) => t === 'Notes')?.[0] ?? null
+  const body = lines.join('\n').replace(/\n+$/, '').split('\n')
+  return (notes === null ? [...body, '', ...block] : [...lines.slice(0, notes), ...block, ...lines.slice(notes)]).join('\n').replace(/\n+$/, '\n')
+}
+// A README's bytes as the layer holds it: a how-to's with its steps.
+const pageOf = (files, path) => {
+  const script = path.startsWith('/howto/') ? files[path.replace(/README\.md$/, STEPS)] : null
+  return script ? Buffer.from(withSteps(Buffer.from(files[path]).toString(), Buffer.from(script).toString())) : Buffer.from(files[path])
+}
+
 // The top keyword; the two pages made at extraction.
 export const TOP = '.'
 export const GENERATED = ['modules', 'third-party', 'schemas']
@@ -152,7 +184,7 @@ export function extract (packages, { alone = false } = {}) {
   const checked = new Set()
   const put = ({ p, path, at }) => {
     if (out[at]) return parse(out[at].toString())
-    out[at] = Buffer.from(p.files[path])
+    out[at] = pageOf(p.files, path)
     const text = out[at].toString()
     if (!checked.has(at)) { checked.add(at); for (const [c, d] of check(text)) problems.push({ page: at.slice(1).replace(/\/README\.md$/, ''), check: c, detail: d }) }
     return parse(text)

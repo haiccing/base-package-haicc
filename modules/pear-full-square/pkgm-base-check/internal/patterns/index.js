@@ -21,6 +21,7 @@ export const PATTERNS = {
   commission: 'mrepo/runtime/hooks/commission.haicc or decommission.haicc: what the mrepo does once deployed (its components deployed, its service brought up) and before its teardown (what it deployed torn down)',
   documents: '"documents": "store" in its list: every package in the install\'s store documented, beyond the list',
   program: 'a hook that starts a placed package\'s program beside the mrepo (runtime/start)',
+  howto: 'howto/<name>/steps.haicc: a how-to runnable, its steps a script beside its page, run where it is installed',
   platform: '"platform": "<org>" in its package.json: an mrepo that deploys its components, its organisation\'s, with the boot protocol and lays their packages on top of them (a dual install)',
   '<org>-component': 'a list of a platform\'s organisation: a component on that platform, its packages laid on top of an mrepo the platform deployed'
 }
@@ -66,6 +67,7 @@ export function patternsOf (pkg, { platforms = [] } = {}) {
   if (has('schemas')) out.push('schemas')
   if (has('mrepo/runtime/hooks/commission.haicc') || has('mrepo/runtime/hooks/decommission.haicc')) out.push('commission')
   if (list && json(join(pkg, 'mrepo', 'packages', '.layer.json')).documents !== undefined) out.push('documents')
+  if (dirs(join(pkg, 'howto')).some(n => existsSync(join(pkg, 'howto', n, 'steps.haicc')))) out.push('howto')
   return out
 }
 

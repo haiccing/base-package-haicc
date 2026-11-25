@@ -10,21 +10,22 @@ which. One launch of the `haicc` command for all of them.
 
 ## Steps
 
+The script, [steps.haicc](steps.haicc): each line as typed after `haicc`, what it answers under it; run with `howto/run`, shown here at info extraction.
+
+## At the terminal
+
+What only the `haicc` command does, around the steps: lines on several
+lines, a heredoc, a script kept in the install.
+
 ```sh
-# at the host: its lines as if typed after haicc host
+# several lines in one argument: a shell multi-line string
 haicc host haicc/script . '
 service/stop
 service/start
 crud/read .
 '
-# at a position inside it: the lines run from swarms/swarm-1
-haicc host haicc/script swarms/swarm-1 '
-crud/read .
-boot/deploy node-1 haiccing/base-component-haicc
-'
 # a heredoc: a line that holds JSON keeps its quotes
 haicc host haicc/script . <<'END'
-# the swarm's node, then a node in it
 crud/create swarms/swarm-2 '{"kind":"swarm"}'
 boot/deploy swarms/swarm-2/node-1 haiccing/base-component-haicc
 END

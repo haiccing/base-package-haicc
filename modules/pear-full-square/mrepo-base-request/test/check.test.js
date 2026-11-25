@@ -2,7 +2,7 @@ import test from 'brittle'
 import { readdirSync } from 'bare-fs'
 import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
-import { check, matches, missing, hookOf, parse, words, record, wrap, stamp, tick, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN } from '../index.js'
+import { check, matches, missing, hookOf, parse, words, record, wrap, stamp, tick, complete, continuationOf, CEILING, isComplete, logger, LEVELS, FLAGS, LAYER, layerOf, modeOf, flagsOf, sorted, chained, rewrites, problems, notRun, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, ROOT, MAIN, OUTSIDE, OWN, send } from '../index.js'
 
 // The protocols as a runtime loaded them: each action's URIs (patterns
 // written at main, where the outside stands), and the states that allow it
@@ -143,6 +143,14 @@ test('hooks: a file a transition, its lines simple commands; a script\'s lines, 
   t.alike(parse('# a comment\n\nservice/initialise\n  service/start  ').map(l => [l.n, l.words]), [[3, ['service/initialise']], [4, ['service/start']]], 'blank lines and comments skipped, each line its number')
   t.alike(words(`crud/create a '{"n":1}'`), ['crud/create', 'a', '{"n":1}'], 'a quoted part one word')
   t.exception(() => parse('# only a comment'), /missing argument: script/)
+})
+
+test('a line sent: its request\'s offset given back beside its completed form', async (t) => {
+  const submitted = []
+  const runtime = { uri: 'local/x', submit: async core => { submitted.push(core); return 1764000000123 }, answer: async offset => ({ output: { asked: offset } }) }
+  const form = await send(runtime, ['crud/read', '.'])
+  t.alike(form, { output: { asked: 1764000000123 }, offset: 1764000000123 }, 'its answer, and the offset its request was given')
+  t.alike(submitted[0].value, ['crud/read', '.'], 'the command as its parts')
 })
 
 test('a script\'s command: its URI where its lines run, then the lines, one argument', (t) => {

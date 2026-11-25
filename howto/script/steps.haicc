@@ -1,0 +1,15 @@
+# scene: the host, in service by its commission
+. boot/deploy host haiccing/base-component-haicc
+# step: at the host: its lines as if typed after haicc host, here one
+host haicc/script . 'service/stop'
+# expect: "line":"service/stop"
+# expect: "state":"initialised"
+host haicc/script . 'service/start'
+# expect: "state":"started"
+# step: at a position inside it: the lines run from swarms/swarm-1
+host crud/create swarms/swarm-1 '{"kind":"swarm"}'
+host haicc/script swarms/swarm-1 'boot/deploy node-1 haiccing/base-component-haicc'
+# expect: "deployed":"swarms/swarm-1/node-1"
+# expect: "mrepo":"swarm-1/node-1"
+host haicc/script swarms/swarm-1 'crud/read .'
+# expect: "children":["node-1"]

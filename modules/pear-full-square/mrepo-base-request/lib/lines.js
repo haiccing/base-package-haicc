@@ -32,7 +32,9 @@ export function parse (text) {
 }
 
 // One command sent to the mrepo's own inbox, tagged as its own (internal),
-// its response waited for in its outbox folder. -> its completed form
+// its response waited for in its outbox folder. -> its completed form, its
+// request's offset beside it (`offset`, its identity there: its record in
+// request/done found by it after; none for the runtime's own, `own`)
 export async function send ({ dir, uri, submit = null, answer = null, own = null }, parts, { timeout = 300 } = {}) {
   // (own: the runtime's: the command placed as the mrepo's own internal
   // request, straight into its request layers, its completed form back)
@@ -45,14 +47,14 @@ export async function send ({ dir, uri, submit = null, answer = null, own = null
   if (answer) {
     for (const end = Date.now() + timeout * 1000; ;) {
       const form = await answer(offset)
-      if (form) return form
+      if (form) return { ...form, offset }
       if (Date.now() >= end) throw new Error(`no response in ${timeout} s: ${parts.join(' ')}`)
       await new Promise(resolve => setTimeout(resolve, 50))
     }
   }
   const back = await answered(dir, offset, { timeout })
   if (back === null) throw new Error(`no response in ${timeout} s: ${parts.join(' ')}`)
-  return JSON.parse(back).value.value
+  return { ...JSON.parse(back).value.value, offset }
 }
 
 // The lines run where the script was sent (at: a position in main, `.`

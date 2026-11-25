@@ -11,7 +11,7 @@ const write = (d, files) => { for (const [p, v] of Object.entries(files)) { mkdi
 const tree = files => { const d = mkdtempSync(join(tmpdir(), 'patterns-')); write(d, files); return d }
 const HOWTO = p => `# a how-to\n\nDoes it.\n\nPattern: ${p}\n\n## Steps\n\n\`\`\`sh\n# why\nls\n\`\`\`\n`
 
-test('patterns: read from a package\'s files; a program started by a hook; a platform and its component', (t) => {
+test('patterns: read from a package\'s files; a program started by a hook; a platform and its component; a runnable how-to', (t) => {
   const made = []
   try {
     const protocol = tree({ 'package.json': {}, 'protocol.js': '', 'mrepo/links/.layer.json': {}, 'mrepo/runtime/hooks/boot.haicc': 'a/b' }); made.push(protocol)
@@ -22,6 +22,8 @@ test('patterns: read from a package\'s files; a program started by a hook; a pla
     t.alike(patternsOf(component), ['package', 'component', 'mrepo-definition', 'service', 'continuation-script'], 'a component: its list, a service, a script')
     t.alike(patternsOf(docs), ['package', 'documentation-package'], 'a documentation package: its layers are pages, not a layer it brings')
     t.alike(patternsOf(app), ['package', 'app'])
+    const runnable = tree({ 'package.json': {}, 'run.js': '', 'howto/demo/README.md': '# demo\n', 'howto/demo/steps.haicc': '# step: x\n. crud/read .\n', 'howto/other/README.md': '# other\n' }); made.push(runnable)
+    t.alike(patternsOf(runnable), ['package', 'app', 'howto'], 'a how-to with its script beside its page: a runnable how-to')
     const commissioned = tree({ 'package.json': {}, 'mrepo/packages/.layer.json': {}, 'mrepo/runtime/hooks/commission.haicc': 'boot/deploy docs haiccing/base-component-docs\nservice/initialise\n' }); made.push(commissioned)
     t.alike(patternsOf(commissioned), ['package', 'component', 'mrepo-definition', 'hooks', 'commission'], 'a commission: what the mrepo does once deployed')
     // a platform declaring its organisation; a component of it, its hooks starting its renderer

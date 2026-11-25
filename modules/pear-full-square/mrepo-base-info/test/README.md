@@ -12,6 +12,7 @@ A README's menus and the old form; the rules; the keywords' form; an mrepo of th
 - extract: the keywords from the top down, split on package; a jump, a category, sections; a module once
 - extract: what does not fit is a problem, never resolved silently
 - extract: a package documented beyond the list, below its organisation; the mrepo's own still the last of its list
+- a how-to's page with its steps: its ## Steps filled from the script beside it, a fact once
 - the actions: extract writes the layer, get reads it by keywords
 - documents: store: every other package in the store documented, below its organisation; extract again adds what is new; clear removes the build
 - get: a short keyword several packages have: a choice each, kept apart, each written in its context

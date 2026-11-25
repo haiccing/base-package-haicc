@@ -18,6 +18,7 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - check: the service's own actions, each in its state
 - check at the inbox: neither the activation nor the state (the queue may change them first)
 - hooks: a file a transition, its lines simple commands; a script's lines, split as the shell splits them
+- a line sent: its request's offset given back beside its completed form
 - a script's command: its URI where its lines run, then the lines, one argument
 - flags: written after a command's URI, that step's; -- says where what follows starts
 - the flag unit: a folder a flag, each listed, its declaration; what holds down a chain; strict: what keeps a command from being run

@@ -8,16 +8,7 @@ on to the mrepo it leads to, with what is left of the URI.
 
 ## Steps
 
-```sh
-# at the host: sent on at its shortcut in the boot mrepo
-haicc host info/get
-# chained through two shortcuts: the boot mrepo, the host, its node
-haicc host haicc node-1 info/get
-# at a position inside the host, a swarm's node, then on at its shortcut there
-haicc host haicc swarms/swarm-1/node-1 info/get
-# below a shortcut, a URI does not run through: the hop says the way
-haicc . crud/read host/swarms
-```
+The script, [steps.haicc](steps.haicc): each line as typed after `haicc`, what it answers under it; run with `howto/run`, shown here at info extraction.
 
 ## Notes
 
