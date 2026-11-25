@@ -38,7 +38,7 @@ export async function provides (pkg) {
     protocols,
     run: existsSync(join(pkg, 'run.js')),
     hooks: existsSync(join(pkg, 'mrepo', 'runtime', 'hooks')),
-    list: existsSync(join(pkg, 'mrepo', 'packages', 'layer.json')),
+    list: existsSync(join(pkg, 'mrepo', 'packages', '.layer.json')),
     modules: dirs(join(pkg, 'modules')).some(n => n !== 'node_modules')
   }
 }

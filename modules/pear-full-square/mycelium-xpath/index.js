@@ -3,3 +3,5 @@
 
 export { select, objectChildren } from './lib/xpath.js'
 export { query } from './lib/query.js'
+export { nodeset, reader } from './lib/nodeset.js'
+export { XPathResult, XPathIterator } from './lib/result.js'

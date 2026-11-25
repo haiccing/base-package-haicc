@@ -12,7 +12,7 @@ export const PATTERNS = {
   component: 'a list of packages and no protocol: several packages deployed together',
   'documentation-package': '"docs": true: pages only, no structure brought',
   app: 'a run.js and neither a protocol nor a list: a program run from its bundle',
-  'mrepo-definition': 'a list, mrepo/packages/layer.json: the packages an mrepo is made of',
+  'mrepo-definition': 'a list, mrepo/packages/.layer.json: the packages an mrepo is made of',
   layer: 'a layer of its own in mrepo/, beyond the packages and the runtime',
   hooks: 'mrepo/runtime/hooks/: commands run on a status transition',
   service: 'mrepo/runtime/service.json: a service-managed mrepo',
@@ -49,14 +49,14 @@ export function patternsOf (pkg, { platforms = [] } = {}) {
   const has = p => existsSync(join(pkg, ...p.split('/')))
   const docs = pj.docs === true
   const protocol = has('protocol.js')
-  const list = has('mrepo/packages/layer.json')
+  const list = has('mrepo/packages/.layer.json')
   const out = ['package']
   if (protocol) out.push('protocol-package')
   if (docs) out.push('documentation-package')
   if (list && !protocol && !docs) out.push('component')
   if (has('run.js') && !protocol && !list) out.push('app')
   if (list) out.push('mrepo-definition')
-  if (!docs && dirs(join(pkg, 'mrepo')).some(l => l !== 'packages' && l !== 'runtime' && existsSync(join(pkg, 'mrepo', l, 'layer.json')))) out.push('layer')
+  if (!docs && dirs(join(pkg, 'mrepo')).some(l => l !== 'packages' && l !== 'runtime' && existsSync(join(pkg, 'mrepo', l, '.layer.json')))) out.push('layer')
   if (has('mrepo/runtime/hooks')) out.push('hooks')
   if (has('mrepo/runtime/hooks') && readdirSync(join(pkg, 'mrepo', 'runtime', 'hooks')).some(f => /^\s*runtime\/start\b/m.test(readFileSync(join(pkg, 'mrepo', 'runtime', 'hooks', f), 'utf8')))) out.push('program')
   if (list && !protocol && !docs && platforms.includes(basename(dirname(pkg)))) out.push(componentPattern(basename(dirname(pkg))))
@@ -65,7 +65,7 @@ export function patternsOf (pkg, { platforms = [] } = {}) {
   if (has('scripts')) out.push('continuation-script')
   if (has('schemas')) out.push('schemas')
   if (has('mrepo/runtime/hooks/commission.haicc') || has('mrepo/runtime/hooks/decommission.haicc')) out.push('commission')
-  if (list && json(join(pkg, 'mrepo', 'packages', 'layer.json')).documents !== undefined) out.push('documents')
+  if (list && json(join(pkg, 'mrepo', 'packages', '.layer.json')).documents !== undefined) out.push('documents')
   return out
 }
 

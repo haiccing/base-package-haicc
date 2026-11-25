@@ -28,7 +28,7 @@ branch is squashed into its target, one commit there; a failure resets instead. 
   parks its request until an outside job, an async function, ends; its
   writes so far are dropped, the runtime is free meanwhile. The job's
   result is written as a completed record into the mrepo's own
-  `waiting/outbox/<key>.json`, collected as a linked mrepo's response is,
+  `waiting/outbox` under an offset of the mrepo's, collected as a linked mrepo's response is,
   and the action executed again with it: `form.resumed`, `{ output }` or
   `{ error }`. One wait a request.
 - **A command sent on** (`exec.forward(to, command)`, `lib/remote.js`): an
@@ -60,7 +60,7 @@ branches made from their targets (`execute/main`, `execute/runtime`,
 `execute/request/execute`), its action run inside the execution context
 (read-only to it: the targets read overlaid, the execution branches written,
 the runtime's context read through `exec.runtime`; the request's id,
-`exec.id`, its record's key: `request/done/<id>.json` once done), its
+`exec.id`, its record's offset, its name in `request/done` once done), its
 record completed,
 each branch squashed into its own target. `executed(ctx, name, record)`
 hands over a form completed elsewhere the same way (the boot's own request).

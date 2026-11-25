@@ -18,7 +18,7 @@ async function mrepo (work, folder, pkg, links = []) {
   const at = { author: { name: 'test', email: 'test@localhost' }, time: Date.now() }
   const layers = {
     runtime: { '/mrepo.json': { uri: folder === 'boot' ? 'local/boot' : folder } },
-    packages: { '/layer.json': { packages: [pkg] } },
+    packages: { '/.layer.json': { packages: [pkg] } },
     links: Object.fromEntries(links.map((l, i) => [`/k${i}.json`, { key: `k${i}`, uri: l.uri, at: l.at, how: 'deployed' }]))
   }
   for (const [l, files] of Object.entries(layers)) {

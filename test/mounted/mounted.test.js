@@ -42,7 +42,7 @@ function execution (files = {}) {
   return { exec, executed, sent }
 }
 const HOST = {
-  'main/layer.json': {},
+  'main/.layer.json': {},
   'main/notes.txt': 'a text',
   'main/host/.node.json': {},
   'main/host/.shortcuts.json': [{ mrepo: 'local/host', link: 'k-host' }],

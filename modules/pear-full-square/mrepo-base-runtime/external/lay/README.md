@@ -33,7 +33,7 @@ Splectral's components are made so (`splectral/install`).
 ## Design
 
 - **What is laid**: every file of the package's `mrepo/runtime/` but the
-  layer's own definition (`layer.json`) and its pages: the hooks above
+  layer's own definition (`.layer.json`) and its pages: the hooks above
   all. A file there already is replaced, as a later package's replaces
   an earlier one's at a deploy: a package laid on top brings the hooks
   its base has not (`start`, `stop`), and replaces nothing.

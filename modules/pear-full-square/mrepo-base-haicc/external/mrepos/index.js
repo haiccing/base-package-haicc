@@ -26,12 +26,12 @@ async function readOf (dir) {
   const repo = openRepo(p2pgitBackend(join(dir, '.git'), { fs }))
   // catch: a document not there: none
   const json = async p => { try { return JSON.parse((await repo.read(p)).toString()) } catch { return null } }
-  const list = (await json('/packages/layer.json'))?.packages ?? []
+  const list = (await json('/packages/.layer.json'))?.packages ?? []
   const links = []
   // catch: no links layer: no links
   const files = await repo.select('/links/*').catch(() => [])
   for (const [p] of files) {
-    if (!p.endsWith('.json') || p.endsWith('/layer.json')) continue
+    if (!p.endsWith('.json') || p.endsWith('/.layer.json')) continue
     const r = await json(p)
     if (r?.uri && r?.at) links.push({ uri: r.uri, at: r.at })
   }

@@ -14,7 +14,9 @@ export async function goto (exec, { uri, args = [] }) {
     return exec.run(args, { at: positionOf(uri) })
   }
   if (whole !== MAIN && !whole.startsWith(`${MAIN}/`)) throw new Error(`not a position in main: ${whole} (main, main/<position>)`)
-  const { found, stopped } = await query(exec, uri)
+  const result = await query(exec, uri)
+  const found = await result.all()
+  const stopped = result.stopped()
   // where the command goes: the positions selected, and where the query
   // stopped at a shortcut with some of it left
   const none = found.find(f => f.kind === 'value' || f.kind === 'file')

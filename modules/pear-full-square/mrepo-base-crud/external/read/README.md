@@ -10,6 +10,14 @@ key of the node's document, in its URI form: `publicKey` is written
 `public-key`. Nothing there selects nothing: an empty
 array, not an error.
 
+## Logical and physical
+
+`--flags logical` reads a topic as its records, the latest first, each
+under its address (`done/*[@offset=<offset>]`), nothing of how it is
+stored in the answer; `--flags physical` reads the layer as it is
+stored (`mrepo-base-xpath`, `query`). With neither, the mrepo's setting
+says (`/runtime/xpath.json`, `reading`); with no setting, physical.
+
 ## Signature
 
 `read(exec, { uri })`: requested as `crud/read <URI>`.
@@ -37,7 +45,7 @@ A URI that goes on inside a node's document selects the value there:
 A file is its own document, JSON or its text: `{ "uri": [...],
 "value": ... }`. So the records of another layer are read:
 `crud/read done/* --flags layer=request`. A folder without a document
-is not among them, nor a layer's own config (`layer.json` at its root).
+is not among them, nor a layer's own config (`.layer.json` at its root).
 
 A binary record, AVRO in its single-object encoding (`.avro`), is
 decoded by the install's registry (`mycelium-value-avro`, its folder

@@ -26,6 +26,7 @@ modules for linux-x64, linux-arm64, each with its version, licence and source in
 - [mycelium-value-avro](pear-full-square/mycelium-value-avro/)
 - [mycelium-value-json](pear-full-square/mycelium-value-json/)
 - [mycelium-xpath](pear-full-square/mycelium-xpath/)
+- [mycelium-xpath-physical](pear-full-square/mycelium-xpath-physical/)
 - [p2p-mrepo](pear-full-square/p2p-mrepo/)
 - [p2p-replicate](pear-full-square/p2p-replicate/)
 - [p2p-store](pear-full-square/p2p-store/)

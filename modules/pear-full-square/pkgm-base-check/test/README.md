@@ -17,6 +17,9 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 - an action is a documented method: its folder, the function it exports, what its README states
 - a list that does not end with its own package
 - hooks: in their place, on a transition, each a command
+- a layer's structure: a structure type there is, with what it needs
+- explicit, always: a streaming layer declares its structure; without it the layer is a folder: said
+- the names a package lays into its layers: a URI's, or hidden and one of those there are
 
 ## `package.test.js`
 

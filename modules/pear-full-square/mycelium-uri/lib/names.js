@@ -46,3 +46,13 @@ export function dataNameOf (segment) {
   if (typeof segment !== 'string' || !URI_FORM.test(segment)) throw new Error(`not a data name's URI form: ${segment}`)
   return segment.replace(/-([a-z])/g, (_, c) => c.toUpperCase())
 }
+
+// Hidden names (base-docs-package, mrepo/main: "a name starting with a dot
+// is no URI's"): what a container keeps beside its data, its own. Hidden
+// by the name's rule, none singled out; the ones there are, in one place:
+// a layer's config, a node's document, a node's shortcuts.
+export const HIDDEN = ['.layer.json', '.node.json', '.shortcuts.json', '.lock', '.pointer.json']
+
+export function isHidden (s) {
+  return typeof s === 'string' && s.startsWith('.')
+}

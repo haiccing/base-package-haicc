@@ -132,8 +132,8 @@ test('the cascade: each level carrying the next, unfolded', (t) => {
   const json = avro.encode(reg, 'pear-full-square/mycelium-value-avro/json', { any: [1, 'two', null, { three: true }] })
   const inner = avro.encode(reg, { type: 'record', name: 'a.Form', fields: [{ name: 'args', type: 'bytes' }, { name: 'output', type: ['null', 'bytes'] }] }, { args: json, output: answer })
   const ts = '2026-11-21T10:00:00.123Z'
-  const rec = avro.encode(reg, 'pear-full-square/mycelium-value-avro/record', { topic: '/x/inbox', key: 'k', timestamp: ts, headers: { by: 'test', n: [1] }, value: inner })
+  const rec = avro.encode(reg, 'pear-full-square/mycelium-value-avro/record', { topic: '/x/inbox', key: 'k', offset: 1795312345678, timestamp: ts, headers: { by: 'test', n: [1] }, value: inner })
   const out = JSON.parse(JSON.stringify(avro.unfold(reg, rec)))
-  t.alike(out, { topic: '/x/inbox', key: 'k', timestamp: ts, headers: { by: 'test', n: [1] }, value: { args: { any: [1, 'two', null, { three: true }] }, output: { help: 'h', does: null, answer: ['x'] } } })
+  t.alike(out, { topic: '/x/inbox', key: 'k', offset: 1795312345678, timestamp: ts, headers: { by: 'test', n: [1] }, value: { args: { any: [1, 'two', null, { three: true }] }, output: { help: 'h', does: null, answer: ['x'] } } })
   t.ok(avro.isSingle(avro.decode(reg, rec).value), 'one level read: the next still bytes')
 })

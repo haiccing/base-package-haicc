@@ -6,7 +6,7 @@ import { programAt } from '../../internal/program/index.js'
 
 // What a package brings to the runtime layer: its hooks and the like, not
 // the layer's own definition, not its pages.
-const config = key => key.startsWith('/mrepo/runtime/') && key !== '/mrepo/runtime/layer.json' && !key.endsWith('README.md')
+const config = key => key.startsWith('/mrepo/runtime/') && key !== '/mrepo/runtime/.layer.json' && !key.endsWith('README.md')
 
 export async function lay (exec, { args: [path] = [] }) {
   const dir = exec.runtime.dir

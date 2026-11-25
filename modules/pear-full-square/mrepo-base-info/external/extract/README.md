@@ -35,7 +35,7 @@ What it writes, in the `info` layer:
 - `modules/README.md`, `third-party/README.md`, `schemas/README.md` and
   each organisation's page, made here;
 - `problems.json`: `[{ keyword?, page?, check, detail }]`;
-- `layer.json`, when the layer has none.
+- `.layer.json`, when the layer has none.
 
 ## Errors
 

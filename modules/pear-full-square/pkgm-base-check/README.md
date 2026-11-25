@@ -31,9 +31,9 @@ The code rules:
 
 The mrepo side:
 
-- **Structure**: every leaf of `mrepo/` has a valid `layer.json`, with its
+- **Structure**: every leaf of `mrepo/` has a valid `.layer.json`, with its
   mode and description; no README inside a layer; a file in a folder
-  without a `layer.json` contributes to a layer another package defines;
+  without a `.layer.json` contributes to a layer another package defines;
   a preloaded request is a well formed record; the packages are listed by
   name.
 - **Protocol**: every action its `protocol.js` configures has its

@@ -1,8 +1,8 @@
 {
   "package": "haiccing/base-package-haicc",
-  "content": "3a5e816dcc4212428925899ca81aa10e11de40c0105773bd7c71b945d6e2ca63",
+  "content": "05709bb89d7ee5afc78235c7a4e53d626e2f564a8bce50e8f76b35a9385802f2",
   "bare": "v1.36.0",
-  "date": "2026-11-23T09:29:16.077Z",
+  "date": "2026-11-24T14:47:32.257Z",
   "set": "full",
   "ok": true,
   "units": [
@@ -75,12 +75,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-crud",
       "ok": true,
       "tests": {
-        "passed": 9,
-        "total": 9
+        "passed": 10,
+        "total": 10
       },
       "asserts": {
-        "passed": 80,
-        "total": 80
+        "passed": 89,
+        "total": 89
       },
       "failures": []
     },
@@ -144,8 +144,8 @@
         "total": 21
       },
       "asserts": {
-        "passed": 238,
-        "total": 238
+        "passed": 264,
+        "total": 264
       },
       "failures": []
     },
@@ -157,8 +157,8 @@
         "total": 10
       },
       "asserts": {
-        "passed": 172,
-        "total": 172
+        "passed": 177,
+        "total": 177
       },
       "failures": []
     },
@@ -179,12 +179,12 @@
       "unit": "/test/modules/pear-full-square/mrepo-base-xpath",
       "ok": true,
       "tests": {
-        "passed": 5,
-        "total": 5
+        "passed": 9,
+        "total": 9
       },
       "asserts": {
-        "passed": 54,
-        "total": 54
+        "passed": 97,
+        "total": 97
       },
       "failures": []
     },
@@ -192,12 +192,12 @@
       "unit": "/test/modules/pear-full-square/mycelium-container-document",
       "ok": true,
       "tests": {
-        "passed": 1,
-        "total": 1
+        "passed": 6,
+        "total": 6
       },
       "asserts": {
-        "passed": 8,
-        "total": 8
+        "passed": 42,
+        "total": 42
       },
       "failures": []
     },
@@ -218,12 +218,12 @@
       "unit": "/test/modules/pear-full-square/mycelium-uri",
       "ok": true,
       "tests": {
-        "passed": 21,
-        "total": 21
+        "passed": 22,
+        "total": 22
       },
       "asserts": {
-        "passed": 195,
-        "total": 195
+        "passed": 217,
+        "total": 217
       },
       "failures": []
     },
@@ -257,12 +257,25 @@
       "unit": "/test/modules/pear-full-square/mycelium-xpath",
       "ok": true,
       "tests": {
-        "passed": 21,
-        "total": 21
+        "passed": 22,
+        "total": 22
       },
       "asserts": {
-        "passed": 141,
-        "total": 141
+        "passed": 152,
+        "total": 152
+      },
+      "failures": []
+    },
+    {
+      "unit": "/test/modules/pear-full-square/mycelium-xpath-physical",
+      "ok": true,
+      "tests": {
+        "passed": 12,
+        "total": 12
+      },
+      "asserts": {
+        "passed": 91,
+        "total": 91
       },
       "failures": []
     },
@@ -309,12 +322,12 @@
       "unit": "/test/modules/pear-full-square/pkgm-base-check",
       "ok": true,
       "tests": {
-        "passed": 23,
-        "total": 23
+        "passed": 26,
+        "total": 26
       },
       "asserts": {
-        "passed": 70,
-        "total": 70
+        "passed": 89,
+        "total": 89
       },
       "failures": []
     }

@@ -11,7 +11,7 @@ const CONFIG = { mode: 'atomic', description: 'Info: the pages of the packages t
 // list, its third-party code's record.
 // (a schema a package carries: its own, its modules')
 const SCHEMA = /^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/
-const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k)
+const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/.layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k)
 // A document that may not be there: null then; one that is there and is
 // no document is an error.
 // log: none (one read; the action says what it found)
@@ -36,7 +36,7 @@ export async function extractAction (exec, { uri }) {
   // what its list documents beyond itself (documents: store): every
   // package in the store, the install's, reached through its packages
   // manifest's mapping, read only; nothing of them placed here
-  const documents = (await json(exec, '/packages/layer.json'))?.documents ?? null
+  const documents = (await json(exec, '/packages/.layer.json'))?.documents ?? null
   const store = documents === 'store' ? (await json(exec, '/packages/manifest.json'))?.store ?? null : null
   if (documents === 'store' && !store) throw new Error('documents: store: the packages manifest names no store')
   const stored = store ? storedIn(store).filter(pkg => !listed[pkg]) : []
@@ -49,7 +49,7 @@ export async function extractAction (exec, { uri }) {
     return { pkg, files, paths: Object.keys(b.files), documented: !listed[pkg] }
   }))
   const files = await exec.step('extract', r => ({ files: Object.keys(r).length }), async () => extract(read))
-  if (await exec.find(`/${LAYER}/layer.json`) === null) files['/layer.json'] = Buffer.from(JSON.stringify(CONFIG, null, 2) + '\n')
+  if (await exec.find(`/${LAYER}/.layer.json`) === null) files['/.layer.json'] = Buffer.from(JSON.stringify(CONFIG, null, 2) + '\n')
   // what was written before: the pages its indexes named, each
   // package's index
   const before = await built(exec)

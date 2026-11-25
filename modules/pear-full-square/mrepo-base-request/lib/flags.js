@@ -36,6 +36,17 @@ const takes = (spec, value) => (Array.isArray(spec) ? spec.includes(value) : typ
 // flag's when it is written with a value it takes, else main.
 export const layerOf = flags => sorted(flags).flags.layer ?? LAYER
 
+// How a command's URI is read: logical (a topic as its records, its
+// storage hidden) or physical (as its layer is stored). A command's own
+// flag says, logical before physical where both are written; where none
+// is, the mrepo's setting (its default reading); where it has none,
+// physical.
+export const MODES = ['physical', 'logical']
+export const modeOf = (flags, setting = 'physical') => {
+  const said = sorted(flags).flags
+  return said.logical ? 'logical' : said.physical ? 'physical' : MODES.includes(setting) ? setting : 'physical'
+}
+
 // A map of flags as written -> { flags: those there are, with a value
 // they take; ignored: [{ flag, value, why }] the others }.
 export function sorted (written = {}) {

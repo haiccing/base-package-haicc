@@ -65,8 +65,13 @@
 // here (exec.run) can set it from there on, one sent on takes the flags in
 // force with it, and the entries of the request it became come back with
 // its response, each under its jump (`jump`: the positions gone through).
-import { wrap, complete, continuationOf, isComplete, logger, sorted, problems, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, formOf, joined, slashed, OUTSIDE, OWN } from 'mrepo-base-request'
+import { wrap, record, streamOf, complete, continuationOf, isComplete, logger, sorted, problems, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, formOf, joined, slashed, OUTSIDE, OWN } from 'mrepo-base-request'
+
+// The XPath machinery's own layers, and its log of physical queries there.
+export const XPATH = 'xpath'
+export const XPATH_LOG = 'xpath/log'
 import { from, ROOT } from 'mycelium-uri'
+import { join } from 'bare-path'
 import { pass } from './lib/remote.js'
 import { park } from './lib/wait.js'
 import { changes } from './lib/changes.js'
@@ -251,6 +256,8 @@ export async function execute (ctx, { actions = {} } = {}) {
     take(form.flags)
     // what the boundary counts, for the request's metrics
     const counted = { reads: 0, selects: 0, puts: 0, removes: 0, commits: 0 }
+    // the physical queries its logical ones stood for (the physical log's record)
+    const physical = []
     // the step the action is at: the last event it logged
     let step = null
     // an action's entries, under its protocol and action
@@ -266,7 +273,11 @@ export async function execute (ctx, { actions = {} } = {}) {
         say(lvl, event, { ...(typeof data === 'function' ? {} : data), failed: err.message, ms: Date.now() - t, ...moved() })
         throw err
       }
-      say(lvl, event, { ...(typeof data === 'function' ? data(r) : data), ms: Date.now() - t, ...moved() })
+      const said = { ...(typeof data === 'function' ? data(r) : data), ms: Date.now() - t, ...moved() }
+      say(lvl, event, said)
+      // a physical query (a node set's batch, mrepo-base-xpath): kept for
+      // the physical log too, whatever the request's own log keeps
+      if (event === 'batch') physical.push({ ...(({ reads, selects, puts, removes, commits, ...query }) => query)(said) })
       return r
     }
     // the boundary's own steps, at debug, each with what it took
@@ -429,7 +440,7 @@ export async function execute (ctx, { actions = {} } = {}) {
       for (const t of made.keys()) await close(backend, name, t)
       try {
         const value = park(ctx, name, core, waited)
-        write('info', 'request.waiting', { key: value.remote.key })
+        write('info', 'request.waiting', { offset: value.remote.offset })
         metrics(null)
         const c = await w.change(await open(w, backend, name, EXECUTE))
         await c.put(`/${name}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, { ...core, value: { ...value, log: entries } })) + '\n'))
@@ -444,7 +455,7 @@ export async function execute (ctx, { actions = {} } = {}) {
       for (const t of made.keys()) await close(backend, name, t)
       try {
         const value = pass(ctx, name, core, forwarded.to, forwarded.command, flags)
-        write('info', 'request.sent', { to: forwarded.to.at, mrepo: forwarded.to.mrepo, key: value.remote.key })
+        write('info', 'request.sent', { to: forwarded.to.at, mrepo: forwarded.to.mrepo, offset: value.remote.offset })
         metrics(null)
         // what it logged so far stays with it, waiting
         const c = await w.change(await open(w, backend, name, EXECUTE))
@@ -474,6 +485,14 @@ export async function execute (ctx, { actions = {} } = {}) {
     }
     for (const t of made.keys()) await timed('removed', { target: t }, () => close(backend, name, t))
     metrics(result.ok)
+    // The physical log: what the physical side did for this request, a
+    // record under the request's offset in the xpath layer's log, written
+    // into its folder as a file: no commit here (a read stays a read); the
+    // runtime commits the folder at its checkpoints. A read of the xpath
+    // layers themselves is not logged: the log would feed itself.
+    if (physical.length && ctx.dir && /^\d{13}$/.test(name) && form.uri?.[0] !== XPATH) {
+      streamOf(join(ctx.dir, XPATH_LOG)).put(Number(name), record(`/${XPATH_LOG}`, { request: Number(name), command: `${protocol}/${action}`, queries: physical }, Number(name)))
+    }
     // The form completed, in its envelope, through its own execution branch.
     await executed(ctx, name, wrap(`/${EXECUTE}`, complete(core, result, entries)))
   }

@@ -6,5 +6,7 @@ import layer from './layer/index.js'
 import container from './container/index.js'
 import help from './help/index.js'
 import feedback from './feedback/index.js'
+import logical from './logical/index.js'
+import physical from './physical/index.js'
 
-export const FLAGS = { log, layer, container, help, feedback }
+export const FLAGS = { log, layer, container, help, feedback, logical, physical }

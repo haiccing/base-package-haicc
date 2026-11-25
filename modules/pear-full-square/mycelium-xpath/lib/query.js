@@ -45,14 +45,20 @@
 // the keys of its document. A leaf of the tree itself has a value in a
 // filter when its document is no object (a text, a number).
 //
-// A position, [n] or [last()], alone in its filter: the n-th (from 1) of
-// the nodes the step selected under the same parent, in the order they
-// came (the tree's own order; a list's).
+// A position: the place (from 1) of a node among those the step selected
+// under the same parent, in the order they came (the tree's own order; a
+// list's). [n] or [last()], alone in its filter; or compared, position()
+// and last() as numbers, with + and - between numbers:
+// [position()<=50], [position()>last()-50] (the last 50). A filter of
+// positions and names alone reads no document.
+//
+// Comparing, as XPath 2.0: with a number on a side, numbers; two texts,
+// as text, an order too: [name()<'1795482773435'] (names of one length
+// that are digits order as their numbers do).
 //
 // What is not of this phase is refused, said as such: descendants (`//`),
-// the union (`|`), position() and a position joined with something else,
-// the axes (`::`), the other functions. What looks back (`..`) is not
-// built.
+// the union (`|`), a bare number joined with something else, the axes
+// (`::`), the other functions. What looks back (`..`) is not built.
 
 const INSIDE = Symbol('inside a document')
 const inside = value => ({ [INSIDE]: true, value })
@@ -100,7 +106,7 @@ function segment (text, from) {
 //   | { exists: operand }
 // an operand: { literal } | { path: [steps] } | { fn, args }
 const OPS = ['!=', '<=', '>=', '=', '<', '>']
-const FUNCTIONS = { name: 0, 'starts-with': 2, contains: 2 }
+const FUNCTIONS = { name: 0, position: 0, last: 0, 'starts-with': 2, contains: 2 }
 function expression (text, from, to) {
   let at = from
   const space = () => { while (at < to && /\s/.test(text[at])) at++ }
@@ -143,8 +149,21 @@ function expression (text, from, to) {
     return { path: steps }
   }
 
+  // numbers added and taken off: last() - 50 (a minus after a name needs
+  // its space: a name holds hyphens)
+  function sum () {
+    let left = operand()
+    for (;;) {
+      space()
+      const op = at < to && (text[at] === '+' || text[at] === '-') ? text[at] : null
+      if (!op) return left
+      at++
+      left = { arith: op, left, right: operand() }
+    }
+  }
+
   function comparison () {
-    const left = operand()
+    const left = sum()
     space()
     const op = OPS.find(o => text.startsWith(o, at) && at + o.length <= to)
     if (!op) {
@@ -152,7 +171,7 @@ function expression (text, from, to) {
       return { exists: left }
     }
     at += op.length
-    return { compare: op, left, right: operand() }
+    return { compare: op, left, right: sum() }
   }
 
   function unary () {
@@ -222,12 +241,18 @@ export async function query (tree, root, text) {
 
   // A filter's operand at a node -> its values (those of the nodes a path
   // leads to: leaves; a node that is no leaf has no value).
-  async function values (ref, operand) {
+  async function values (ref, operand, ctx) {
     if ('literal' in operand) return [operand.literal]
     if (operand.fn === 'name') return [nameOf(ref)]
+    if (operand.fn === 'position') return [ctx.position]
+    if (operand.fn === 'last') return [ctx.last]
+    if (operand.arith) {
+      const [x, y] = [Number((await values(ref, operand.left, ctx))[0]), Number((await values(ref, operand.right, ctx))[0])]
+      return [operand.arith === '+' ? x + y : x - y]
+    }
     if (operand.fn) {
       // as XPath: the first of each, nothing there the empty text
-      const [x, y] = (await Promise.all(operand.args.map(a => values(ref, a)))).map(v => String(v[0] ?? ''))
+      const [x, y] = (await Promise.all(operand.args.map(a => values(ref, a, ctx)))).map(v => String(v[0] ?? ''))
       return [operand.fn === 'starts-with' ? x.startsWith(y) : x.includes(y)]
     }
     const all = []
@@ -244,8 +269,8 @@ export async function query (tree, root, text) {
     return refs
   }
   // [operand] alone: a path, is anything there; a function, what it says
-  async function reaches (ref, operand) {
-    if (!operand.path) return (await values(ref, operand)).some(Boolean)
+  async function reaches (ref, operand, ctx) {
+    if (!operand.path) return (await values(ref, operand, ctx)).some(Boolean)
     return (await along(ref, operand.path)).length > 0
   }
   const COMPARE = {
@@ -256,17 +281,26 @@ export async function query (tree, root, text) {
     '>': (a, b) => a > b,
     '>=': (a, b) => a >= b
   }
-  async function holds (ref, e) {
-    if (e.or) { for (const x of e.or) if (await holds(ref, x)) return true; return false }
-    if (e.and) { for (const x of e.and) if (!await holds(ref, x)) return false; return true }
-    if (e.not) return !await holds(ref, e.not)
-    if (e.exists) return reaches(ref, e.exists)
-    const [left, right] = [await values(ref, e.left), await values(ref, e.right)]
-    // as XPath compares: numbers when a side is one, or the order is asked;
-    // else as text; true when any pair holds
-    const numeric = ['<', '<=', '>', '>='].includes(e.compare) || [...left, ...right].some(v => typeof v === 'number')
+  // (ctx: the node's place among those selected under its parent: { position, last })
+  async function holds (ref, e, ctx) {
+    if (e.or) { for (const x of e.or) if (await holds(ref, x, ctx)) return true; return false }
+    if (e.and) { for (const x of e.and) if (!await holds(ref, x, ctx)) return false; return true }
+    if (e.not) return !await holds(ref, e.not, ctx)
+    if (e.exists) return reaches(ref, e.exists, ctx)
+    const [left, right] = [await values(ref, e.left, ctx), await values(ref, e.right, ctx)]
+    // as XPath 2.0 compares: numbers when a side is one; two texts as text,
+    // an order too; true when any pair holds
+    const numeric = [...left, ...right].some(v => typeof v === 'number')
     const as = v => (numeric ? Number(v) : String(v))
     return left.some(a => right.some(b => COMPARE[e.compare](as(a), as(b))))
+  }
+  // what a filter's expression asks: a node's place (position(), last()); a
+  // document (a path)
+  const asks = (e, what) => {
+    if (!e || typeof e !== 'object') return false
+    if (what === 'place' && (e.fn === 'position' || e.fn === 'last')) return true
+    if (what === 'document' && e.path) return true
+    return Object.values(e).some(v => (Array.isArray(v) ? v.some(x => asks(x, what)) : asks(v, what)))
   }
 
   let refs = [{ path: '/', node: root }]
@@ -287,11 +321,22 @@ export async function query (tree, root, text) {
           for (const ref of refs) { const p = parentOf(ref); (groups.get(p) ?? groups.set(p, []).get(p)).push(ref) }
           return [...groups.values()].map(g => (e.position === 'last' ? g.at(-1) : g[e.position - 1])).filter(Boolean)
         }
+        // each node's place among those selected under its parent, where
+        // the filter asks for it
+        const places = new Map()
+        if (asks(e, 'place')) {
+          const groups = new Map()
+          for (const ref of refs) { const p = parentOf(ref); (groups.get(p) ?? groups.set(p, []).get(p)).push(ref) }
+          for (const g of groups.values()) g.forEach((ref, i) => places.set(ref, { position: i + 1, last: g.length }))
+        }
+        // a filter of places and names alone reads nothing: a link is not
+        // asked, its place among them is known here
+        const reads = asks(e, 'document')
         const kept = []
         for (const ref of refs) {
-          const why = await stopOf(ref)
+          const why = reads ? await stopOf(ref) : null
           if (why) stopped.push({ path: ref.path, node: ref.node, rest, why })
-          else if (await holds(ref, e)) kept.push(ref)
+          else if (await holds(ref, e, places.get(ref))) kept.push(ref)
         }
         return kept
       })

@@ -7,6 +7,7 @@ The tests of mycelium-uri, a section per file, each test by its name.
 - names: lowercase words joined by single hyphens
 - data names: lowerCamelCase, no two capitals in a row, no _
 - a data name and its URI form, exact both ways
+- hidden names: a name starting with a dot is no URI's; the ones there are, in one place
 
 ## `uri.test.js`
 

@@ -96,8 +96,11 @@ async function documentOf (exec, node, at) {
 // document (a record in a layer). A folder without a document is not
 // among them. A URI does not run through a
 // shortcut: refused, said with the way across. -> [{ names, node, value? }]
-export async function select (exec, p) {
-  const { found, stopped } = await query(exec, p.segments)
+// (mode: how the URI is read, mrepo-base-xpath's: physical when none is said)
+export async function select (exec, p, { mode = 'physical' } = {}) {
+  const result = await query(exec, p.segments, { mode })
+  const found = await result.all()
+  const stopped = result.stopped()
   if (stopped.length) {
     const [{ at, rest }] = stopped
     throw new Error(`${at} is a shortcut: a URI does not run through it (haicc ${at} haicc ${rest} ...)`)

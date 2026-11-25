@@ -1,4 +1,5 @@
 import test from 'brittle'
+import { layer } from 'mrepo-base-request'
 import { spawnSync } from 'bare-subprocess'
 import { mkdtempSync, rmSync, existsSync } from 'bare-fs'
 import { openRepo } from 'mycelium-git'
@@ -61,7 +62,7 @@ test('the runtime: started detached, the store held, asked over its connection, 
     t.absent(existsSync(join(work, 'log')), 'no plain file log')
     const r = await (await import('../index.js')).open(work)
     try {
-      const done = await openRepo(r.backend).select('/request/done/*')
+      const done = await layer({ repo: openRepo(r.backend) }, 'request/done').list()
       t.is(done.length, 4, 'in request/done: the preloaded one, the protocol protocol opened by the runtime, the boot hook\'s line, the posted one')
     } finally { await r.close() }
   } finally { rmSync(work, { recursive: true, force: true }) }

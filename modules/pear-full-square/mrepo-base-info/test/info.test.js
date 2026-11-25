@@ -71,7 +71,7 @@ const component = (included = '- [base-package-x](../base-package-x/)\n- [packag
   files: {
     '/README.md': B(page('base-component-y', 'The y component.', [['mrepo', 'mrepo/'], ['gone', 'gone/']], `\n## Included packages\n\n${included}\n`)),
     '/mrepo/README.md': B(page('mrepo/', 'Its list.')),
-    '/mrepo/packages/layer.json': B(JSON.stringify({ packages: ['org/base-package-x', 'org/package-docs-mrepo', 'org/base-component-y'] })),
+    '/mrepo/packages/.layer.json': B(JSON.stringify({ packages: ['org/base-package-x', 'org/package-docs-mrepo', 'org/base-component-y'] })),
     '/modules/third-party.json': B(JSON.stringify({ modules: [{ name: 'brittle', version: '3.0.0', license: 'Apache-2.0' }] }))
   }
 })
@@ -154,7 +154,7 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
     await t.exception(get(exec, {}), /no info extracted in this mrepo yet/, 'get before extract: said')
     const r = await extractAction(exec, { uri: ['.'] })
     t.alike([r.changed, r.problems], [true, 2], 'extracted: its two problems counted')
-    t.ok(files['/info/layer.json'] && files['/info/index.json'], 'the layer written, its config when it had none')
+    t.ok(files['/info/.layer.json'] && files['/info/index.json'], 'the layer written, its config when it had none')
     const n = writes.length
     t.alike([(await extractAction(exec, { uri: ['.'] })).changed, writes.length], [false, n], 'again: nothing changed, nothing written')
     await t.exception(extractAction(exec, { uri: ['main', 'x'] }), /info extract: the whole mrepo only/)
@@ -186,7 +186,7 @@ test('documents: store: every other package in the store documented, below its o
     mkdirSync(join(store, 'addons'), { recursive: true })
     const files = {
       '/packages/manifest.json': B(JSON.stringify({ store, packages: { 'org/base-package-x': {}, 'org/package-docs-mrepo': {}, 'org/base-component-y': {} } })),
-      '/packages/layer.json': B(JSON.stringify({ packages: ['org/base-package-x', 'org/package-docs-mrepo', 'org/base-component-y'], documents: 'store' }))
+      '/packages/.layer.json': B(JSON.stringify({ packages: ['org/base-package-x', 'org/package-docs-mrepo', 'org/base-component-y'], documents: 'store' }))
     }
     const exec = {
       runtime: { dir },
@@ -208,7 +208,7 @@ test('documents: store: every other package in the store documented, below its o
     t.is((await extractAction(exec, { uri: ['.'] })).changed, false, 'and again: nothing new, nothing changed')
     const r = await clear(exec, { uri: ['.'] })
     t.ok(r.removed > 0, `clear: the build removed, ${r.removed} files`)
-    t.alike(Object.keys(files).filter(p => p.startsWith('/info/') && p !== '/info/layer.json'), [], 'nothing of it left, the layer\'s config kept')
+    t.alike(Object.keys(files).filter(p => p.startsWith('/info/') && p !== '/info/.layer.json'), [], 'nothing of it left, the layer\'s config kept')
     t.alike(await clear(exec, { uri: ['.'] }), { removed: 0, again: true }, 'clear again: nothing built, a repeat')
     await t.exception(clear(exec, { uri: ['main', 'x'] }), /info clear: the whole mrepo only/)
     files['/packages/manifest.json'] = B(JSON.stringify({ packages: {} }))

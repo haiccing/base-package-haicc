@@ -32,13 +32,46 @@ setting.
   the destination); each hand-over replaces the envelope; execution
   completes the form (`output` or `error`); the completed form is sent back
   into the outbox, in an envelope. Headers empty for now.
+- **A request's identity is its offset** (`lib/record.js`): the
+  milliseconds since the epoch when it arrived at the mrepo, a number,
+  never two the same there: on its record and every envelope around it
+  (`offset`), and its name in every layer, 13 digits (`nameOf`). One
+  mrepo's: a record from another (a child's response) gets its own
+  here, on its envelope, and keeps the other's on its core.
+- **The drop method** (`lib/boxes.js`): `drop(dir, uri, core)`, the one
+  way anyone drops a record into an mrepo's inbox: its offset given
+  under the inbox folder's lock (a streaming folder,
+  `mycelium-container-document`), stamped on the core and its envelope,
+  the file written: its offset back, the sender's confirmation.
+  `answered(dir, offset)` waits for its response in the outbox folder
+  under the same offset. The mrepo's own requests take their offsets
+  from the same lock (`offsetOf(ctx)`, the runtime's `ctx.offset`).
 - **The boxes are layers**, `inbox` and `outbox` (non-atomic): posting is a
-  commit, `post(ctx, record, name)` (an input adding its commit: native git)
-  or `post(ctx)` (the inbox folder's new files, the layer's working tree:
-  the p2p host's and a `filesystem` mrepo's runtime); taken in when the
-  `inbox` head moves; answers committed into `outbox`, then written into
-  the outbox folder (`outboxOf(dir)`, made at build, watchable from the
-  start); nothing removed. An mrepo by its directory: `inboxOf(dir)`.
+  commit, `post(ctx, record)` (an input adding its commit: native git)
+  or `post(ctx)` (the inbox folder's new records, the layer's working
+  tree: what came after the layer's last); answers committed into
+  `outbox`, then written into the outbox folder (`outboxOf(dir)`);
+  nothing removed. An mrepo by its directory: `inboxOf(dir)`.
+- **Streaming layers** (`lib/layer.js`, `STREAMS`): the `inbox`, the
+  `outbox` and `request/done`, what only grows, keep a record in
+  folders by its offset's digits (`/<layer>/17953/179531/<offset>.json`;
+  the levels their `.layer.json`'s `structure`); pending and execute are
+  flat, the same names. Declared, always: a layer streams because its
+  config says its structure, never by its name; one that declares none
+  is a folder. A box the runtime makes itself is made with that config
+  (`ensure`, `declarationOf`). `layer(ctx, name)` reads and writes a record by
+  its name alone.
+- **First come, first served** (`arriving`, `POINTER`): the inbox is
+  taken in past a pointer, the last record taken
+  (`request/pending/default/.pointer.json`), moved in the commit that
+  queues the record; none taken ahead of another. The inbox is read
+  as a topic, its records after the pointer, ascending
+  (`mrepo-base-xpath`'s `query`, its result iterated): only the folders from the
+  pointer's on are touched. An inbox that declares no structure is a
+  folder, no inbox: said.
+- **A queue beside an mrepo** (`queueOf`, `keyed`): a component's side
+  boxes, records taken and removed, under a key of the exchange's own:
+  no stream.
 - **Logs and following**: `logger(detail)` (`log(level, event, data)`;
   `error` and `warn` always kept, of `info`, `verbose`, `debug` as much
   as `detail` says, `info` by default; `level(to)` sets it from there on;
@@ -121,7 +154,7 @@ setting.
   `ctx.intake === false`: the inbox not taken in yet.
 - **A request begins on its own branch** (`begin`, `principals`,
   `requestBranch`): from pending straight onto
-  `execute/<key>/request/execute`, its principal; never into
+  `execute/<offset>/request/execute`, its principal; never into
   `request/execute` itself, which only receives completed requests by
   merge, on their way to done. One at a time: the next begins when no
   branch is being processed.
@@ -154,7 +187,7 @@ setting.
   `stop`, `shutdown`.
 - **A layer's records** (`layer(ctx, branch)`): one JSON document a
   record, `<name>.json`, listed in the order they arrived (the commit
-  chain). A layer's config, `layer.json` (committed with it when built from
+  chain). A layer's config, `.layer.json` (committed with it when built from
   a structure), is not one of its records, nor is it posted from the inbox
   folder.
 - **The setting** (`setting(work)`): `<work>/mrepo.json`,

@@ -8,9 +8,15 @@
 // or changed on the way; processing completes the form: its value the
 // request with its output (or the error that stopped it).
 //
-// The key: a GUID set by the sender on the core when the request is made,
-// carried by every envelope around it, and the name of its document in every
-// layer: a request traced everywhere by it.
+// The offset: the milliseconds since the epoch when the request arrived at
+// the mrepo (its inbox; its own requests, the same clock), given by the
+// drop method (lib/boxes.js), never two the same. It is the request's one
+// identity there: on the core, on every envelope around it, and the name of
+// its document in every layer (13 digits): a request traced everywhere by
+// it, and a layer's natural order. An offset is one mrepo's: a record that
+// comes in from another (a child's response) gets its own here, on its
+// envelope, and keeps the other's on its core.
+// (guid: an identity that is no request's: a link's)
 import crypto from 'bare-crypto'
 
 export const guid = () => {
@@ -20,9 +26,17 @@ export const guid = () => {
   const h = b.toString('hex')
   return `${h.slice(0, 8)}-${h.slice(8, 12)}-${h.slice(12, 16)}-${h.slice(16, 20)}-${h.slice(20)}`
 }
-export const record = (topic, value, key = null) => ({ topic, key, timestamp: new Date().toISOString(), headers: {}, value })
-// An envelope around a record: its key the record's.
-export const wrap = (topic, inner) => record(topic, inner, inner?.key ?? null)
+export const record = (topic, value, offset = null) => ({ topic, offset, timestamp: new Date().toISOString(), headers: {}, value })
+// An envelope around a record: its offset the record's (another: a record
+// from elsewhere, given its own here).
+export const wrap = (topic, inner, offset = inner?.offset ?? null) => record(topic, inner, offset)
+// A record given its offset: stamped on it, and on its core when it is an
+// envelope around one that has none yet.
+export const stamp = (rec, offset) => ({ ...rec, offset, ...(rec.value && typeof rec.value === 'object' && 'topic' in rec.value && 'value' in rec.value && rec.value.offset == null ? { value: { ...rec.value, offset } } : {}) })
+// An mrepo's clock where it has no inbox folder to give its offsets (a
+// store on git alone, a test): in one process, now or the last plus one.
+let last = 0
+export const tick = (now = Date.now()) => (last = Math.max(now, last + 1))
 // Completed: its output (or the error that stopped it), and its log when
 // there is one (the entries kept: a request is its own record).
 // (a continuation: with an output, what the one who asked goes on with:

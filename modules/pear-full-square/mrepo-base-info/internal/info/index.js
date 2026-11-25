@@ -198,7 +198,7 @@ export function extract (packages, { alone = false } = {}) {
   }
   // a package's own: its README at its keyword; its included packages,
   // against its list
-  const listOf = p => { const b = p.files['/mrepo/packages/layer.json']; if (!b) return null; try { return JSON.parse(b.toString()).packages ?? null } catch (err) { problems.push({ page: `packages/${p.pkg}/mrepo/packages/layer.json`, check: 'list', detail: err.message }); return null } }
+  const listOf = p => { const b = p.files['/mrepo/packages/.layer.json']; if (!b) return null; try { return JSON.parse(b.toString()).packages ?? null } catch (err) { problems.push({ page: `packages/${p.pkg}/mrepo/packages/.layer.json`, check: 'list', detail: err.message }); return null } }
   // the organisations, each a node below the top: its packages below it,
   // by their keywords, in the order they were listed
   const orgs = {}

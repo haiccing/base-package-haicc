@@ -17,7 +17,8 @@ const TREE = '040000'
 // mrepo's layers (help: the READMEs of its packages; protocols: the
 // configs of the protocols it offers); pending and capability go when the
 // code using them is rebuilt.
-const LAYERS = ['main', 'request', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links', 'pending', 'overlay', 'data', 'capability']
+// xpath: the XPath machinery's own layers (its log of physical queries).
+const LAYERS = ['main', 'request', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links', 'xpath', 'pending', 'overlay', 'data', 'capability']
 // Every reserved first segment: a branch name starts with one.
 const RESERVED = [...LAYERS, 'execute', 'publish']
 // Permanent: never deleted.

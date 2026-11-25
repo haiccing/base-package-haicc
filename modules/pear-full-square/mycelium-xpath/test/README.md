@@ -24,6 +24,7 @@ Shared by the tests, not a test itself.
 - query: name gives a document's key its name in a query and in a path
 - query: async children and documents
 - query: without document and stop, a tree of names only
+- query: position() and last() compared, numbers added and taken off: a range of the nodes selected under a parent; nothing read
 - query: what is not a query, and what is not of this phase
 
 ## `xpath.test.js`

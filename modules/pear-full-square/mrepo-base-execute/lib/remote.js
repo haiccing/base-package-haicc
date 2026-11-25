@@ -12,15 +12,16 @@
 //     back to this request's own branch (/<this mrepo>/execute/<key>);
 //     delivered into the linked mrepo's inbox folder (the same node:
 //     direct; another node needs dispatch, not built)
-//     -> the request's form with what it waits for: remote { at, folder, key }
+//     -> the request's form with what it waits for: remote { at, folder,
+//        offset }: the child's offset, at the linked mrepo
 import { existsSync } from 'bare-fs'
 import { join } from 'bare-path'
-import { record, wrap, guid, inboxOf } from 'mrepo-base-request'
+import { record, drop } from 'mrepo-base-request'
 
 export function pass (ctx, name, core, to, command, flags = {}) {
   if (!to?.dir || !existsSync(join(to.dir, 'inbox'))) throw new Error(`not reachable: ${to?.at} (no inbox at ${to?.dir})`)
-  const key = guid()
-  const child = record(`/${ctx.uri ?? ctx.name}/execute/${name}`, Object.keys(flags).length ? { command, flags } : command, key)
-  inboxOf(to.dir).write(key, wrap(`/${to.mrepo}/inbox`, child))
-  return { ...core.value, remote: { at: to.at, folder: to.folder, key } }
+  const child = record(`/${ctx.uri ?? ctx.name}/execute/${name}`, Object.keys(flags).length ? { command, flags } : command)
+  // dropped as everyone drops a record: its offset the linked mrepo's
+  const offset = drop(to.dir, to.mrepo, child)
+  return { ...core.value, remote: { at: to.at, folder: to.folder, offset } }
 }

@@ -4,4 +4,4 @@
 
 export { isSegment, validate, sameName, isUri, parse, format, join, parent, split } from './lib/uri.js'
 export { relative, stepsOf, selects, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT } from './lib/relative.js'
-export { isName, validateName, isDataName, validateDataName, uriFormOf, dataNameOf } from './lib/names.js'
+export { isName, validateName, isDataName, validateDataName, uriFormOf, dataNameOf, isHidden, HIDDEN } from './lib/names.js'

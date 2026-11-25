@@ -47,7 +47,7 @@ function formBytes (reg, form, { args = null, output = null }) {
 
 export function encodeRecord (reg, rec, opts = {}) {
   const value = isRecord(rec.value) ? encodeRecord(reg, rec.value, opts) : rec.value && typeof rec.value === 'object' ? formBytes(reg, rec.value, opts) : rec.value === null || rec.value === undefined ? null : encode(reg, JSON_TYPE, rec.value)
-  return encode(reg, RECORD, { topic: rec.topic ?? null, key: rec.key ?? null, timestamp: rec.timestamp, headers: rec.headers ?? {}, value })
+  return encode(reg, RECORD, { topic: rec.topic ?? null, key: rec.key ?? null, offset: rec.offset ?? null, timestamp: rec.timestamp, headers: rec.headers ?? {}, value })
 }
 
 function formFrom (reg, bytes) {
@@ -73,7 +73,7 @@ export function decodeRecord (reg, bytes) {
     const inner = decode(reg, value)
     value = isRecord(inner) && 'headers' in inner ? decodeRecord(reg, value) : formFrom(reg, value)
   }
-  return { topic: r.topic, key: r.key, timestamp: r.timestamp, headers: r.headers, value }
+  return { topic: r.topic, offset: r.offset ?? null, ...(r.key != null ? { key: r.key } : {}), timestamp: r.timestamp, headers: r.headers, value }
 }
 
 // The value handler for a topic of records (a node's log): a record to

@@ -24,12 +24,13 @@
 //                                 when its core names where it is to arrive
 // A record keeps its name through its moves; a restart finishes a move half
 // done (in both: the old place cleared). The boxes (lib/boxes.js) are layers.
-import { existsSync, readFileSync } from 'bare-fs'
 import { join } from 'bare-path'
-import { post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX } from './lib/boxes.js'
-import { record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
-import { FLAGS, LAYER, flagsOf, sorted, layerOf, chained, rewrites } from './lib/flags.js'
-import { layer, AUTHOR } from './lib/layer.js'
+import { post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, INBOX, OUTBOX } from './lib/boxes.js'
+import { record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL } from './lib/record.js'
+import { FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites } from './lib/flags.js'
+import { layer, AUTHOR, STREAMS, declarationOf } from './lib/layer.js'
+import { nameOf } from 'mycelium-container-document'
+import { query } from 'mrepo-base-xpath'
 import { viewOf, gitdirOf, setting, isWork, SETTING, MREPOS, SCRIPTS } from './lib/view.js'
 import { relative, from, within, slashed, unslashed, segmented, joined, positionOf } from 'mycelium-uri'
 import { interpret, formOf, layerFor, problems, passesOn, ROOT, MAIN, OUTSIDE, OWN } from './lib/command.js'
@@ -38,7 +39,7 @@ import { words, parse, send, run as runLines } from './lib/lines.js'
 
 export { follow } from './lib/follow.js'
 export { encodeRecord, decodeRecord, logHandler, REQUEST } from './lib/typed.js'
-export { MREPOS, SCRIPTS, post, ensure, inboxFolder, inboxOf, outboxOf, INBOX, OUTBOX, record, wrap, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, flagsOf, sorted, layerOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
+export { MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, wrap, stamp, tick, guid, complete, continuationOf, CEILING, isComplete, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, formOf, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, OUTSIDE, OWN, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
 export const EXECUTE = 'request/execute'
@@ -60,7 +61,7 @@ export async function runtimeData ({ repo, protocols = null }) {
   const active = {}
   for (const [p] of await repo.select('/protocols/*')) {
     const name = p.slice(p.lastIndexOf('/') + 1)
-    if (name.endsWith('.json') && name !== 'layer.json') active[name.slice(0, -5)] = await read(p) ?? {}
+    if (name.endsWith('.json') && name !== '.layer.json') active[name.slice(0, -5)] = await read(p) ?? {}
   }
   return { service: await read('/runtime/service.json'), protocols, active }
 }
@@ -146,12 +147,12 @@ export function check (value, { service, protocols, active }, { state = true, in
 async function sendBack (ctx, name, core) {
   if (!core.topic) return
   await ensure(ctx, 'outbox')
-  const envelope = wrap(OUTBOX, core)
+  const envelope = wrap(OUTBOX, core, Number(name))
   await layer(ctx, 'outbox').put(name, envelope, `Output ${name}`)
   // Then its working folder: the record, for a subscriber watching it (git
   // first: the folder follows the record). Written whole, renamed into
   // place; the folder made if missing.
-  if (ctx.dir) outboxOf(ctx.dir).write(name, envelope)
+  if (ctx.dir) outboxOf(ctx.dir).put(Number(name), envelope)
 }
 
 const branches = async ctx => Object.fromEntries(await ctx.backend.listBranches())
@@ -171,8 +172,17 @@ const branches = async ctx => Object.fromEntries(await ctx.backend.listBranches(
 //                       trusted, its URI canonical only
 // No mark on the request: internal is having no record in the inbox, which
 // keeps its history (isInternal).
+// Its name: its offset (13 digits): the one it arrived with at the inbox;
+// the mrepo's own, given here by the mrepo's clock.
+// From the inbox, the pointer moves with it (POINTER): in the commit that
+// queues it; after the one that keeps it in done when it is not queued.
 // -> { name, queued, refused }
-export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at = null }) {
+export const POINTER = '.pointer'
+const point = (ctx, name) => layer(ctx, PENDING).put(POINTER, { inbox: name }, `Inbox taken in to ${name}`)
+export async function admit (ctx, core, { origin, name = null, at = null }) {
+  name ??= nameOf(origin === 'internal' && isComplete(core) ? offsetOf(ctx) : (core?.offset ?? offsetOf(ctx)))
+  if (core && core.offset == null) core = { ...core, offset: Number(name) }
+  const taken = origin === 'inbox' ? { [POINTER]: { inbox: name } } : {}
   let why = null
   let form = core?.value
   // a command as typed (its parts): interpreted here, the form filled in
@@ -181,7 +191,7 @@ export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at
   // a response collected by the mrepo itself (a completed form, for a
   // request waiting here): not a request to interpret or check; queued
   if (origin === 'internal' && isComplete(core)) {
-    await layer(ctx, PENDING).put(name, wrap(`/${PENDING}`, core), `Response ${name}`)
+    await layer(ctx, PENDING).put(name, wrap(`/${PENDING}`, core, Number(name)), `Response ${name}`)
     return { name, queued: true }
   }
   // (what is wrong with the request itself is said as it is; anything else
@@ -199,18 +209,20 @@ export async function admit (ctx, core, { origin, name = core?.key ?? guid(), at
     const done = complete(core, { ok: true, value: notRun(form, unrun) }, entries)
     await layer(ctx, DONE).put(name, wrap(`/${DONE}`, done), `Not run ${name}`)
     await sendBack(ctx, name, done)
+    if (origin === 'inbox') await point(ctx, name)
     return { name, notRun: unrun }
   }
   if (!why) {
     try { why = check(form, await runtimeData(ctx), origin === 'internal' ? { internal: true } : { state: false }) } catch (err) { why = `runtime: ${err.message}` }
   }
   if (why) {
-    const refused = complete(core ?? record(null, null, name), { ok: false, error: why })
+    const refused = complete(core ?? record(null, null, Number(name)), { ok: false, error: why })
     await layer(ctx, DONE).put(name, wrap(`/${DONE}`, refused), `Refused ${name}`)
     await sendBack(ctx, name, refused)
+    if (origin === 'inbox') await point(ctx, name)
     return { name, refused: why }
   }
-  await layer(ctx, PENDING).put(name, wrap(`/${PENDING}`, core), `${origin === 'internal' ? 'Internal' : 'Request'} ${name}: ${form.protocol} ${form.action} ${joined(form.uri)}`)
+  await layer(ctx, PENDING).put(name, wrap(`/${PENDING}`, core), `${origin === 'internal' ? 'Internal' : 'Request'} ${name}: ${form.protocol} ${form.action} ${joined(form.uri)}`, taken)
   return { name, queued: true }
 }
 
@@ -222,23 +234,41 @@ export const notRun = (form, why) => ({ run: false, command: Array.isArray(form.
 // keeps every record it was given; a preloaded request is internal too).
 export async function isInternal (ctx, name) {
   if (!(await branches(ctx)).inbox) return true
-  return !(await layer(ctx, 'inbox').list()).includes(name)
+  return !(await layer(ctx, 'inbox').has(name))
 }
 
 // An internal request: the mrepo's own, submitted straight to the handler,
 // tagged as triggered internally. Its topic null: nobody waits for it.
 // at: where its command stands (OWN, the mrepo's root, by default; OUTSIDE,
 // main, for a line written as from outside: a hook's). -> admit's result
-export const internal = (ctx, form, name = guid(), { at = null } = {}) => admit(ctx, { ...record(null, form, name), headers: { trigger: 'internal' } }, { origin: 'internal', name, at })
+export const internal = (ctx, form, name = nameOf(offsetOf(ctx)), { at = null } = {}) => admit(ctx, { ...record(null, form, Number(name)), headers: { trigger: 'internal' } }, { origin: 'internal', name, at })
 
-export async function untaken (ctx) {
+// The inbox's records not yet taken in, first come, first served: those
+// after the pointer (the last one taken in, kept with the queue:
+// request/pending/default/.pointer.json), in their natural order.
+export async function arriving (ctx) {
   const b = await branches(ctx)
   if (!b.inbox) return []
-  const taken = new Set()
-  for (const l of [PENDING, EXECUTE, DONE]) if (b[l]) for (const n of await layer(ctx, l).list()) taken.add(n)
-  for (const p of await principals(ctx)) taken.add(p.id) // being processed, or waiting, on its own branch
-  return (await layer(ctx, 'inbox').arrived()).filter(n => !taken.has(n))
+  // catch: no pointer yet: nothing taken in, all of them
+  const pointer = b[PENDING] ? await ctx.repo.read(`/${PENDING}/${POINTER}.json`).then(x => JSON.parse(x.toString()).inbox, () => null) : null
+  // read as a topic: its records after the pointer, ascending: an
+  // XPathResult, iterated; only the folders from the pointer's on are
+  // touched. Its layer declares its structure (its config); one that
+  // declares none is a folder, no inbox: said.
+  const topic = await query(reading(ctx), ['inbox', pointer === null ? '*' : `*[@offset>${Number(pointer)}]`], { mode: 'logical', ascending: true })
+  if (topic.metadata()?.logical.mode !== 'logical') throw new Error('the inbox is a folder, no topic: its layer declares no structure (inbox/.layer.json, structure: offset-files)')
+  return (await topic.all()).map(ref => nameOf(Number(ref.at.match(/@offset=(\d+)\]$/)[1])))
 }
+// The mrepo as a query reads it, outside a request's execution: the
+// runtime's own reads of its topics (nothing measured: no request's log).
+const reading = ctx => ({
+  id: null,
+  node: uri => ctx.repo.node(slashed(uri)),
+  children: node => ctx.repo.children(node),
+  bytes: node => ctx.repo.bytes(node),
+  find: path => ctx.repo.find(path),
+  step: (event, data, fn) => fn()
+})
 
 // A request's own branch of request/execute: execute/<key>/request/execute.
 // The request is processed there, never in request/execute itself, and the
@@ -248,8 +278,10 @@ export async function untaken (ctx) {
 export const requestBranch = id => `execute/${id}/${EXECUTE}`
 
 // The request branches here, each with its principal (the request the branch
-// is named after): { id, branch, core, waits (the child's key it waits for,
-// its command passed on), response (the child's completed form, once added) }.
+// is named after): { id, branch, core, waits (the child's offset it waits
+// for, at the child, its command passed on), response (the child's
+// completed form, once added: the branch's other record, under the offset
+// it was given here) }.
 // A branch not being processed has a waiting principal: waits, no response.
 export async function principals (ctx) {
   const out = []
@@ -259,8 +291,17 @@ export async function principals (ctx) {
     const read = n => ctx.repo.read(`/${b}/${n}.json`).then(x => JSON.parse(x.toString()), () => null)
     const core = (await read(id))?.value
     if (!core) continue
-    const waits = core.value?.remote?.key ?? null
-    out.push({ id, branch: b, core, waits, response: waits ? (await read(waits))?.value ?? null : null })
+    const waits = core.value?.remote?.offset ?? null
+    let response = null
+    if (waits !== null) {
+      for (const [path, n] of await ctx.repo.select(`/${b}/*`)) {
+        const other = n.type === 'blob' && path.endsWith('.json') ? path.slice(path.lastIndexOf('/') + 1, -'.json'.length) : null
+        if (!other || other === id || other.startsWith('.')) continue
+        const back = (await read(other))?.value
+        if (back?.offset === waits && isComplete(back)) response = back
+      }
+    }
+    out.push({ id, branch: b, core, waits, response })
   }
   return out
 }
@@ -288,48 +329,52 @@ export async function request (ctx) {
   // the handler into pending, as the mrepo's own.
   const all = await principals(ctx)
   if (ctx.dir) {
-    const queuedNow = await pending.list()
+    // (queued already: a response for that request in pending, not yet on
+    // its branch)
+    const queuedNow = []
+    for (const n of await pending.list()) { const c = (await pending.read(n)).value; if (isComplete(c)) queuedNow.push(`${c.topic}|${c.offset}`) }
     for (const p of all) {
-      if (!p.waits || p.response || queuedNow.includes(p.waits)) continue
-      const file = join(ctx.dir, p.core.value.remote.folder, 'outbox', `${p.waits}.json`)
-      if (!existsSync(file)) continue
-      const back = JSON.parse(readFileSync(file, 'utf8')).value
-      if (back?.key === p.waits && isComplete(back)) await admit(ctx, back, { origin: 'internal', name: p.waits })
+      if (!p.waits || p.response || queuedNow.includes(`${mine}${p.id}|${p.waits}`)) continue
+      const out = outboxOf(join(ctx.dir, p.core.value.remote.folder))
+      if (!out.has(p.waits)) continue
+      const back = out.read(p.waits).value
+      if (back?.offset === p.waits && isComplete(back)) await admit(ctx, back, { origin: 'internal' })
     }
   }
 
-  // The inbox taken in, when its head has moved, each record through the
-  // handler (admit); not while the mrepo is not operational yet (ctx.intake
-  // false: its internal requests first; the records wait in the inbox).
-  // (intake 'internal', while an mrepo boots: only its own requests, tagged
-  // by their trigger; the others left in the inbox, taken in after)
+  // The inbox taken in, when its head has moved, first come, first served:
+  // each record after the pointer, in its natural order, through the handler
+  // (admit), the pointer moved with it; not while the mrepo is not
+  // operational yet (ctx.intake false: its own requests first, placed
+  // straight; the records wait in the inbox, none taken ahead of another).
   const head = (await branches(ctx)).inbox
-  let deferred = false
   if (head && head !== ctx.seen.inbox && ctx.intake !== false) {
     const box = layer(ctx, 'inbox')
     const here = `/${ctx.uri ?? ctx.name}${INBOX}`
-    for (const name of await untaken(ctx)) {
+    for (const name of await arriving(ctx)) {
       let envelope = null
       // catch: a record that does not read is no request: refused below, as one that is none
       try { envelope = await box.read(name) } catch {}
-      if (ctx.intake === 'internal' && envelope?.value?.headers?.trigger !== 'internal') { deferred = true; continue }
       // misdelivered: the envelope's, before its content is looked at
       if (envelope && envelope.topic !== here) {
-        const refused = complete(envelope.value ?? record(null, null, name), { ok: false, error: `misdelivered: for ${envelope.topic}, this is ${here}` })
-        await done.put(name, wrap(`/${DONE}`, refused), `Refused ${name}`)
+        const refused = complete(envelope.value ?? record(null, null, Number(name)), { ok: false, error: `misdelivered: for ${envelope.topic}, this is ${here}` })
+        await done.put(name, wrap(`/${DONE}`, refused, Number(name)), `Refused ${name}`)
         await sendBack(ctx, name, refused)
+        await point(ctx, name)
         continue
       }
-      await admit(ctx, envelope?.value ?? null, { origin: 'inbox', name })
+      // (its offset: the one it arrived under, whatever it says itself)
+      const core = envelope?.value && typeof envelope.value === 'object' ? { ...envelope.value, offset: Number(name) } : null
+      await admit(ctx, core, { origin: 'inbox', name })
     }
-    if (!deferred) ctx.seen.inbox = head
+    ctx.seen.inbox = head
   }
 
   // A completed form: to done, then out of execute; sent back.
   for (const name of await execute.list()) {
     const core = (await execute.read(name)).value
     if (!isComplete(core)) continue
-    const into = wrap(`/${DONE}`, core)
+    const into = wrap(`/${DONE}`, core, Number(name))
     await done.put(name, into, `Done ${name}`)
     await execute.remove(name, `Done ${name}: out of execute`)
     // a child's response, merged in with its principal: kept in done, not
@@ -356,13 +401,14 @@ export async function request (ctx) {
     const id = isComplete(core) && typeof core.topic === 'string' && core.topic.startsWith(mine) ? core.topic.slice(mine.length) : null
     if (id !== null) {
       const p = now.find(x => x.id === id)
-      if (p?.waits === core.key) {
+      if (p?.waits === core.offset) {
+        // (under the offset it was given here: one name through this mrepo)
         const c = await ctx.writer.change(p.branch)
-        await c.put(`/${core.key}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, core)) + '\n'))
-        await c.commit(`${id}: the response of ${core.key}`, { author: AUTHOR })
+        await c.put(`/${next}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, core, Number(next))) + '\n'))
+        await c.commit(`${id}: the response of ${core.offset}`, { author: AUTHOR })
       } else {
         // nobody waits for it here: kept, in done
-        await done.put(next, wrap(`/${DONE}`, core), `Stray response ${next}`)
+        await done.put(next, wrap(`/${DONE}`, core, Number(next)), `Stray response ${next}`)
       }
       await pending.remove(next, `${next}: a response${p ? ` for ${id}` : ''}`)
       return

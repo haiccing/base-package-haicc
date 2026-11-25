@@ -1,0 +1,14 @@
+{
+  "name": "mycelium-xpath-physical",
+  "id": "8f6f2c53-5b0e-4a77-9d0a-3a6f7c1e2b94",
+  "description": "The physical side of a query: a node set's physical XPath, by its storage's structure type",
+  "type": "module",
+  "exports": "./index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "brittle": "4.5.0"
+  }
+}
