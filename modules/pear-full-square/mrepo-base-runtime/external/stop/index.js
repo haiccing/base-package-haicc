@@ -6,7 +6,6 @@ export async function stop (exec, { args: [path] = [] }) {
   const dir = exec.runtime.dir
   if (!dir) throw new Error('no directory in the context')
   const p = programAt(dir, path)
-  const r = await exec.step('program', x => ({ program: p.path, ended: x ?? null }), () => end(p.state))
-  exec.log('info', r ? 'ended' : 'not running', { program: p.path, ...(r ?? {}) })
-  return { stopped: p.path, ended: r }
+  const r = await exec.step('program', x => (x ? `Its program ended, pid ${x.pid}, ${x.how}.` : 'No program of it running.'), () => end(p.state))
+  return r ? `Ended the program of ${p.path}, pid ${r.pid} (${r.how}).` : `The program of ${p.path} was not running: nothing ended.`
 }

@@ -8,11 +8,6 @@ export async function goto (exec, { uri, args = [] }) {
   if (!args.length) throw new Error('missing argument: command')
   const whole = joined(segmented(uri))
   const command = args.join(' ')
-  // the mrepo itself, above its layers: its own commands, executed here
-  if (whole === ROOT) {
-    exec.log('verbose', 'executed here', { at: ROOT, command })
-    return exec.run(args, { at: positionOf(uri) })
-  }
   if (whole !== MAIN && !whole.startsWith(`${MAIN}/`)) throw new Error(`not a position in main: ${whole} (main, main/<position>)`)
   const result = await query(exec, uri)
   const found = await result.all()
@@ -31,12 +26,12 @@ export async function goto (exec, { uri, args = [] }) {
     // left of the URI in front of it, a goto there
     const [to] = links
     const sent = to.rest ? ['haicc', to.rest, ...args] : args
-    exec.log('verbose', 'sent on', { at: to.at, mrepo: to.shortcut.mrepo, command: sent.join(' ') })
+    exec.log('verbose', 'sent on', `Sent on at ${to.at}, to ${to.shortcut.mrepo}: ${sent.join(' ')}`)
     return exec.forward(to.shortcut, sent)
   }
   // ordinary nodes: executed here, in the context of each position: the
   // command that follows stands there, its URI read behind the position
-  const run = at => { exec.log('verbose', 'executed here', { at, command }); return exec.run(args, { at: positionOf([MAIN, at]) }) }
+  const run = at => { exec.log('verbose', 'executed here', `Executed here, at ${at}: ${command}`); return exec.run(args, { at: positionOf([MAIN, at]) }) }
   // a URI that names one position: there, or an error; what the command gave
   if (!selects(whole)) {
     if (!here.length) {
@@ -45,7 +40,7 @@ export async function goto (exec, { uri, args = [] }) {
       // unique URI (<swarm>/<node>): dispatch's, where this mrepo has it
       // active: routed there (dispatch/send), not through a shortcut.
       if (written.includes('/') && await exec.find('protocols/dispatch.json') !== null) {
-        exec.log('verbose', 'dispatched', { uri: written, command })
+        exec.log('verbose', 'dispatched', `Dispatched to ${written}: ${command}`)
         // catch: no such node in the swarm either: said as one error, the cause kept; anything else thrown on
         try { return await exec.run(['dispatch/send', written, ...args]) } catch (err) {
           if (!/^no node of the swarm by that unique URI/.test(err.message)) throw err
@@ -56,8 +51,10 @@ export async function goto (exec, { uri, args = [] }) {
     }
     return run(here[0].at)
   }
-  // one that selects: the command at each, in order; what each gave, a list
+  // one that selects: the command at each, in order; what each said, each
+  // under its position; their attachments together
   const out = []
-  for (const f of here) out.push({ at: f.at, value: await run(f.at) })
-  return out
+  for (const f of here) out.push({ at: f.at, ...(await run(f.at)) })
+  if (!out.length) return `No position selected by ${whole.slice(MAIN.length + 1) || ROOT}: nothing run.`
+  return { message: [`Run at ${out.length} ${out.length === 1 ? 'position' : 'positions'}.`, ...out.map(o => `== ${o.at}\n${o.message}`)].join('\n\n'), attachments: out.flatMap(o => o.attachments) }
 }

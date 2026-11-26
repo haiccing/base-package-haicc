@@ -1,0 +1,17 @@
+{
+  "name": "mycelium-avro",
+  "version": "0.1.0",
+  "description": "The base family's schemas in AVRO, whatever the encoding: types, names by URI, fingerprints, validation, is and is-like.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "avsc": "github:bare-for-pear/avsc#deedf716c9d529dfaac38de4676ab3cba2073468"
+  },
+  "devDependencies": {
+    "brittle": "4.5.0"
+  }
+}

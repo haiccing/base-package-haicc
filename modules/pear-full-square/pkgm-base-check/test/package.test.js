@@ -37,6 +37,15 @@ test('a package well formed: a folder for every test, a test of its own, whateve
   })
 })
 
+test('a test of its own that runs where the package is deployed, <name>-in-situ: in the in-situ set, not the others', async (t) => {
+  const files = { ...base, 'protocol.js': PROTOCOL, ...sets(['anything']), ...unit('anything'), ...unit('health-in-situ') }
+  await within(files, async d => {
+    t.alike(await details(d), ['test/health-in-situ: not in the validate-in-situ set'], 'not in the in-situ set: said; not asked for in validate and full')
+  })
+  files['test/validate-in-situ.json'] = { description: 'Where it is deployed.', tests: ['health-in-situ', 'info-in-situ', 'mrepo-in-situ'] }
+  await within(files, async d => { t.alike(await details(d), [], 'in the in-situ set: none') })
+})
+
 test('it tests what it provides: protocols, a program, hooks, a list, and no test of its own', async (t) => {
   await within({ ...base, 'protocol.js': PROTOCOL, ...sets() }, async d => {
     t.alike(await details(d), ['it provides the p protocol, the q protocol: no test of its own'], 'protocols untested: said, each named')

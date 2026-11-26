@@ -2,7 +2,7 @@
 // a module's <org>/<module>/<name>); its AVRO fullname by the data-name
 // mapping (base-docs-uri, "Data names"), exact both ways, each part its
 // data name: the name the core type, the namespace its variant's context
-// (base-docs-uri, "Core types").
+// (base-docs-avro, "Core types").
 //   haiccing/base-package-help/annotate-answer
 //   haiccing.basePackageHelp.annotateAnswer
 import { dataNameOf, uriFormOf, isDataName } from 'mycelium-uri'

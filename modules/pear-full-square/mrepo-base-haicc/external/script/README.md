@@ -21,7 +21,9 @@ its lines at `swarms/swarm-1` in the host.
 
 ## Returns
 
-`[{ line, output }]`: each line and what it answered.
+`Ran <n> lines at <position>.`, then each line and what it said, each
+under its line (`> <line>`); their attachments together. A line that
+fails ends it: failed, `line <n>: <line>: <what it said>`.
 
 ## Errors
 

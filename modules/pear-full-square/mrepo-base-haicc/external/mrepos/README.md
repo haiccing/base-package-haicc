@@ -29,14 +29,19 @@ haicc . haicc/mrepos "*/*[package='haiccing/base-component-docs']"
 
 ## Returns
 
-A list, `[{ uri, position, package, running }]`, in unique URI order:
+`<n> mrepos in the install's registry.` (selected: `<n> of the install's
+<m> mrepos selected by <xpath>.`), then a line each, in unique URI
+order, its unique URI first, exact: `<uri> at <position>, from
+<package>, running.`
 
-- `uri`: its unique URI.
-- `position`: where it is from the mrepo asked, the positions of the
+- its position: where it is from the mrepo asked, the positions of the
   links down to it, forward only (`workbench/docs`; `.`, the mrepo
-  itself); `null` where it is not forward of it.
-- `package`: the package that defines it, its list's last.
-- `running`: its runtime answering.
+  itself); `not reached from here` where it is not forward of it;
+- its package: the one that defines it (its list's last);
+- `running` or `not running`: its runtime answering over its socket.
+
+Nothing selected: said, `None of the install's <m> mrepos selected by
+<xpath>.`
 
 ## Errors
 

@@ -36,7 +36,7 @@ is(reg, fingerprint, schema)      // AVRO's own: by name or declared alias
   the data-name mapping (`base-docs-uri`, "Data names"), exact both ways,
   each part its data name (`haiccing.basePackageHelp.annotateAnswer`):
   `fullnameOf`, `uriOf`. The name is the core type, the namespace its
-  variant (`base-docs-uri`, "Core types"; `partsOf`). A name that does
+  variant (`base-docs-avro`, "Core types"; `partsOf`). A name that does
   not map is still a valid schema, known by its fingerprint only.
 - **Its identity is its fingerprint**, a content hash: the AVRO
   specification's CRC-64-AVRO of its Parsing Canonical Form, written as

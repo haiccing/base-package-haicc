@@ -3,8 +3,8 @@
 The mrepo request protocol: it takes requests in from the inbox and moves
 them through pending, execute and done.
 
-A request is a record. It is checked at the inbox against the mrepo's API
-and service state, queued in `request/pending/default`, moved one at a time
+A request arrives in a record. It is checked at the inbox against its
+declared types and the mrepo's API, queued in `request/pending/default`, moved one at a time
 into `request/execute`, then into `request/done`, and sent back through the
 outbox. The module also holds the records, the boxes, logging, following,
 and the mrepo's storage setting. The runtime runs it, one pass at a time.
@@ -13,35 +13,45 @@ and the mrepo's storage setting. The runtime runs it, one pass at a time.
 
 - [flags](flags/)
 - [lib](lib/)
-- [schemas](schemas/)
 - [test](test/)
 
 ## Design
 
 The mrepo request protocol, base variant: a repository's inbox taken in,
-each message (a record)
-validated against its API and its service state, placed in
+each record
+validated by its types and against its API, placed in
 `request/pending/default`; the next request moved into `request/execute`; a
-completed one copied into `request/done` and answered. One pass at a time,
+returned one copied into `request/done` and answered. One pass at a time,
 over data states, run by the repository's runtime (`mrepo-base-runtime`).
 Also the records, the boxes and the local dispatcher, and the repository's
 setting.
 
-- **Records are an onion**: the core (the pre-filled form: its topic where
-  it is to arrive back, its value the request) in an envelope (its topic
-  the destination); each hand-over replaces the envelope; execution
-  completes the form (`output` or `error`); the completed form is sent back
-  into the outbox, in an envelope. Headers empty for now.
+- **A record around a request**, one level (`lib/record.js`, `record`):
+  the transport's envelope, `topic`, `key`, `offset`, `timestamp`
+  (a time as JSON holds one, ISO 8601), `headers` (empty for now), and its value, the request;
+  each hand-over a new record, its topic the new place, around the same
+  request. Their types are the runtime package's
+  (`haiccing/base-package-runtime`, `types/`: `record`, `request`),
+  named here by their URIs (`TYPES`).
+- **A request is self-contained** (`lib/request.js`): its `command`, the
+  line as typed; who asked and where its answer goes its own (`from`,
+  `to`, `reply`, `origin`), whatever carries it; its `form`, the command
+  as understood; its `processing` (log, metrics, what it waits for);
+  what is `returned`: `done` or `failed`, and a message, natural
+  language, the outcome first, a fact a line. A function a step, each
+  giving a new request: `asked`, `filled`, `understood`, `noted`,
+  `measured`, `returned`, `isReturned`; `unread`, what stands for
+  something that came in and is no request.
 - **A request's identity is its offset** (`lib/record.js`): the
   milliseconds since the epoch when it arrived at the mrepo, a number,
-  never two the same there: on its record and every envelope around it
-  (`offset`), and its name in every layer, 13 digits (`nameOf`). One
-  mrepo's: a record from another (a child's response) gets its own
-  here, on its envelope, and keeps the other's on its core.
-- **The drop method** (`lib/boxes.js`): `drop(dir, uri, core)`, the one
-  way anyone drops a record into an mrepo's inbox: its offset given
+  never two the same there: on every record around it (`offset`), and
+  its name in every layer, 13 digits (`nameOf`). One mrepo's: a request
+  from another (a child's answer) gets its own here, on its record, the
+  other's kept as the record's `key`.
+- **The drop method** (`lib/boxes.js`): `drop(dir, uri, request)`, the one
+  way anyone drops a request into an mrepo's inbox: its offset given
   under the inbox folder's lock (a streaming folder,
-  `mycelium-container-document`), stamped on the core and its envelope,
+  `mycelium-container-document`), on the record around it,
   the file written: its offset back, the sender's confirmation.
   `answered(dir, offset)` waits for its response in the outbox folder
   under the same offset. The mrepo's own requests take their offsets
@@ -72,43 +82,40 @@ setting.
 - **A queue beside an mrepo** (`queueOf`, `keyed`): a component's side
   boxes, records taken and removed, under a key of the exchange's own:
   no stream.
-- **Logs and following**: `logger(detail)` (`log(level, event, data)`;
+- **Logs and following**: `logger(detail)` (`log(level, event, line)`: an
+  entry the request type's, `time`, `level`, `event`, and what happened,
+  a line;
   `error` and `warn` always kept, of `info`, `verbose`, `debug` as much
-  as `detail` says, `info` by default; `level(to)` sets it from there on;
-  the entries into the completed form, `complete(core, result,
-  entries)`); `follow({ dir, name })` prints
+  as `detail` says, `info` by default; `level(to)` sets it from there on);
+  `follow({ dir, name })` prints
   each record as it arrives in an mrepo's request layers and its children's
   in view, one compact line a record, its topic the full path; `settled()`:
   every request done (none pending or executing in any of them).
-- **Typed records** (`lib/typed.js`, `schemas/request.json`): a record
-  as AVRO, the cascade (`mycelium-value-avro`): the record, its value
-  the form completed (`request`: what it asked, then its output or its
-  error, its log; the form's other fields in `more`), in that its
-  arguments and its output, single-object encoded, the action's own
-  schema when given and valid, else `json`; an envelope a level more.
-  `encodeRecord(reg, record, { args, output })`, `decodeRecord(reg,
-  bytes)`, back as JSON holds it; `logHandler(reg, opts)`, the value
-  handler for a topic of records, a node's log. The request layers, the
-  inbox and the outbox stay JSON.
-- **A request's form**: `{ protocol, action, uri, args }`, the arguments a
-  list, unnamed. A request may also be given as a command, as it is typed:
-  its parts in order, `<protocol>/<action> <URI> <argument>...`, an array
-  or a string (`{ command }`, or the value itself). It is interpreted on
-  its way into pending (`interpret(command, protocols, at)`, `formOf`):
-  the protocol alone takes its default action (its config's `default`).
-  The command stays in the form, beside what it was interpreted as.
-- **A continuation** (`lib/record.js`: `continuationOf`, `CEILING`,
-  `complete`): a completed form may hold, beside its output, a script
+- **A request's form**: `{ protocol, action, uri, args, flags }`, the
+  arguments a list of texts, unnamed, the flags a record, a field a flag. A request
+  is asked as a command line, as it is typed: `<protocol>/<action> <URI>
+  <argument>...`. Its line is read by the one parser (`words`, the
+  shell's way; `lineOf`, words written as a line, the way back) and
+  understood on its way into pending (`understood`: `read(words,
+  protocols, at)`, `interpret`): the protocol alone takes its default
+  action (its config's `default`). The line stays the request's
+  `command`, beside its form.
+- **A continuation** (`lib/record.js`: `continuationOf`, `CEILING`): a
+  request's processing may hold a script
   for who asked to go on with: `{ at, script }`, shell text calling
   `haicc`, at most 64 KiB, and the position it is run for.
 - **Flags** (`lib/flags.js`, the flags there are in `flags/`, a folder
   each): written after a command's URI, after
   `--flags`, space separated, a flag alone or `key=value`: that step's.
   The list runs to the end of the command, or to a `--` with its
-  arguments after it. In the form a map, `flags`, there only when one
-  was written or came with the request (a command sent on brings the
-  sender's flags that hold down a chain, `chained`: such a flag holds
-  until changed). After the URI of
+  arguments after it. In the form a record, `flags`, a field each flag there is, each its
+  own type (`typed`, `NONE`; the runtime package's `requestFlags`): one
+  that stands alone a boolean, false when not written; one that takes a
+  value a text, null when not written. Every function reads the map as
+  written and the record the same (`chained`: those that hold down a
+  chain; `carrying(words, flags, protocols)`: a command sent on, or run
+  inside another, with them written into its words, at the head of its
+  own list or in one of its own after its URI). After the URI of
   an action that passes its words on (its config: `command: true`) the
   list is that step's and the next command starts after the `--` that
   closes it. A list is closed by `--` or by the end of the command,
@@ -125,42 +132,56 @@ setting.
   its flag does not take (a tail flag with no text), a rewrite on a
   command that is not the last or whose protocol is not here, more than
   one rewrite: nothing of the command is run; at the door
-  the request completes, not failed, its output `{ run: false, command,
-  why }` (`notRun`), each reason a warning in its log. **A rewrite**
+  the request is returned `failed`, `Not run: its flags.`, then each
+  reason a line, each a warning in its log too. **A rewrite**
   (`help`, `feedback`): the command it is on becomes another request
-  before the door, which checks the rewritten one (`rewritten` in the
-  form says which flag): `help` makes it `help/annotate`, `feedback`
+  before the door, which checks the rewritten one (its line as typed
+  still its `command`): `help` makes it `help/annotate`, `feedback`
   `haici/feedback`, at the same URI.
 - **A request's URI is relative**: no leading slash, as written where
   its writer stands. `.` is the position itself, and so is none given;
-  `./x` is `x`. From outside the writer stands at `main` (`MAIN`), so the
-  outside reaches `main` only; the mrepo's own requests, a hook, stand at
-  its root and name the layer first. A leading slash is refused.
-- **Inside, a URI is an array of segments**: in the form, the prefix
-  where the writer stands, then the URI as written. From outside
-  (`OUTSIDE`) that is the prefix `main` and one segment: `host` is
-  `["main", "host"]`, no URI `["main", "."]`; a command executed at a
-  position in `main` (`haicc`'s `goto`) stands there, the position a
-  segment between: `["main", "swarms/swarm-1", "."]`. The mrepo's own (`OWN`)
-  have no prefix: `["."]`, `["runtime/hooks"]`. Outside, a URI is one
-  segment, as it is written: a form given filled in carries it so. The
-  URI functions are `mycelium-uri`'s, offered here too: `relative`,
-  `segmented`, `joined`, `positionOf`, `slashed`.
-- **One way into pending** (`admit(ctx, core, { origin })`): the inbox's
-  records and internal requests (`internal(ctx, form)`, the mrepo's own)
-  pass the same handler, validated by where they come from; refused, the
-  form completed with the error in `request/done`. No mark: a request is
+  `./x` is `x`. A leading slash is refused.
+- **Inside, a URI is a chain of parts, one pattern for every request**
+  (the human, 2026-11-26: "to avoid having to parse repeatedly"; "it
+  always starts with the mrepo layer to begin with. That is then follow
+  by URI local root positions, ending in a relative end URI"; "use one
+  path"): the layer first, then the local root positions gone through,
+  then the URI as written, the last; kept apart, so no boundary is
+  parsed again. A request stands at `main` (`STANDING`) unless a
+  position or a flag says another: `host` is `["main", "host"]`, no URI
+  `["main", "."]`; a command executed at a position in `main`
+  (`haicc`'s `goto`) stands there: `["main", "swarms/swarm-1", "."]`;
+  another layer by its flag: `["runtime", "hooks"]`. What led to this
+  mrepo is not in it: forward visibility only. The mrepo's own requests
+  (a hook's line) are written the same way; they differ in what they
+  are allowed (any layer, not asked whether a protocol is active), not
+  in their URI. Read as one URI, for a query: its parts joined
+  (`joined`). The URI functions are `mycelium-uri`'s, offered here too:
+  `relative`, `segmented`, `joined`, `positionOf`, `slashed`.
+- **Checked by its types at the inbox** (`wrong(ctx, record)`): the
+  record without its value and the request, each asked of the schema
+  registry as the runtime reaches it (`ctx.registry`, `valid(uri,
+  value)`), strict; what is wrong said, where. No registry: nothing is
+  taken in.
+- **One way into pending** (`admit(ctx, request, { origin })`): the
+  inbox's requests and internal ones (`internal(ctx, command)`, the
+  mrepo's own, a line or its words) pass the same handler, validated by
+  where they come from; refused, the request returned `failed` in
+  `request/done` (`refusal`: `Refused, nothing run.`, then why, a fact
+  a line) and sent back where it names (`reply`). No mark: a request is
   internal when the inbox has no record of it (`isInternal(ctx, name)`).
   `ctx.intake === false`: the inbox not taken in yet.
 - **A request begins on its own branch** (`begin`, `principals`,
   `requestBranch`): from pending straight onto
   `execute/<offset>/request/execute`, its principal; never into
-  `request/execute` itself, which only receives completed requests by
+  `request/execute` itself, which only receives returned requests by
   merge, on their way to done. One at a time: the next begins when no
   branch is being processed.
 - **Waiting principals**: a branch not being processed has one, which says
-  which child it waits for. The child's response is collected from its
-  outbox folder into pending (the mrepo's own) and, at the front of the
+  what it waits for (`processing.waiting`: the folder, the offset there).
+  The child's answer is collected from its
+  outbox folder into pending (the mrepo's own, its record's key that
+  offset) and, at the front of the
   queue, added to that branch as a record of its own. Merged in with its
   principal, it goes to `request/done` and is not sent on. A response
   nobody waits for goes to `request/done`. `settled()` counts any request
@@ -197,4 +218,4 @@ setting.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the inbox on p2p-git and native git, a command interpreted, the check of a request (activation, state, internal), hooks and a script's lines, flags, the log, a record; each test by its name in [test/](test/).
+- `brittle-bare test/*.test.js` (Bare installed): the inbox on p2p-git and native git, the pass (a request taken in, refused, the mrepo's own, an answer collected), a request's steps, a command interpreted, the check of a request (activation, state, internal), hooks and a script's lines, flags, the log, a record; each test by its name in [test/](test/).

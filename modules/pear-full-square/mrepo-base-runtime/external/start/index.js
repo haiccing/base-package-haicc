@@ -10,9 +10,8 @@ export async function start (exec, { args: [path] = [] }, { bare } = {}) {
   const p = programAt(dir, path)
   if (!existsSync(p.bundle)) throw new Error(`no package there: ${p.path} (its bundle, ${p.path}.bundle, in the mrepo's folder)`)
   const was = stateOf(p.state)
-  if (was) { exec.log('verbose', 'running already', { program: p.path, pid: was.pid }); return { started: p.path, already: true, state: was } }
-  const s = await exec.step('program', r => ({ program: p.path, pid: r?.pid ?? null }), () => launch({ bundle: p.bundle, dir, state: p.state, ...(bare ? { bare } : {}) }))
+  if (was) return `The program of ${p.path} is running already, pid ${was.pid}: left as it is.`
+  const s = await exec.step('program', r => (r ? `Its program launched, pid ${r.pid}.` : 'Its program launched, no state written.'), () => launch({ bundle: p.bundle, dir, state: p.state, ...(bare ? { bare } : {}) }))
   if (!s) throw new Error(`its program did not start: ${p.path} (no state written in 10 s: ${p.path}.state.json)`)
-  exec.log('info', 'started', { program: p.path, pid: s.pid })
-  return { started: p.path, state: s }
+  return `Started the program of ${p.path}, pid ${s.pid}.`
 }

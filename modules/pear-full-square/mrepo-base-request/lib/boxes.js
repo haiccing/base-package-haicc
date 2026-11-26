@@ -1,14 +1,13 @@
 // A repository's boxes, as layers:
 // `inbox` and `outbox`, non-atomic (git on disk), streaming: a record a
 // document, its name its offset, kept in buckets; nothing removed
-// (housekeeping later). What arrives in the inbox is an envelope: its topic
-// this repository's inbox (/<name>/inbox), its value the core record (the
-// pre-filled form).
+// (housekeeping later). What arrives in the inbox is a record: its topic
+// this repository's inbox (/<name>/inbox), its value the request.
 // The boxes' folders are streaming folders (mycelium-container-document):
-//   drop(dir, uri, core)     THE way a record is dropped into an mrepo's
+//   drop(dir, uri, request)  THE way a request is dropped into an mrepo's
 //                            inbox, by everyone: its offset given under the
-//                            folder's lock (the time it arrives), stamped on
-//                            the core and its envelope, the file written:
+//                            folder's lock (the time it arrives), on its
+//                            record, the file written:
 //                            -> its offset, the sender's confirmation
 //   answered(dir, offset)    its completed form waited for in the mrepo's
 //                            outbox folder, under the same offset
@@ -24,7 +23,7 @@
 import { join } from 'bare-path'
 import { existsSync, readFileSync, watch } from 'bare-fs'
 import { stream, documents, nameOf, BUCKETS } from 'mycelium-container-document'
-import { wrap, stamp, tick } from './record.js'
+import { record, stamp, tick } from './record.js'
 import * as json from 'mycelium-value-json'
 import { viewOf, setting } from './view.js'
 import { layer, AUTHOR, CONFIG, declarationOf } from './layer.js'
@@ -50,15 +49,15 @@ export const outboxOf = dir => box(join(dir, 'outbox'))
 // documents, each taken and removed, named by a key of the exchange's own;
 // no stream: nothing stays, nothing is ordered.
 //   queueOf(folder)            its documents (JSON)
-//   keyed(topic, inner, key)   an envelope and its record under that key
+//   keyed(topic, value, key)   a record under that key
 export const queueOf = folder => documents(folder, json)
-export const keyed = (topic, inner, key) => ({ ...wrap(topic, { ...inner, key }), key })
+export const keyed = (topic, value, key) => record(topic, value, null, key)
 
 // The mrepo's clock: an offset given, never two the same there: its inbox
 // folder's (the one lock every sender takes), the runtime's (ctx.offset).
 export const offsetOf = ctx => ctx.offset ? ctx.offset() : tick()
 
-export const drop = (dir, uri, core) => inboxOf(dir).create(offset => wrap(`/${uri}/inbox`, { ...core, offset }))
+export const drop = (dir, uri, request) => inboxOf(dir).create(offset => record(`/${uri}/inbox`, request, offset))
 
 // -> the record as stored (its text), null when none came in time
 export async function answered (dir, offset, { timeout = 120, every = 200 } = {}) {

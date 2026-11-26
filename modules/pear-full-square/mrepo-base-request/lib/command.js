@@ -1,46 +1,46 @@
-// A command: a request as it is typed, its parts in order,
+// A command: a request as it is typed, its words in order (lib/lines.js,
+// the one parser, splits its line),
 //   <protocol>/<action> <URI> <argument>...
-// given as an array of parts or as a string (split at its spaces).
 //
 // A URI in a request is relative: no leading slash, relative to where its
 // writer stands. `.` is the position itself; none given means `.`; `./x`
-// is `x`. Outside it is one segment, as it is written.
-// Inside, in the form the mrepo works with, a URI is an array of segments
-// (mycelium-uri): the prefix where its writer stands, then the URI as it
-// was written:
-//   OUTSIDE   a request from outside stands at the mrepo's main: the prefix
-//             main, two segments: ['main', 'host'], ['main', '.']; the
-//             outside is restricted to main
-//   OWN       the mrepo itself (a hook, a request of its own) stands at its
-//             root, the folder above the layers: no prefix, one segment,
-//             the layer first in it: ['runtime/hooks'], ['.']
+// is `x`. As it is written it is one URI.
+// Inside, in the form the mrepo works with, a URI is a chain of parts
+// (mycelium-uri), kept apart so no boundary is parsed again: the layer
+// first, then the local root positions gone through, then the URI as it
+// was written, the last. One pattern for every request, whoever asks: it
+// stands at the mrepo's main (STANDING) unless a position (a haicc
+// command went there) or a flag (layer=<name>) says another:
+// ['main', 'host'], ['main', '.'], ['main', 'swarms/swarm-1', '.'],
+// ['runtime', 'hooks']. What led to this mrepo is not in it: forward
+// visibility only. (Read as one URI, for a query: its parts joined.)
+// The mrepo's own requests differ in what they are allowed, not in how
+// their URI is written: any layer, by the flag, as anyone names one.
 //
 // Flags (lib/flags.js) are written after a command's URI, after the word
-// --flags: the flags of that step. In the form they are a map, `flags`,
-// there only when one was written or came with the request. After the URI
-// of a command that passes its words on (its action's config: `command:
-// true`, haicc's goto) the list is that step's, and the next command
-// starts after the -- that closes it; the words of that command are left
-// as written: a list among them is its own.
+// --flags: the flags of that step. After the URI of a command that passes
+// its words on (its action's config: `command: true`, haicc's goto) the
+// list is that step's, and the next command starts after the -- that
+// closes it; the words of that command are left as written: a list among
+// them is its own.
 import { relative, ROOT } from 'mycelium-uri'
 import { split, layerOf, sorted, chained, rewrites, WORD, END } from './flags.js'
 
 export { ROOT }
 export const MAIN = 'main'
-export const OUTSIDE = [MAIN]
-export const OWN = []
+// Where a request stands when nothing says another: the layer main.
+export const STANDING = [MAIN]
 
-//   interpret(command, protocols, at) -> { protocol, action, uri, args, flags? }
-//     the first part    <protocol>/<action>; the protocol alone: its default
+//   interpret(words, protocols, at) -> { protocol, action, uri, args, flags? }
+//     the first word    <protocol>/<action>; the protocol alone: its default
 //                       action (its config's `default`, in protocols)
 //     the second        the URI, as written where the writer stands (at,
-//                       a prefix: OWN by default); none: `.`; in the form
-//                       the prefix's segments, then it
+//                       the parts before it: STANDING by default); none:
+//                       `.`; in the form those parts, then it
 //     the rest          the arguments, a list, unnamed
 // Throws when it is no command, or the action cannot be told.
-export function interpret (command, protocols = {}, at = OWN) {
-  const given = typeof command === 'string' ? command.trim().split(/\s+/).filter(Boolean) : command
-  if (!Array.isArray(given) || !given.length || given.some(p => typeof p !== 'string' || !p)) throw new Error('not a command: its parts, <protocol>/<action> <URI> <arguments>')
+export function interpret (given, protocols = {}, at = STANDING) {
+  if (!Array.isArray(given) || !given.length || given.some(p => typeof p !== 'string' || !p)) throw new Error('not a command: its words, <protocol>/<action> <URI> <arguments>')
   const first = given[0]
   if (first === WORD) throw new Error(`not a command: flags follow a command's URI (<protocol>/<action> <URI> ${WORD} <flag>... [${END}] ...)`)
   const names = first.split('/')
@@ -56,27 +56,26 @@ export function interpret (command, protocols = {}, at = OWN) {
   return { protocol, action, uri: [...at, relative(second)], args, ...(Object.keys(flags).length ? { flags } : {}) }
 }
 
-// The flags a request carries: those that came with it that hold down a
-// chain (a command sent on brings the sender's: such a flag holds until
-// changed), under those written with its own command.
-const carried = (value, own) => {
-  const flags = { ...chained(value.flags), ...(own ?? {}) }
-  return Object.keys(flags).length ? { flags } : {}
-}
+// A command line's words (lib/lines.js, the one parser) read as the form
+// the mrepo works with, where the writer stands: interpreted, a rewrite
+// flag applied, its URI at the layer its flags say. What a request's form
+// is made by (lib/request.js, understood); throws when it is no command.
+export const read = (parts, protocols = {}, at = STANDING) => layered(rewritten(interpret(parts, protocols, at), protocols), protocols)
 
-// A request's value, as it is given, made the form the mrepo works with:
-// a command (a string, an array of parts, or { command }) interpreted, its
-// protocol, action, URI and arguments beside it; a form given filled in
-// ({ protocol, action, uri, args }): its URI, one segment as written, taken
-// where the writer stands, the same. Once: a form is made where a request
-// comes in.
-export function formOf (value, protocols = {}, at = OWN) {
-  if (typeof value === 'string' || Array.isArray(value)) value = { command: value }
-  if (!value || typeof value !== 'object') return value
-  if (value.command !== undefined && value.protocol === undefined) { const form = interpret(value.command, protocols, at); return layered(rewritten({ ...value, ...form, ...carried(value, form.flags) }, protocols), protocols) }
-  if (value.protocol === undefined) return value
-  if (Array.isArray(value.uri)) throw new Error('not a URI: one segment, as it is written')
-  return layered({ ...value, uri: [...at, relative(value.uri)] }, protocols)
+// A command's words with the flags in force written into them: what a
+// command sent on, or run inside another, takes with it (those that hold
+// down a chain; a fact once: in its line, nowhere beside it). Written at
+// the head of its own flag list, so what it writes itself comes after and
+// holds; where it has none, a list of its own after its URI, closed.
+export function carrying (parts, flags = {}, protocols = {}) {
+  const held = Object.entries(chained(sorted(flags).flags)).map(([flag, value]) => (value === true ? flag : `${flag}=${value}`))
+  if (!held.length || !Array.isArray(parts) || !parts.length) return parts
+  const [protocol, action = protocols?.[protocol]?.default] = parts[0].split('/')
+  const passes = passesOn({ protocol, action }, protocols)
+  const i = passes ? ([1, 2].find(k => parts[k] === WORD) ?? -1) : parts.indexOf(WORD, 1)
+  if (i >= 0) return [...parts.slice(0, i + 1), ...held, ...parts.slice(i + 1)]
+  const at = Math.min(2, parts.length)
+  return [...parts.slice(0, at), WORD, ...held, END, ...parts.slice(at)]
 }
 
 // What keeps a command from being run, by its flags (strict: nothing of it
@@ -97,16 +96,16 @@ export function problems (form, protocols = {}) {
 
 // A rewrite flag applied (when nothing keeps the command from being run):
 // the command it is on becomes the request its flag says, before the door,
-// which checks the rewritten one; the flag gone from it; `rewritten` says
-// which. The command stays in the form as typed. rewrite(form, value): the
-// flag's value given with the form (a tail flag's: its text).
+// which checks the rewritten one; the flag gone from it. The command as
+// typed is the request's own line. rewrite(form, value): the flag's value
+// given with the form (a tail flag's: its text).
 function rewritten (form, protocols) {
   const found = rewrites(form.flags)
   if (!found.length || problems(form, protocols).length) return form
   const [flag, f] = found[0]
   const { [flag]: gone, ...rest } = form.flags
   const { flags, ...plain } = form
-  return { ...plain, ...f.rewrite(form, form.flags[flag]), ...(Object.keys(rest).length ? { flags: rest } : {}), rewritten: flag }
+  return { ...plain, ...f.rewrite(form, form.flags[flag]), ...(Object.keys(rest).length ? { flags: rest } : {}) }
 }
 
 // main is the default layer of a request that stands there: a flag changes

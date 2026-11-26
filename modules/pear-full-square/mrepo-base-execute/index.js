@@ -1,7 +1,7 @@
 // mrepo-base-execute: the execute protocol, base variant. One pass over its
 // data state, given the runtime's context ({ name, repo, writer, backend }):
-// a request on its own branch of request/execute (an envelope around the
-// core, the pre-filled form), its form not yet completed:
+// a request on its own branch of request/execute (a record around it), not
+// yet returned:
 //   1. checked again against the runtime's data as it is now (the service
 //      state may have moved since it was queued); its action run inside the
 //      execution context (read-only to it, frozen): it reads a target
@@ -16,68 +16,87 @@
 //      there, the request's: what it did on its branch, commit by commit,
 //      stays out of the target's history), then removed (a failure:
 //      removed, nothing squashed)
-//   4. the form completed with its output (or the error that stopped it),
-//      written in its envelope through execute/<key>/request/execute, merged
-//      into request/execute (the request completed: the request protocol
-//      moves it to done, then starts the next pending)
-// executed(ctx, name, record): step 4 alone, a form completed elsewhere (the
-// boot's own request) handed over the same way; a runtime running on the
+//   4. the request returned: done, with what its action says and its
+//      attachments, or failed, with what stopped it; written in its record
+//      through execute/<key>/request/execute, merged into request/execute
+//      (the request protocol moves it to done, then starts the next
+//      pending)
+// An action: fn(exec, form) -> what it says happened, natural language (the
+// outcome first, a fact a line, names exact): a text, or { message,
+// attachments } where data is its product, each attachment its name, its
+// type's URI and where its value is. One that says nothing fails its
+// request. What it throws fails it: its message what is said.
+// executed(ctx, name, record): step 4 alone, a request returned elsewhere
+// (the boot's own) handed over the same way; a runtime running on the
 // repository may merge it first: found done then.
-// failed(ctx, why): a runtime's pass that failed, its error in the request
-// executing (its form completed with it: `runtime: <message>`); the names
-// completed ([]: none was executing).
+// failed(ctx, why): a runtime's pass that failed, said in the request
+// executing (returned failed); the names returned ([]: none was executing).
 // A request is processed on its own branch of request/execute (begun there
 // by the request protocol, straight from pending), which only ever adds: its
-// principal, what it waits for, a child's response, its completion; merged
+// principal, what it waits for, a child's answer, its completion; merged
 // into request/execute then, and removed.
 // A command sent on (lib/remote.js): an action that finds its position a
 // shortcut sends the command that follows to the mrepo linked there
 // (exec.forward). The request's processing ends there: what it waits for is
-// added to its principal; a request branch not being processed has a
-// waiting principal. The request protocol adds the child's response to the
-// branch; the principal is then returned with it here.
-// A command executed here (exec.run): interpreted, checked as this request
+// said on it (processing.waiting); a request branch not being processed has
+// a waiting principal. The request protocol adds the child's answer to the
+// branch; the principal is then returned with it here: what was returned
+// there its own. What happened to it there is not copied: the request it
+// became is linked (processing.sent: the mrepo, its offset there), found
+// in that mrepo's request/done.
+// A command executed here (exec.run): understood, checked as this request
 // is, its action run in this same execution. Its URI is read as written
-// where it stands: at the root for the mrepo's own (a hook), at main for
-// one from outside, at the position a haicc command went to.
+// where it stands: at main, or at the position a haicc command went to.
 // A request's URI is an array of segments, a prefix then the URI as
 // written (['main', 'host']); the paths the execution reads and writes by
 // are given relative from the root (main/x) or slash-led (/main/x), the
 // same.
-// The request's log (its record's `log`): made here, at the boundary, for
-// every request, whatever its action does:
-//   info      what it gets unasked: what it changed, a target a line
-//             (request.changed: the paths added, changed, removed), where
-//             it was sent on (request.sent), and its metrics, the closing
-//             line (request.metrics: ok, ms, reads, selects, puts, removes,
-//             commits)
-//   verbose   the action's steps, debug its internals: the action's own
-//             entries (exec.log), stored under its protocol and action
-//             (crud.read.<event>); and at debug this boundary's own steps
-//             (train.<event>, each with its ms)
-//   error     what stopped it (request.failed: the error, the chain of its
-//             causes, the step it was at, what was undone; its stack at
-//             debug); warn: a flag a request carries that is none (at the
-//             door such a request is not run: mrepo-base-request,
-//             problems; request.flag). Both always kept.
-// How much is kept is the request's flag, log=info|verbose|debug (info
-// without it). A flag holds through a chain until changed: a command run
-// here (exec.run) can set it from there on, one sent on takes the flags in
-// force with it, and the entries of the request it became come back with
-// its response, each under its jump (`jump`: the positions gone through).
-import { wrap, record, streamOf, complete, continuationOf, isComplete, logger, sorted, problems, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, formOf, joined, slashed, OUTSIDE, OWN } from 'mrepo-base-request'
+// What happened to the request on its way (its processing), made here, at
+// the boundary, for every request, whatever its action does. A fact once:
+// what has a field is not said in a line beside it.
+//   metrics   how long it took, what it read and wrote (ms, reads,
+//             selects, puts, removes, commits)
+//   changed   what it changed, a target each: the paths added, changed,
+//             removed (at most LISTED of a target; beyond: said in its log)
+//   waiting   what it waits for, sent on or parked; sent, the request it
+//             became where it was sent on, a link
+//   log       its entries, a line each ({ time, level, event, line }):
+//             verbose: the action's steps, debug its internals: the
+//             action's own entries (exec.log), under its protocol and
+//             action (crud.read.<event>); and at debug this boundary's own
+//             steps (train.<event>, each with what it took); error: what
+//             stopped it (request.failed: the error, the step it was at,
+//             what was undone; its stack at debug); always kept
+// How much of the log is kept is the request's flag, log=info|verbose|debug
+// (info without it). A flag holds through a chain until changed: a command
+// run here (exec.run) can set it from there on, one sent on takes the flags
+// in force with it, written into its line; the entries of the request it
+// became are that request's own, there.
+import { record, continuationOf, logger, sorted, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, asked, understood, measured, returned, isReturned, refusal, carrying, words, lineOf, joined, slashed, STANDING } from 'mrepo-base-request'
 
-// The XPath machinery's own layers, and its log of physical queries there.
+
+// The XPath machinery's own layers, and its log of physical queries there
+// (xpath's names; its log is written again when xpath is brought to the
+// request: a step's line holds no query to keep).
 export const XPATH = 'xpath'
 export const XPATH_LOG = 'xpath/log'
 import { from, ROOT } from 'mycelium-uri'
-import { join } from 'bare-path'
 import { pass } from './lib/remote.js'
 import { park } from './lib/wait.js'
 import { changes } from './lib/changes.js'
 
-// What a request's audit lists of one target at most: beyond it, a count.
-const LISTED = 100
+// What a request lists of one target's changes at most: beyond it, a count.
+export const LISTED = 100
+
+// What an action says, as the request has it: a text, or { message,
+// attachments }.
+function said (answer, protocol, action) {
+  const a = typeof answer === 'string' ? { message: answer } : answer
+  if (!a || typeof a !== 'object' || typeof a.message !== 'string' || !a.message.trim()) throw new Error(`nothing said: ${protocol}/${action} answers with what happened, in words`)
+  return { message: a.message, attachments: a.attachments ?? [] }
+}
+// A count said: 2 reads, 1 put; those that are none left out.
+const counts = c => Object.entries(c).filter(([, n]) => n).map(([k, n]) => `${n} ${n === 1 ? k.slice(0, -1) : k}`).join(', ')
 // An error's causes, outermost first: the messages down its chain.
 const causesOf = err => { const out = []; for (let c = err?.cause; c && out.length < 20; c = c.cause) out.push(c.message ?? String(c)); return out }
 
@@ -118,7 +137,7 @@ async function close (backend, id, target) {
   if (at) await backend.deleteBranch(name, at)
 }
 
-// A request's record written (in its envelope) through its own execution
+// A request's record written through its own execution
 // branch of request/execute and merged back into it; the branch removed.
 export async function executed ({ backend, writer: w }, name, record) {
   const branch = await open(w, backend, name, EXECUTE)
@@ -144,14 +163,16 @@ export async function executed ({ backend, writer: w }, name, record) {
 export async function failed (ctx, why) {
   const names = []
   for (const p of await principals(ctx)) {
-    if (isComplete(p.core) || p.waits) continue // done already; or waiting: not executing
+    if (isReturned(p.request) || p.waits) continue // done already; or waiting: not executing
     const { log, entries } = logger()
-    log('error', 'runtime.failed', { error: why })
-    await executed(ctx, p.id, wrap(`/${EXECUTE}`, complete(p.core, { ok: false, error: why }, entries)))
+    log('error', 'runtime.failed', why)
+    await executed(ctx, p.id, record(`/${EXECUTE}`, returned(logged(p.request, entries), 'failed', `Failed: the runtime's pass over it.\n${why}`), Number(p.id)))
     names.push(p.id)
   }
   return names
 }
+// A request with entries added to its log.
+const logged = (request, entries) => ({ ...request, processing: { ...request.processing, log: [...request.processing.log, ...entries] } })
 
 // The runtime's context as an execution reads it: read-only, no writer.
 const runtimeView = ctx => Object.freeze({
@@ -160,10 +181,10 @@ const runtimeView = ctx => Object.freeze({
   uri: ctx.uri ?? ctx.name,
   work: ctx.work ?? null,
   dir: ctx.dir ?? null,
-  // a record into the mrepo's own inbox, as its storage takes one
+  // a request into the mrepo's own inbox, as its storage takes one
   submit: ctx.submit ?? null,
   answer: ctx.answer ?? null,
-  // a command placed as the mrepo's own internal request, its completed form back
+  // a command placed as the mrepo's own internal request, the request returned back
   own: ctx.own ?? null,
   branches: async () => (await ctx.backend.listBranches()).map(([b]) => b),
   // the protocols the runtime loaded, their configs by name
@@ -183,36 +204,28 @@ export async function execute (ctx, { actions = {} } = {}) {
   // request the branch is named after.
   for (const p of await principals(ctx)) {
     const name = p.id
-    let core = p.core
-    // completed already (a pass interrupted before the merge): merged now
-    if (isComplete(core)) { await w.merge(p.branch, EXECUTE, `Merge ${name}: executed`, { author: AUTHOR }); await close(backend, name, EXECUTE); continue }
-    // A wrapped remote command, passed on (lib/remote.js): waiting for its
-    // child's response, it is not being processed; the response added to
-    // its branch, the principal is returned with it. A job waited for
-    // (lib/wait.js): its result added, the request resumed: executed again
-    // with it (form.resumed), below.
-    if (p.waits) {
-      if (!p.response || !isComplete(p.response)) continue
-      const r = p.response.value
-      if (core.value.remote?.resume) {
-        const { remote, ...rest } = core.value
-        core = { ...core, value: { ...rest, resumed: 'error' in r ? { error: r.error } : { output: r.output ?? null } } }
-        const c = await w.change(p.branch)
-        await c.put(`/${name}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, core)) + '\n'))
-        await c.commit(`${name}: resumed`, { author: AUTHOR })
-      }
-    }
-    const form = core.value
-    if (p.waits && !core.value.resumed) {
-      const r = p.response.value
-      // its log: what it logged before it was sent on, then the entries of
-      // the request it became, each under its jump
-      const jump = e => ({ ...e, jump: [core.value.remote.at, ...(e.jump ?? [])] })
-      const both = [...(core.value.log ?? []), ...(r.log ?? []).map(jump)]
-      // its continuation comes back with it, its position seen from here:
-      // behind the position the command was sent on at
-      const continuation = r.continuation ? { ...r.continuation, at: from(core.value.remote.at, r.continuation.at) } : null
-      await executed(ctx, name, wrap(`/${EXECUTE}`, complete(core, 'error' in r ? { ok: false, error: r.error } : { ok: true, value: r.output ?? null, continuation }, both)))
+    const request = p.request
+    const form = request.form
+    const written = r => executed(ctx, name, record(`/${EXECUTE}`, r, Number(name)))
+    // returned already (a pass interrupted before the merge): merged now
+    if (isReturned(request)) { await w.merge(p.branch, EXECUTE, `Merge ${name}: executed`, { author: AUTHOR }); await close(backend, name, EXECUTE); continue }
+    // A command sent on (lib/remote.js): waiting for its child's answer,
+    // it is not being processed; the answer added to its branch, the
+    // principal is returned with it. A job waited for (lib/wait.js): its
+    // result added, the request resumed: executed again with it
+    // (exec.resumed), below.
+    if (p.waits && !isReturned(p.response)) continue
+    const was = request.processing.waiting
+    const resumed = was?.resume ? p.response.returned : null
+    if (was && !resumed) {
+      const r = p.response
+      // What was returned there is this request's answer. What happened
+      // to it there is that request's own, in that mrepo's request/done:
+      // linked (processing.sent), not copied. Its continuation comes back
+      // with the answer (whoever asked goes on with it), its position
+      // seen from here: behind the position the command was sent on at.
+      const c = r.processing?.continuation
+      await written({ ...request, processing: { ...request.processing, waiting: null, continuation: c ? { ...c, at: from(was.at, c.at) } : null }, returned: r.returned })
       continue
     }
     const present = await heads(backend)
@@ -230,7 +243,7 @@ export async function execute (ctx, { actions = {} } = {}) {
     // Its execution branches, made as it first writes a target: each with
     // the head it started from.
     const made = new Map()
-    const ensure = async t => { if (!made.has(t)) { const b = await timed('branch', { target: t }, () => open(w, backend, name, t)); made.set(t, (await heads(backend))[b]) } }
+    const ensure = async t => { if (!made.has(t)) { const b = await timed('branch', `Its execution branch of ${t} made.`, () => open(w, backend, name, t)); made.set(t, (await heads(backend))[b]) } }
     const snapshot = async () => { const h = await heads(backend); return new Map([...made.keys()].map(t => [t, h[branchOf(name, t)]])) }
     const edits = new Map()
     const targetOf = uri => {
@@ -240,48 +253,40 @@ export async function execute (ctx, { actions = {} } = {}) {
     const inside = uri => uri.slice(uri.indexOf('/', 1) < 0 ? uri.length : uri.indexOf('/', 1)) || '/'
     const { protocol, action } = form
     const message = `${name}: ${protocol} ${action} ${joined(form.uri)}`
-    // Its log: entries into the request's own record, as much as its flag
-    // asks for (log=info|verbose|debug; info without it). A flag that is
-    // not one, or a value its flag does not take: ignored, and said.
+    // Its log: entries into the request's own, as much as its flag asks
+    // for (log=info|verbose|debug; info without it).
     const began = Date.now()
     const { log: write, entries, level } = logger()
     // the flags in force: the request's, then what a command run here sets
     let flags = {}
-    const take = written => {
-      const { flags: good, ignored } = sorted(written)
-      for (const i of ignored) write('warn', 'request.flag', { flag: i.flag, ignored: i.why })
+    const take = given => {
+      const { flags: good } = sorted(given)
       flags = { ...flags, ...good }
       if (good.log) level(good.log)
     }
     take(form.flags)
     // what the boundary counts, for the request's metrics
     const counted = { reads: 0, selects: 0, puts: 0, removes: 0, commits: 0 }
-    // the physical queries its logical ones stood for (the physical log's record)
-    const physical = []
     // the step the action is at: the last event it logged
     let step = null
-    // an action's entries, under its protocol and action
-    const logOf = (p, a) => (lvl, event, data) => { write(lvl, `${p}.${a}.${event}`, data); step = `${p}.${a}.${event}` }
+    // an action's entries, under its protocol and action: a line each
+    const logOf = (p, a) => (lvl, event, line) => { write(lvl, `${p}.${a}.${event}`, line); step = `${p}.${a}.${event}` }
     // an action's step, measured for it: what it took, what it read and
-    // wrote meanwhile (the counts that moved)
-    const stepOf = say => async (event, data, fn, lvl = 'verbose') => {
+    // wrote meanwhile (the counts that moved), said behind its line
+    const stepOf = say => async (event, line, fn, lvl = 'verbose') => {
       const before = { ...counted }
       const t = Date.now()
-      const moved = () => Object.fromEntries(Object.keys(counted).filter(k => counted[k] !== before[k]).map(k => [k, counted[k] - before[k]]))
+      const took = () => { const moved = counts(Object.fromEntries(Object.keys(counted).map(k => [k, counted[k] - before[k]]))); return `(${Date.now() - t} ms${moved ? `; ${moved}` : ''})` }
       let r
       try { r = await fn() } catch (err) {
-        say(lvl, event, { ...(typeof data === 'function' ? {} : data), failed: err.message, ms: Date.now() - t, ...moved() })
+        say(lvl, event, `${typeof line === 'function' ? event : line}: failed, ${err.message} ${took()}`)
         throw err
       }
-      const said = { ...(typeof data === 'function' ? data(r) : data), ms: Date.now() - t, ...moved() }
-      say(lvl, event, said)
-      // a physical query (a node set's batch, mrepo-base-xpath): kept for
-      // the physical log too, whatever the request's own log keeps
-      if (event === 'batch') physical.push({ ...(({ reads, selects, puts, removes, commits, ...query }) => query)(said) })
+      say(lvl, event, `${typeof line === 'function' ? line(r) : line} ${took()}`)
       return r
     }
     // the boundary's own steps, at debug, each with what it took
-    const timed = async (event, data, f) => { const t = Date.now(); const r = await f(); write('debug', `train.${event}`, { ...data, ms: Date.now() - t }); return r }
+    const timed = async (event, what, f) => { const t = Date.now(); const r = await f(); write('debug', `train.${event}`, `${what} (${Date.now() - t} ms)`); return r }
     // internal (no record of it in the inbox): no API, no state gate
     const internal = await isInternal(ctx, name)
     // what the action sent on, if it did (exec.forward): { to, command }
@@ -293,7 +298,7 @@ export async function execute (ctx, { actions = {} } = {}) {
     const flush = async (what = message) => {
       for (const [t, list] of edits) {
         await ensure(t)
-        await timed('commit', { target: t, writes: list.length }, async () => {
+        await timed('commit', `${list.length} ${list.length === 1 ? 'write' : 'writes'} committed on its branch of ${t}.`, async () => {
           const c = await w.change(branchOf(name, t))
           for (const [op, path, bytes] of list) op === 'put' ? await c.put(path, bytes) : c.remove(path)
           await c.commit(what, { author: AUTHOR })
@@ -347,39 +352,40 @@ export async function execute (ctx, { actions = {} } = {}) {
       // Everything of this execution ditched, its local commits too: back to
       // where it started; the action goes on.
       reset: () => rollbackAll(),
-      // A command executed here, in this execution: its parts interpreted,
-      // checked as this request is, its action run; its value. own: as the
-      // mrepo's own (a hook: not held at the door). at: where it stands, a
-      // prefix its URI is read behind (none for the mrepo's own, main for
-      // one from outside, by default).
-      run: async (command, { own = false, at = internal || own ? OWN : OUTSIDE } = {}) => {
-        // (the flags in force come with it, as with a command sent on)
-        const given = Array.isArray(command) || typeof command === 'string' ? { command } : command
-        const inner = formOf({ ...given, flags: { ...flags, ...(given.flags ?? {}) } }, ctx.protocols ?? {}, at)
+      // A command executed here, in this execution: a line or its words,
+      // understood, checked as this request is, its action run; what it
+      // says. own: as the mrepo's own (a hook: not held at the door). at:
+      // where it stands, the parts its URI is read behind (main by
+      // default; a position there, where a haicc command went).
+      run: async (command, { own = false, at = STANDING } = {}) => {
+        // (the flags in force come with it, as with a command sent on:
+        // written into its line)
+        const parts = carrying(Array.isArray(command) ? command : words(command), flags, ctx.protocols ?? {})
+        let inner
         // what its flags keep from being run: not run, said (as at the door)
-        const unrun = problems(inner, ctx.protocols ?? {})
-        if (unrun.length) throw new Error(`not run: ${unrun.join('; ')}`)
+        try { inner = understood(asked(lineOf(parts)), ctx.protocols ?? {}, at).form } catch (err) { throw err.unrun ? new Error(`not run: ${err.unrun.join('; ')}`) : err }
         const why = check(inner, await runtimeData(ctx), { internal: internal || own })
         if (why) throw new Error(why)
         const fn = actions[inner.protocol]?.[inner.action]
         if (!fn) throw new Error(unknown(actions, inner.protocol, inner.action))
         // its flags in force from here on; its entries under its own name
         take(inner.flags)
-        return (await fn(Object.freeze({ ...exec, log: logOf(inner.protocol, inner.action), step: stepOf(logOf(inner.protocol, inner.action)) }), inner)) ?? null
+        return said(await fn(Object.freeze({ ...exec, log: logOf(inner.protocol, inner.action), step: stepOf(logOf(inner.protocol, inner.action)) }), inner), inner.protocol, inner.action)
       },
       // The command sent on to the mrepo a shortcut leads to (to: xpath's
       // resolve): this request waits for its response, nothing of it is
       // executed here. The action returns what this returns.
       // A job waited for: the request parked until the job ends, the
-      // runtime free meanwhile; then the action executed again with its
-      // result, form.resumed ({ output } or { error }). Its writes before
-      // it waits are dropped. One a request, not resumed twice.
+      // runtime free meanwhile; then the action executed again with what
+      // the job returned, exec.resumed ({ status, message, attachments }).
+      // Its writes before it waits are dropped. One a request, not resumed
+      // twice.
       // what the request was resumed with, after a wait: the same to an
       // action run inside it (exec.run); null when it was not
-      resumed: form.resumed ?? null,
+      resumed,
       wait: job => {
         if (waited || forwarded) throw new Error('waiting already')
-        if (form.resumed) throw new Error('resumed already: no second wait')
+        if (resumed) throw new Error('resumed already: no second wait')
         waited = job
         return null
       },
@@ -398,15 +404,15 @@ export async function execute (ctx, { actions = {} } = {}) {
         continued = continuationOf(script, at)
         return null
       },
-      // An entry in the request's log: log(level, event, data), level one of
+      // An entry in the request's log: log(level, event, line), level one of
       // error, warn (always kept), info, verbose, debug (kept as the request
       // asks); stored under the action's protocol and action.
       log: logOf(protocol, action),
-      // A step of the action, measured here: step(event, data, fn) runs fn
-      // and logs the event (at verbose; level: another) with what it took
-      // (ms) and what it read and wrote meanwhile; data an object, or a
-      // function of fn's result (what it found). -> fn's result. A step
-      // that throws is logged too, then throws on.
+      // A step of the action, measured here: step(event, line, fn) runs fn
+      // and logs the event (at verbose; level: another), its line, then
+      // what it took and what it read and wrote meanwhile; line a text, or
+      // a function of fn's result (what it found, said). -> fn's result. A
+      // step that throws is logged too, then throws on.
       step: stepOf(logOf(protocol, action))
     })
     let result
@@ -414,86 +420,67 @@ export async function execute (ctx, { actions = {} } = {}) {
       // Checked again as it executes: the state now, not as it was queued
       // (two queued while booted: the second initialise refused here).
       const why = check(form, await runtimeData(ctx), { internal })
-      if (why) throw new Error(why)
+      if (why) throw Object.assign(new Error(why), { refused: true })
       const fn = actions[protocol]?.[action]
-      if (!fn) throw new Error(unknown(actions, protocol, action))
-      result = { ok: true, value: (await fn(exec, form)) ?? null }
-      if (continued) result.continuation = continued
+      if (!fn) throw Object.assign(new Error(unknown(actions, protocol, action)), { refused: true })
+      const answer = await fn(exec, form)
+      result = forwarded || waited ? { ok: true } : { ok: true, ...said(answer, protocol, action) }
       if (!forwarded && !waited) await flush()
     } catch (err) {
       // The one place an error ends a request: what stopped it, the chain
       // of what caused it, the step the action was at, what is undone.
-      result = { ok: false, error: err.message }
       const causes = causesOf(err)
-      write('error', 'request.failed', { error: err.message, ...(causes.length ? { causes } : {}), at: step, undone: { commits: counted.commits, puts: counted.puts, removes: counted.removes }, ...(level() === 'debug' && err.stack ? { stack: String(err.stack).split('\n').map(l => l.trim()) } : {}) })
+      result = { ok: false, message: err.refused ? refusal(err.message) : ['Failed, nothing of it kept.', err.message, ...causes.map(c => `caused by: ${c}`)].join('\n') }
+      const undone = counts({ commits: counted.commits, puts: counted.puts, removes: counted.removes })
+      // (refused: nothing was run; why is what is returned, said once)
+      if (!err.refused) write('error', 'request.failed', [`${err.message}${step ? `, at ${step}` : ''}.`, ...causes.map(c => `Caused by: ${c}.`), undone ? `Undone: ${undone}.` : 'Nothing to undo.', ...(level() === 'debug' && err.stack ? String(err.stack).split('\n').slice(1).map(l => l.trim()) : [])].join('\n'))
       forwarded = null
       waited = null
+      continued = null
       await rollbackAll()
     }
-    // the request's metrics: its closing line
-    const metrics = ok => write('info', 'request.metrics', { ok, ms: Date.now() - began, ...counted })
-    // Sent on (exec.forward): nothing of it executed here, its writes
-    // dropped; what it waits for added to its principal on its branch: it
-    // stays there, waiting; the branch not being processed any more.
-    if (waited) {
+    // Parked (exec.wait) or sent on (exec.forward): nothing of it executed
+    // here, its writes dropped; what it waits for said on its principal,
+    // on its branch: it stays there, waiting; the branch not being
+    // processed any more. What it logged so far stays with it.
+    if (waited || forwarded) {
       await rollbackAll()
       for (const t of made.keys()) await close(backend, name, t)
       try {
-        const value = park(ctx, name, core, waited)
-        write('info', 'request.waiting', { offset: value.remote.offset })
-        metrics(null)
+        const waiting = waited ? park(ctx, name, request, waited) : pass(ctx, name, request, forwarded.to, forwarded.command, flags)
+        // (sent on: the request it became, linked: its mrepo and its offset there)
+        const sent = forwarded ? { at: forwarded.to.at, mrepo: forwarded.to.mrepo, offset: waiting.offset } : null
         const c = await w.change(await open(w, backend, name, EXECUTE))
-        await c.put(`/${name}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, { ...core, value: { ...value, log: entries } })) + '\n'))
-        await c.commit(`${name}: waiting for a job`, { author: AUTHOR })
+        await c.put(`/${name}.json`, Buffer.from(JSON.stringify(record(`/${EXECUTE}`, { ...logged(request, entries), processing: { ...logged(request, entries).processing, waiting, sent } }, Number(name))) + '\n'))
+        await c.commit(waited ? `${name}: waiting for a job` : `${name}: sent on to ${forwarded.to.at}, waiting`, { author: AUTHOR })
       } catch (err) {
-        await executed(ctx, name, wrap(`/${EXECUTE}`, complete(core, { ok: false, error: err.message })))
-      }
-      continue
-    }
-    if (forwarded) {
-      await rollbackAll()
-      for (const t of made.keys()) await close(backend, name, t)
-      try {
-        const value = pass(ctx, name, core, forwarded.to, forwarded.command, flags)
-        write('info', 'request.sent', { to: forwarded.to.at, mrepo: forwarded.to.mrepo, offset: value.remote.offset })
-        metrics(null)
-        // what it logged so far stays with it, waiting
-        const c = await w.change(await open(w, backend, name, EXECUTE))
-        await c.put(`/${name}.json`, Buffer.from(JSON.stringify(wrap(`/${EXECUTE}`, { ...core, value: { ...value, log: entries } })) + '\n'))
-        await c.commit(`${name}: sent on to ${forwarded.to.at}, waiting`, { author: AUTHOR })
-      } catch (err) {
-        await executed(ctx, name, wrap(`/${EXECUTE}`, complete(core, { ok: false, error: err.message })))
+        write('error', 'request.failed', `${err.message}.`)
+        await written(returned(logged(request, entries), 'failed', `Failed, nothing of it kept.\n${err.message}`))
       }
       continue
     }
     // Squashed into its target, each execution branch that moved (main
     // first): one commit there, the request's; then removed, squashed or
     // discarded.
+    const changed = []
     if (result.ok) {
       const now = await heads(backend)
       for (const [t, from] of made) {
         const head = now[branchOf(name, t)]
         if (head === from) continue
-        // its audit: what the request changed there
-        const changed = await changes(backend, from, head)
-        const listed = changed.slice(0, LISTED)
+        // what the request changed there
+        const all = await changes(backend, from, head)
+        const listed = all.slice(0, LISTED)
         const of = kind => listed.filter(c => c.change === kind).map(c => c.path)
         // (the same in the end, written and undone: nothing to say, and the squash makes no commit)
-        if (changed.length) write('info', 'request.changed', { target: t, count: changed.length, added: of('added'), changed: of('changed'), removed: of('removed'), ...(changed.length > LISTED ? { more: changed.length - LISTED } : {}) })
-        await timed('squash', { target: t }, () => w.squash(branchOf(name, t), t, message, { author: AUTHOR }))
+        if (all.length) changed.push({ target: t, added: of('added'), changed: of('changed'), removed: of('removed') })
+        if (all.length > LISTED) write('info', 'request.changed', `${all.length} paths changed in ${t}: the first ${LISTED} listed.`)
+        await timed('squash', `Its branch of ${t} squashed into it.`, () => w.squash(branchOf(name, t), t, message, { author: AUTHOR }))
       }
     }
-    for (const t of made.keys()) await timed('removed', { target: t }, () => close(backend, name, t))
-    metrics(result.ok)
-    // The physical log: what the physical side did for this request, a
-    // record under the request's offset in the xpath layer's log, written
-    // into its folder as a file: no commit here (a read stays a read); the
-    // runtime commits the folder at its checkpoints. A read of the xpath
-    // layers themselves is not logged: the log would feed itself.
-    if (physical.length && ctx.dir && /^\d{13}$/.test(name) && form.uri?.[0] !== XPATH) {
-      streamOf(join(ctx.dir, XPATH_LOG)).put(Number(name), record(`/${XPATH_LOG}`, { request: Number(name), command: `${protocol}/${action}`, queries: physical }, Number(name)))
-    }
-    // The form completed, in its envelope, through its own execution branch.
-    await executed(ctx, name, wrap(`/${EXECUTE}`, complete(core, result, entries)))
+    for (const t of made.keys()) await timed('removed', `Its branch of ${t} removed.`, () => close(backend, name, t))
+    // The request returned, in its record, through its own execution branch.
+    const done = measured({ ...logged(request, entries), processing: { ...logged(request, entries).processing, changed, waiting: null, continuation: continued } }, { ms: Date.now() - began, ...counted })
+    await written(result.ok ? returned(done, 'done', result.message, result.attachments) : returned(done, 'failed', result.message))
   }
 }

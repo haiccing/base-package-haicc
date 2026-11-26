@@ -13,8 +13,9 @@ mrepo's `shutdown`, its `initialise` building it again.
 
 ## Returns
 
-`{ removed }`: how many files were removed. Nothing built: a repeat,
-`{ removed: 0, again: true }`, a warning in its log (idempotent).
+What it did, said: `Cleared the info layer's build: <n> files removed.`
+Nothing built: a repeat, `Nothing built in the info layer: nothing
+removed.`, a warning in its log (idempotent).
 
 ## Errors
 

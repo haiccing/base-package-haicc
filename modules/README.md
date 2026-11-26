@@ -11,15 +11,13 @@ modules for linux-x64, linux-arm64, each with its version, licence and source in
 
 ## Links
 
-- [mrepo-base-crud](pear-full-square/mrepo-base-crud/)
 - [mrepo-base-execute](pear-full-square/mrepo-base-execute/)
 - [mrepo-base-haicc](pear-full-square/mrepo-base-haicc/)
 - [mrepo-base-info](pear-full-square/mrepo-base-info/)
-- [mrepo-base-protocol](pear-full-square/mrepo-base-protocol/)
 - [mrepo-base-request](pear-full-square/mrepo-base-request/)
 - [mrepo-base-runtime](pear-full-square/mrepo-base-runtime/)
-- [mrepo-base-service](pear-full-square/mrepo-base-service/)
 - [mrepo-base-xpath](pear-full-square/mrepo-base-xpath/)
+- [mycelium-avro](pear-full-square/mycelium-avro/)
 - [mycelium-container-document](pear-full-square/mycelium-container-document/)
 - [mycelium-git](pear-full-square/mycelium-git/)
 - [mycelium-uri](pear-full-square/mycelium-uri/)

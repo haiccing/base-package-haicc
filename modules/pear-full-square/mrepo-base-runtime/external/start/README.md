@@ -18,9 +18,9 @@ starts one: a Splectral component's `start` hook its renderer.
 
 ## Returns
 
-`{ started, state }`: the package's path and the state its program wrote
-(its `pid`, and what else it says). Running already: `{ started,
-already: true, state }`, left as it is.
+What it did, said: `Started the program of <path>, pid <pid>.` Running
+already: `The program of <path> is running already, pid <pid>: left as
+it is.`
 
 ## Errors
 

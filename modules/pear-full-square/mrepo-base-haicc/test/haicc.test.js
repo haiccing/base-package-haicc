@@ -14,13 +14,15 @@ function context (files) {
     children: async n => (n.type === 'blob' ? null : [...new Set(Object.keys(files).filter(f => f.startsWith(n.p + '/')).map(f => f.slice(n.p.length + 1).split('/')[0]))].sort().map(name => [name, { type: kind(`${n.p}/${name}`), p: `${n.p}/${name}` }])),
     bytes: async n => Buffer.from(JSON.stringify(files[n.p])),
     find: async p => (p in files ? Buffer.from(JSON.stringify(files[p])) : null),
-    log: function (level, event, data = {}) { (this.entries ??= []).push({ level, event, ...data }) },
-    step: async function (event, data, fn, level = 'verbose') { const r = await fn(); (this.entries ??= []).push({ level, event, ...(typeof data === 'function' ? data(r) : data) }); return r },
-    run: async (command, opts) => { seen.ran.push(command); seen.at.push(opts?.at); return { ran: command } },
+    log: function (level, event, line) { if (typeof line !== 'string') throw new Error('not a log entry: a line'); (this.entries ??= []).push({ level, event, line }) },
+    step: async function (event, line, fn, level = 'verbose') { const r = await fn(); const said = typeof line === 'function' ? line(r) : line; if (typeof said !== 'string') throw new Error('not a log entry: a line'); (this.entries ??= []).push({ level, event, line: said }); return r },
+    run: async (command, opts) => { seen.ran.push(command); seen.at.push(opts?.at); return said(command) },
     forward: (to, command) => { seen.sent.push({ to, command }); return null }
   }
   return { exec, seen }
 }
+// what a command run here says, as exec.run gives it
+const said = command => ({ message: `Ran ${command.join(' ')}.`, attachments: [] })
 const FILES = () => ({
   'main/.layer.json': {},
   'main/notes.txt': 'a text',
@@ -40,13 +42,11 @@ const HOST = { at: 'host', mrepo: 'local/host', link: 'k-host', folder: '../loca
 
 test('goto: at the root executed here; at a shortcut sent on; no command', async (t) => {
   const { exec, seen } = context(FILES())
-  t.alike(await goto(exec, { uri: ['main', '.'], args: ['boot/deploy', 'host', 'haiccing/base-component-haicc'] }), { ran: ['boot/deploy', 'host', 'haiccing/base-component-haicc'] }, 'main, the root position: the command executed here, its value returned')
+  t.alike(await goto(exec, { uri: ['main', '.'], args: ['boot/deploy', 'host', 'haiccing/base-component-haicc'] }), said(['boot/deploy', 'host', 'haiccing/base-component-haicc']), 'main, the root position: the command executed here, what it says returned')
   t.alike(seen.at, [['main']], 'the command that follows stands at the position: its URI is read behind that prefix')
-  t.alike(await goto(exec, { uri: ['.'], args: ['help/extract'] }), { ran: ['help/extract'] }, 'the mrepo itself (its own command): executed here')
-  t.alike(seen.at, [['main'], []], 'standing at the root: no prefix')
   t.is(await goto(exec, { uri: ['main', 'host'], args: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'node-1'] }), null, 'a shortcut: sent on')
   t.alike(seen.sent, [{ to: HOST, command: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'node-1'] }], 'the command that follows, unchanged, to the mrepo linked there')
-  t.is(seen.ran.length, 2, 'nothing of it executed here')
+  t.is(seen.ran.length, 1, 'nothing of it executed here')
   await t.exception(goto(exec, { uri: ['main', 'host'] }), /missing argument: command/)
   await t.exception(goto(exec, { uri: ['main', '/host'], args: ['service/start'] }), /not a relative URI/)
   await t.exception(goto(exec, { uri: ['runtime'], args: ['service/start'] }), /not a position in main: runtime \(main, main\/<position>\)/)
@@ -55,24 +55,24 @@ test('goto: at the root executed here; at a shortcut sent on; no command', async
 
 test('goto: a position inside main: the command executed there, the current root moved', async (t) => {
   const { exec, seen } = context(FILES())
-  t.alike(await goto(exec, { uri: ['main', 'swarms/swarm-1'], args: ['crud/read', '.'] }), { ran: ['crud/read', '.'] }, 'a URI that names one position: what the command gave, as it is')
+  t.alike(await goto(exec, { uri: ['main', 'swarms/swarm-1'], args: ['crud/read', '.'] }), said(['crud/read', '.']), 'a URI that names one position: what the command says, as it is')
   t.alike(seen.at, [['main', 'swarms/swarm-1']], 'the command stands at the position')
-  t.alike(await goto(exec, { uri: ['main', 'swarms', 'swarm-2'], args: ['crud/read', '.'] }), { ran: ['crud/read', '.'] }, 'a goto at a position: its URI read behind it')
+  t.alike(await goto(exec, { uri: ['main', 'swarms', 'swarm-2'], args: ['crud/read', '.'] }), said(['crud/read', '.']), 'a goto at a position: its URI read behind it')
   t.alike(seen.at.at(-1), ['main', 'swarms/swarm-2'])
   await t.exception(goto(exec, { uri: ['main', 'nowhere'], args: ['crud/read', '.'] }), /haicc nowhere: no node there/, 'a position named that is not there: an error')
   await t.exception(goto(exec, { uri: ['main', 'swarm-1/node-2'], args: ['crud/read', '.'] }), /haicc swarm-1\/node-2: no node there$/, 'a unique URI that is no position here, in an mrepo that does not dispatch: the same')
   await t.exception(goto(exec, { uri: ['main', 'swarms/swarm-1/state'], args: ['crud/read', '.'] }), /haicc swarms\/swarm-1\/state: not a position \(a node; a value inside a document is none\)/)
   await t.exception(goto(exec, { uri: ['main', 'notes.txt'], args: ['crud/read', '.'] }), /haicc notes\.txt: not a position \(a node; a file is none\)/)
-  t.alike(exec.entries.filter(e => e.event === 'executed here').map(e => e.at), ['swarms/swarm-1', 'swarms/swarm-2'])
+  t.alike(exec.entries.filter(e => e.event === 'executed here').map(e => e.line), ['Executed here, at swarms/swarm-1: crud/read .', 'Executed here, at swarms/swarm-2: crud/read .'])
 })
 
 test('goto: a URI that selects: the command executed at each position, a list of what each gave', async (t) => {
   const { exec, seen } = context(FILES())
-  t.alike(await goto(exec, { uri: ['main', "swarms/*[state='started']"], args: ['service/start'] }), [{ at: 'swarms/swarm-1', value: { ran: ['service/start'] } }, { at: 'swarms/swarm-3', value: { ran: ['service/start'] } }], 'a filter: at each node it selects, in order')
+  t.alike(await goto(exec, { uri: ['main', "swarms/*[state='started']"], args: ['service/start'] }), { message: 'Run at 2 positions.\n\n== swarms/swarm-1\nRan service/start.\n\n== swarms/swarm-3\nRan service/start.', attachments: [] }, 'a filter: at each node it selects, in order, what each says under its position')
   t.alike(seen.at, [['main', 'swarms/swarm-1'], ['main', 'swarms/swarm-3']])
-  t.alike(await goto(exec, { uri: ['main', 'swarms/*[size>100]'], args: ['service/start'] }), [], 'nothing selected: an empty list, not an error')
-  t.alike((await goto(exec, { uri: ['main', 'swarms/*[size=1]'], args: ['service/start'] })).map(x => x.at), ['swarms/swarm-2'], 'one selected: a list still, the URI selects')
-  t.alike((await goto(exec, { uri: ['main', 'swarms/*'], args: ['x/y'] })).length, 3)
+  t.is(await goto(exec, { uri: ['main', 'swarms/*[size>100]'], args: ['service/start'] }), 'No position selected by swarms/*[size>100]: nothing run.', 'nothing selected: said, not an error')
+  t.is((await goto(exec, { uri: ['main', 'swarms/*[size=1]'], args: ['service/start'] })).message, 'Run at 1 position.\n\n== swarms/swarm-2\nRan service/start.', 'one selected: under its position still, the URI selects')
+  t.is((await goto(exec, { uri: ['main', 'swarms/*'], args: ['x/y'] })).message.split('\n')[0], 'Run at 3 positions.')
   t.is(seen.sent.length, 0)
 })
 
@@ -87,7 +87,7 @@ test('goto: on from one shortcut at a time; what is left of the URI goes with th
   await t.exception(goto(exec, { uri: ['main', '*'], args: ['service/start'] }), /haicc \*: not yet: it reaches a shortcut \(host\) among 3 positions; a command goes on from one shortcut at a time \(haicc host \.\.\.\)/, 'beside ordinary nodes: not yet')
   await t.exception(goto(exec, { uri: ['main', '*/*/x'], args: ['service/start'] }), /not yet: it reaches a shortcut \(host, links\/far\)/, 'several shortcuts: not yet')
   t.is(seen.ran.length, 0, 'nothing executed here')
-  t.alike(exec.entries.filter(e => e.event === 'sent on').map(e => [e.at, e.mrepo]), [['host', 'local/host'], ['host', 'local/host'], ['links/far', 'swarm-9/far']])
+  t.alike(exec.entries.filter(e => e.event === 'sent on').map(e => e.line.split(':')[0]), ['Sent on at host, to local/host', 'Sent on at host, to local/host', 'Sent on at links/far, to swarm-9/far'])
 })
 
 
@@ -102,14 +102,14 @@ test('haicc/script: the lines, each a simple command, run where the URI points; 
   const exec = { runtime: { dir: '/x', uri: 'local/host' }, resumed: null, log: () => {}, wait: job => { waited.push(job); return null }, find: async p => (p === '/runtime/hooks/initialise.haicc' ? Buffer.from('info/extract\n') : null) }
   t.is(await script(exec, { uri: ['main', '.'], args: ['service/initialise\nservice/start'] }), null, 'the request waits for its lines')
   t.is(waited.length, 1, 'one job: the lines, run through the mrepo\'s own inbox')
-  t.alike(await script({ ...exec, resumed: { output: [{ line: 'service/start', output: 1 }] } }, { uri: ['main', '.'], args: ['x'] }), [{ line: 'service/start', output: 1 }], 'resumed: what each line gave')
-  await t.exception(script({ ...exec, resumed: { error: 'line 2: service/start: not now' } }, { uri: ['main', '.'], args: ['x'] }), /line 2: service\/start: not now/, 'resumed with a failure: the line that failed said')
+  t.alike(await script({ ...exec, resumed: { status: 'done', message: 'Ran 1 line at ..\n\n> service/start\nThe service is started: its state is started.', attachments: [] } }, { uri: ['main', '.'], args: ['x'] }), { message: 'Ran 1 line at ..\n\n> service/start\nThe service is started: its state is started.', attachments: [] }, 'resumed: what the job returned, each line and what it said')
+  await t.exception(script({ ...exec, resumed: { status: 'failed', message: 'line 2: service/start: not now', attachments: [] } }, { uri: ['main', '.'], args: ['x'] }), /line 2: service\/start: not now/, 'resumed with a failure: the line that failed said')
 })
 
 test('a node of the swarm by its unique URI: no position here, handed to dispatch where the mrepo has it active', async (t) => {
   const { exec, seen } = context({ ...FILES(), 'protocols/dispatch.json': {} })
-  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2'], args: ['crud/read', '.'] }), { ran: ['dispatch/send', 'swarm-1/node-2', 'crud/read', '.'] }, 'haicc swarm-1/node-2 crud/read .: dispatch/send, the URI as written, the command after it')
-  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2/notes'], args: ['crud/read', '.'] }), { ran: ['dispatch/send', 'swarm-1/node-2/notes', 'crud/read', '.'] }, 'what follows the unique URI goes with it')
+  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/node-2', 'crud/read', '.']), 'haicc swarm-1/node-2 crud/read .: dispatch/send, the URI as written, the command after it')
+  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2/notes'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/node-2/notes', 'crud/read', '.']), 'what follows the unique URI goes with it')
   t.alike(seen.sent, [], 'not through a shortcut')
   await goto(exec, { uri: ['main', 'swarms/swarm-1'], args: ['crud/read', '.'] })
   t.alike(seen.ran.at(-1), ['crud/read', '.'], 'a position that is here: executed here, as before')

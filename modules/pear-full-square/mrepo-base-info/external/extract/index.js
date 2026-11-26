@@ -24,7 +24,7 @@ export async function extractAction (exec, { uri }) {
   const at = joined(uri)
   if (at !== '.' && at !== 'main') throw new Error(`info extract: the whole mrepo only, . (not ${at})`)
   const listed = (await json(exec, '/packages/manifest.json'))?.packages
-  if (!listed) { exec.log('verbose', 'no packages', {}); return { keywords: 0, pages: 0, changed: false, problems: 0 } }
+  if (!listed) { exec.log('verbose', 'no packages', 'No packages manifest in this mrepo.'); return 'No packages linked here: nothing to extract.' }
   const dir = exec.runtime.dir
   // in deploy order, the mrepo's own last: the manifest's order
   const present = Object.keys(listed).filter(pkg => existsSync(join(dir, 'packages', `${pkg}.bundle`)))
@@ -36,31 +36,38 @@ export async function extractAction (exec, { uri }) {
   if (documents === 'store' && !store) throw new Error('documents: store: the packages manifest names no store')
   const stored = store ? storedIn(store).filter(pkg => !listed[pkg]) : []
   const bundleOf = pkg => (listed[pkg] ? join(dir, 'packages', `${pkg}.bundle`) : join(store, `${pkg}.bundle`))
-  const read = await exec.step('bundles', r => ({ listed: Object.keys(listed).length, present: present.length, documented: stored.length, files: r.reduce((n, p) => n + Object.keys(p.files).length, 0) }), async () => [...present, ...stored].map(pkg => {
+  const read = await exec.step('bundles', r => `Read ${present.length} of ${Object.keys(listed).length} listed bundles${stored.length ? ` and ${stored.length} documented from the store` : ''}: ${r.reduce((n, p) => n + Object.keys(p.files).length, 0)} files wanted.`, async () => [...present, ...stored].map(pkg => {
     const b = Bundle.from(readFileSync(bundleOf(pkg)))
     const files = {}
     for (const k of Object.keys(b.files)) if (WANTED(k)) files[k] = b.read(k)
-    exec.log('debug', 'bundle', { package: pkg, files: Object.keys(files).length })
+    exec.log('debug', 'bundle', `${pkg}: ${Object.keys(files).length} files.`)
     return { pkg, files, paths: Object.keys(b.files), documented: !listed[pkg] }
   }))
-  const files = await exec.step('extract', r => ({ files: Object.keys(r).length }), async () => extract(read))
+  const files = await exec.step('extract', r => `Its info made: ${Object.keys(r).length} files.`, async () => extract(read))
   if (await exec.find(`/${LAYER}/.layer.json`) === null) files['/.layer.json'] = Buffer.from(JSON.stringify(CONFIG, null, 2) + '\n')
   // what was written before: the pages its indexes named, each
   // package's index
   const before = await built(exec)
   let changed = false
   const written = { put: 0, removed: 0 }
-  await exec.step('write', () => written, async () => {
+  await exec.step('write', () => `Written into the info layer: ${written.put} put, ${written.removed} removed.`, async () => {
     for (const [p, bytes] of Object.entries(files)) {
       const was = await exec.find(`/${LAYER}${p}`)
-      if (!was || !Buffer.from(was).equals(bytes)) { exec.log('debug', 'put', { path: p }); exec.put(`/${LAYER}${p}`, bytes); changed = true; written.put++ }
+      if (!was || !Buffer.from(was).equals(bytes)) { exec.log('debug', 'put', `Put ${p}.`); exec.put(`/${LAYER}${p}`, bytes); changed = true; written.put++ }
     }
     for (const p of before) {
-      if (!files[p] && await exec.find(`/${LAYER}${p}`) !== null) { exec.log('debug', 'removed', { path: p }); exec.remove(`/${LAYER}${p}`); changed = true; written.removed++ }
+      if (!files[p] && await exec.find(`/${LAYER}${p}`) !== null) { exec.log('debug', 'removed', `Removed ${p}.`); exec.remove(`/${LAYER}${p}`); changed = true; written.removed++ }
     }
   })
   const index = JSON.parse(files['/index.json'].toString())
-  const out = { keywords: Object.keys(index).length, pages: Object.keys(files).filter(p => p.endsWith('README.md')).length, changed, problems: JSON.parse(files['/problems.json'].toString()).length }
-  exec.log(out.problems ? 'warn' : 'info', 'extracted', out)
-  return out
+  const keywords = Object.keys(index).length
+  const pages = Object.keys(files).filter(p => p.endsWith('README.md')).length
+  const problems = JSON.parse(files['/problems.json'].toString()).length
+  if (problems) exec.log('warn', 'problems', `${problems} ${problems === 1 ? 'problem' : 'problems'} in its pages: info/problems.json.`)
+  // (which files: what the request changed, in the info layer)
+  return [
+    `Extracted the info of ${present.length} ${present.length === 1 ? 'package' : 'packages'}${stored.length ? `, ${stored.length} more documented from the store` : ''}: ${keywords} keywords, ${pages} pages.`,
+    changed ? `The info layer changed: ${written.put} put, ${written.removed} removed.` : 'Nothing changed: the info layer as it was.',
+    problems ? `${problems} ${problems === 1 ? 'problem' : 'problems'} in its pages: info/problems.json.` : 'No problems in its pages.'
+  ].join('\n')
 }

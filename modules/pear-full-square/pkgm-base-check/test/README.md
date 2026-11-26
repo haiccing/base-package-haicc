@@ -24,6 +24,7 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 ## `package.test.js`
 
 - a package well formed: a folder for every test, a test of its own, whatever its name: none
+- a test of its own that runs where the package is deployed, <name>-in-situ: in the in-situ set, not the others
 - it tests what it provides: protocols, a program, hooks, a list, and no test of its own
 - every test has its folder: a generic test named in a set without one
 - every package has a test of its own: where nothing is specific, a dummy that says so

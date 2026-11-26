@@ -10,7 +10,7 @@ import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
 import { parse, check, extract, keyword, packageKeyword, packageKey, withSteps, WANTED } from '../internal/info/index.js'
 import { extractAction } from '../external/extract/index.js'
-import { get } from '../external/get/index.js'
+import { get, PAGE } from '../external/get/index.js'
 import { clear } from '../external/clear/index.js'
 
 const B = s => Buffer.from(s)
@@ -158,30 +158,34 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
       runtime: { dir },
       read: async p => { if (!(p in files)) throw new Error(`nothing at ${p}`); return files[p] },
       find: async function (p) { try { return await this.read(p) } catch { return null } },
-      log () {},
-      step: async (event, data, fn) => fn(),
+      log (level, event, line) { if (typeof line !== 'string') throw new Error(`not a log entry: ${event}`) },
+      step: async (event, line, fn) => fn(),
       put: (p, bytes) => { writes.push(p); files[p] = Buffer.from(bytes) },
       remove: p => { writes.push(p); delete files[p] }
     }
     await t.exception(get(exec, {}), /no info extracted in this mrepo yet/, 'get before extract: said')
     const r = await extractAction(exec, { uri: ['.'] })
-    t.alike([r.changed, r.problems], [true, 2], 'extracted: its two problems counted')
+    t.ok(/^Extracted the info of 3 packages: \d+ keywords, \d+ pages\.\nThe info layer changed: \d+ put, 0 removed\.\n2 problems in its pages: info\/problems\.json\.$/.test(r), `extracted, said: what changed, its two problems counted: ${r}`)
     t.ok(files['/info/.layer.json'] && files['/info/index.json'], 'the layer written, its config when it had none')
     const n = writes.length
-    t.alike([(await extractAction(exec, { uri: ['.'] })).changed, writes.length], [false, n], 'again: nothing changed, nothing written')
+    t.alike([(await extractAction(exec, { uri: ['.'] })).split('\n')[1], writes.length], ['Nothing changed: the info layer as it was.', n], 'again: nothing changed, nothing written')
     await t.exception(extractAction(exec, { uri: ['main', 'x'] }), /info extract: the whole mrepo only/)
+    // get: the page asked for, said as it is written; the keywords below it, each as it is asked
+    const below = r => r.message.split('\n').filter(l => l.startsWith('- '))
+    const first = r => r.message.split('\n')[0]
     const top = await get(exec, {})
-    t.alike([top.keyword, top.choices[0].title, top.choices[0].below.map(b => b.keyword)], ['.', 'base-component-y', ['org', 'modules', 'third-party', 'schemas']], 'nothing asked: the top page and its keywords: its organisations, the three made here')
-    t.absent(top.choices[0].page.includes('## Links'), 'the page without its menus: they are its keywords')
+    t.is(first(top), '.: The y component.', 'nothing asked: the top page, its keyword and what it is first')
+    t.alike(below(top).map(l => l.slice(2).split(':')[0]), ['org', 'modules', 'third-party', 'schemas'], 'its keywords below it, a line each: its organisations, the three made here')
+    t.absent(top.message.includes('## Links'), 'the page without its menus: they are its keywords')
+    t.alike(top.attachments, [{ name: 'base-component-y', type: PAGE, at: 'info/packages/org/base-component-y/README.md' }], 'the page itself attached: its type, where it is')
     const run = await get(exec, { args: ['org/base-package-x/run'] })
-    t.alike([run.keyword, run.context, run.choices[0].title, run.choices[0].oneliner, run.choices[0].below], ['org/base-package-x/run', 'org/base-package-x', 'run', 'Runs x.', [{ keyword: 'org/base-package-x/run/signature', oneliner: '`run(exec, form)`.', choices: 1 }]], 'in a package\'s context, its name in front: an action, its page, its sections below, written as they are asked')
-    t.alike((await get(exec, { args: ['org', 'base-package-x', 'run', 'signature'] })).choices[0], { title: 'Signature', oneliner: '`run(exec, form)`.', page: '`run(exec, form)`.', below: [], context: 'org/base-package-x', packages: ['org/base-package-x'] }, 'a section, the keywords as words; its context said')
-    t.is((await get(exec, { args: ['base-package-x/run'] })).context, 'org/base-package-x', 'its name alone, the only one of that name here: the same context')
-    t.alike((await get(exec, { args: ['org'] })).choices[0].below.map(b => [b.keyword, b.oneliner]), [['org/base-component-y', 'The y component.'], ['org/base-package-x', 'The x protocol.'], ['org/package-docs-mrepo', 'The mrepo, documented.']], 'an organisation: its packages, the contexts')
-    const own = await get(exec, { args: ['mrepo'] })
-    t.alike([own.keyword, own.context, own.choices[0].oneliner], ['org/base-component-y/mrepo', 'org/base-component-y', 'Its list.'], 'a short keyword: the mrepo\'s own package\'s first, its context said')
-    const run2 = await get(exec, { args: ['run'] })
-    t.alike([run2.keyword, run2.context], ['org/base-package-x/run', 'org/base-package-x'], 'a short keyword not its own: the one package that has it, its context said')
+    t.alike([first(run), below(run)], ['org/base-package-x/run: Runs x.', ['- org/base-package-x/run/signature: `run(exec, form)`.']], 'in a package\'s context, its name in front: an action, its sections below it, each written as it is asked')
+    const sig = await get(exec, { args: ['org', 'base-package-x', 'run', 'signature'] })
+    t.alike([sig.message, sig.attachments[0].name], ['org/base-package-x/run/signature: `run(exec, form)`.\n\n`run(exec, form)`.', 'Signature'], 'a section, the keywords as words: its text')
+    t.is(first(await get(exec, { args: ['base-package-x/run'] })), 'org/base-package-x/run: Runs x.', 'its name alone, the only one of that name here: the same context')
+    t.alike(below(await get(exec, { args: ['org'] })), ['- org/base-component-y: The y component.', '- org/base-package-x: The x protocol.', '- org/package-docs-mrepo: The mrepo, documented.'], 'an organisation: its packages, the contexts')
+    t.is(first(await get(exec, { args: ['mrepo'] })), 'org/base-component-y/mrepo: Its list.', 'a short keyword: the mrepo\'s own package\'s first, written in its context')
+    t.is(first(await get(exec, { args: ['run'] })), 'org/base-package-x/run: Runs x.', 'a short keyword not its own: the one package that has it, in its context')
     await t.exception(get(exec, { args: ['org/base-package-x/nothing'] }), /no org\/base-package-x\/nothing here: nearest org\/base-package-x, below it run, howto, test, modules, config/, 'a keyword not there in a context: the nearest there, and what is below it')
     await t.exception(get(exec, { args: ['nothing'] }), /no nothing here: nearest \., below it org, modules, third-party, schemas/, 'not there at all: the top, and what is below it')
   } finally { rmSync(dir, { recursive: true, force: true }) }
@@ -204,24 +208,23 @@ test('documents: store: every other package in the store documented, below its o
       runtime: { dir },
       read: async p => { if (!(p in files)) throw new Error(`nothing at ${p}`); return files[p] },
       find: async function (p) { try { return await this.read(p) } catch { return null } },
-      log () {},
-      step: async (event, data, fn) => fn(),
+      log (level, event, line) { if (typeof line !== 'string') throw new Error(`not a log entry: ${event}`) },
+      step: async (event, line, fn) => fn(),
       put: (p, bytes) => { files[p] = Buffer.from(bytes) },
       remove: p => { delete files[p] }
     }
     await extractAction(exec, { uri: ['.'] })
     t.alike(J(files['/info/packages.json'])['else/base-package-w'], { oneliner: 'The w protocol.', documented: true }, 'a package in the store, not in the list: documented, a context of its own')
-    t.alike((await get(exec, { args: ['else'] })).choices[0].below.map(b => b.keyword), ['else/base-package-w'], 'below its organisation')
-    t.alike([(await get(exec, { args: ['run'] })).choices.map(c => c.keyword)], [['org/base-package-x/run', 'else/base-package-w/run']], 'a short keyword in two packages: a choice each, apart')
+    t.alike((await get(exec, { args: ['else'] })).message.split('\n').filter(l => l.startsWith('- ')), ['- else/base-package-w: The w protocol.'], 'below its organisation')
+    t.alike((await get(exec, { args: ['run'] })).message.split('\n').filter(l => l.startsWith('== ')), ['== org/base-package-x/run (org/base-package-x): Runs x.', '== else/base-package-w/run (else/base-package-w): Runs w.'], 'a short keyword in two packages: a choice each, apart')
     const added = { pkg: 'else/base-package-v', files: { '/README.md': B(page('base-package-v', 'The v protocol.')) } }
     bundle(store, added)
-    t.is((await extractAction(exec, { uri: ['.'] })).changed, true, 'extract again: what is new in the store added')
+    t.ok(/^The info layer changed/.test((await extractAction(exec, { uri: ['.'] })).split('\n')[1]), 'extract again: what is new in the store added')
     t.ok(J(files['/info/packages.json'])['else/base-package-v'], 'there')
-    t.is((await extractAction(exec, { uri: ['.'] })).changed, false, 'and again: nothing new, nothing changed')
-    const r = await clear(exec, { uri: ['.'] })
-    t.ok(r.removed > 0, `clear: the build removed, ${r.removed} files`)
+    t.is((await extractAction(exec, { uri: ['.'] })).split('\n')[1], 'Nothing changed: the info layer as it was.', 'and again: nothing new, nothing changed')
+    t.ok(/^Cleared the info layer's build: \d+ files removed\.$/.test(await clear(exec, { uri: ['.'] })), 'clear: the build removed, said')
     t.alike(Object.keys(files).filter(p => p.startsWith('/info/') && p !== '/info/.layer.json'), [], 'nothing of it left, the layer\'s config kept')
-    t.alike(await clear(exec, { uri: ['.'] }), { removed: 0, again: true }, 'clear again: nothing built, a repeat')
+    t.is(await clear(exec, { uri: ['.'] }), 'Nothing built in the info layer: nothing removed.', 'clear again: nothing built, a repeat')
     await t.exception(clear(exec, { uri: ['main', 'x'] }), /info clear: the whole mrepo only/)
     files['/packages/manifest.json'] = B(JSON.stringify({ packages: {} }))
     await t.exception(extractAction(exec, { uri: ['.'] }), /documents: store: the packages manifest names no store/, 'documents the store, names none: said')
@@ -242,7 +245,7 @@ test('get: a short keyword several packages have: a choice each, kept apart, eac
   }
   const exec = { read: async p => { if (!(p in files)) throw new Error(`nothing at ${p}`); return files[p] }, find: async p => files[p] ?? null, log () {} }
   const r = await get(exec, { args: ['test-reports'] })
-  t.alike([r.keyword, r.context, r.choices.map(c => [c.keyword, c.context, c.oneliner])], ['test-reports', undefined, [['org/b/test-reports', 'org/b', 'The proof.'], ['org/c/test-reports', 'org/c', 'The proof.']]], 'one choice a package, the same page twice: packages are apart; each with the keyword to go on with in its context')
+  t.alike([r.message.split('\n')[0], r.message.split('\n').filter(l => l.startsWith('== ')), r.attachments.map(a => a.at)], ['test-reports: 2 choices, each apart.', ['== org/b/test-reports (org/b): The proof.', '== org/c/test-reports (org/c): The proof.'], ['info/packages/org/b/test-reports/README.md', 'info/packages/org/c/test-reports/README.md']], 'one choice a package, the same page twice: packages are apart; each under the keyword to go on with in its context, its page attached')
 })
 
 // the template's bundle, as a runtime reads it

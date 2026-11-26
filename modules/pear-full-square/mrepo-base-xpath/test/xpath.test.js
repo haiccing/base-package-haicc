@@ -16,8 +16,8 @@ function context (files, dir = '/work/mrepos/boot') {
     children: async n => { asked.children++; return n.type === 'blob' ? null : [...new Set(Object.keys(files).filter(f => f.startsWith(n.p + '/')).map(f => f.slice(n.p.length + 1).split('/')[0]))].sort().map(name => [name, { type: kind(`${n.p}/${name}`), p: `${n.p}/${name}` }]) },
     bytes: async n => { asked.bytes.push(n.p); return Buffer.from(typeof files[n.p] === 'string' ? files[n.p] : JSON.stringify(files[n.p])) },
     find: async p => (p in files ? Buffer.from(JSON.stringify(files[p])) : null),
-    log: function (level, event, data = {}) { (this.entries ??= []).push({ level, event, ...data }) },
-    step: async function (event, data, fn, level = 'verbose') { const r = await fn(); (this.entries ??= []).push({ level, event, ...(typeof data === 'function' ? data(r) : data) }); return r }
+    log: function (level, event, line) { if (typeof line !== 'string') throw new Error('not a log entry: a line'); (this.entries ??= []).push({ level, event, line }) },
+    step: async function (event, line, fn, level = 'verbose') { const r = await fn(); const said = typeof line === 'function' ? line(r) : line; if (typeof said !== 'string') throw new Error('not a log entry: a line'); (this.entries ??= []).push({ level, event, line: said }); return r }
   }
   return exec
 }
@@ -102,9 +102,10 @@ test('query: a shortcut: found as one, and where the URI stops', async (t) => {
 test('query: measured: its rounds through the context\'s step; a listing asked once', async (t) => {
   const exec = context(files())
   await query(exec, ['main', "swarms/*[state='started']/nodes/*"])
-  t.alike(exec.entries.map(e => [e.event, e.in, e.out]), [['query', undefined, undefined], ['segment', 1, 3], ['filter', 3, 1], ['segment', 1, 1], ['batch', undefined, undefined]])
-  t.alike(exec.entries.at(-1), { level: 'verbose', event: 'batch', logical: "swarms/*[state='started']/nodes/*", mode: 'physical', type: 'tree', from: null, physical: "swarms/*[state='started']/nodes/*", returned: 1 }, 'the node set\'s batch: the physical query that fetched it, a plain tree\'s the logical one')
-  t.alike(exec.entries[0], { level: 'verbose', event: 'query', uri: "main/swarms/*[state='started']/nodes/*", mode: 'physical' }, 'the query, when its result is made: its URI, how it is read; what it fetches follows, as it is read')
+  t.alike(exec.entries.map(e => e.event), ['query', 'segment', 'filter', 'segment', 'batch'], 'each round a step, an entry each')
+  t.ok(exec.entries[1].line.includes('in 1') && exec.entries[1].line.includes('out 3'), `a round's facts in its line: ${exec.entries[1].line}`)
+  t.is(exec.entries.at(-1).line, "logical swarms/*[state='started']/nodes/*, mode physical, type tree, from null, physical swarms/*[state='started']/nodes/*. Returned 1.", 'the node set\'s batch: the physical query that fetched it, a plain tree\'s the logical one')
+  t.is(exec.entries[0].line, "Query main/swarms/*[state='started']/nodes/*, read as it is stored.", 'the query, when its result is made: its URI, how it is read; what it fetches follows, as it is read')
   t.alike(exec.asked.bytes.filter(p => p.endsWith(NODE)).sort(), ['main/swarms/swarm-1/.node.json', 'main/swarms/swarm-2/.node.json'], 'the documents of the nodes filtered, each once')
   t.is(MAIN, 'main')
 })
@@ -170,8 +171,8 @@ test('query: a topic read logically: its records, the latest first, by their add
   t.alike({ ...all.nodeset, last: null }, { logical: { query: 'done/*', mode: 'logical', layer: 'request' }, fixed: 1795400000003, reached: 'end', physical: { levels: [5, 6], batch: 3, type: 'offset-files', topic: 'done', extension: 'json' }, done: true, last: null }, 'its metadata: the request, fixed at the latest offset, its storage')
   t.ok(all.nodeset.last.startsWith('done/'), 'and the last physical query run for it')
   const batches = exec.entries.filter(e => e.event === 'batch')
-  t.alike(batches.slice(0, 2).map(e => [e.physical, e.returned, e.fixes ?? false]), [['done/*[last()]/*[last()]/*[last()]', 1, true], ["done/17954/179540/*[name()<='1795400000003.json'][position()>last()-3]", 3, false]], 'its physical queries in the log: what fixed it, then its batches')
-  t.ok(batches.every(e => e.logical === 'done/*' && e.mode === 'logical' && e.type === 'offset-files'), 'each with the logical query it stood for')
+  t.alike(batches.slice(0, 2).map(e => [e.line.includes('physical done/*[last()]/*[last()]/*[last()]') || e.line.includes("physical done/17954/179540/*[name()<='1795400000003.json'][position()>last()-3]"), Number(e.line.match(/Returned (\d+)\.$/)[1]), e.line.includes('fixes true')]), [[true, 1, true], [true, 3, false]], 'its physical queries in the log: what fixed it, then its batches')
+  t.ok(batches.every(e => e.line.startsWith('logical done/*, mode logical, type offset-files')), 'each with the logical query it stood for')
   t.alike(exec.asked.bytes.filter(p => /\/\d{13}\.json$/.test(p)), [], 'no record opened to list them')
   // what is asked of the records: their data, a path into them, their own offset
   const crud = await query(context(stored), ['request', "done/*[value/value/protocol='crud']"], { mode: 'logical' })
@@ -186,7 +187,7 @@ test('query: a topic read logically: its records, the latest first, by their add
   // an offset as an index: handed to the storage's generator
   const byOffset = context(stored)
   await query(byOffset, ['request', 'done/*[@offset=1795399999999]'], { mode: 'logical' })
-  t.alike(byOffset.entries.filter(e => e.event === 'batch').map(e => e.physical), ['done/*[last()]/*[last()]/*[last()]', "done/17953/179539/*[name()='1795399999999.json']"], 'one record by its offset: what fixed the node set, then a scan of its folder; nothing else')
+  t.alike(byOffset.entries.filter(e => e.event === 'batch').map(e => e.line.match(/physical (.*?)(?:, [a-z]+ |\. Returned)/)[1]), ['done/*[last()]/*[last()]/*[last()]', "done/17953/179539/*[name()='1795399999999.json']"], 'one record by its offset: what fixed the node set, then a scan of its folder; nothing else')
   t.alike((await query(context(stored), ['request', 'done/*[@offset>1795400000000]'], { mode: 'logical' })).found.length, 3, 'after a pointer')
   // a query says where, never how many: the reader of its result takes what it wants
   await t.exception(query(context(stored), ['request', 'done/*[last()]'], { mode: 'logical' }), /a position is no part of a topic's query/)
@@ -204,13 +205,13 @@ test('result: a URI\'s result as an iterator: the next reference asked for, slic
   for (const o of offsets) stored[`request/done/${String(o).slice(0, 5)}/${String(o).slice(0, 6)}/${o}.json`] = record(o)
   const exec = context(stored)
   const r = await result(exec, ['request', 'done/*'], { mode: 'logical' })
-  const batches = () => exec.entries.filter(e => e.event === 'batch' && !e.fixes).length
+  const batches = () => exec.entries.filter(e => e.event === 'batch' && !e.line.includes('fixes true')).length
   t.alike([r.layer, r.metadata().reached, batches()], ['request', null, 0], 'made: fixed, nothing read, no slice fetched')
   t.alike(await r.iterateNext(), { at: 'done/*[@offset=1795400000002]', kind: 'file', node: { type: 'blob', p: 'request/done/17954/179540/1795400000002.json' } }, 'the next reference: a record at its logical address, its file behind it')
   t.is(batches(), 1, 'one slice fetched')
   t.alike((await r.take(2)).map(f => f.at), ['done/*[@offset=1795400000001]', 'done/*[@offset=1795400000000]'], 'take(2): on, across a slice, under the hood')
   t.is(r.metadata().done, false, 'more there: not read, not fetched')
-  t.absent(exec.entries.some(e => e.event === 'batch' && String(e.physical).includes('179531')), 'the oldest folder not touched: two slices fetched, the reader stopped')
+  t.absent(exec.entries.some(e => e.event === 'batch' && e.line.includes('179531')), 'the oldest folder not touched: two slices fetched, the reader stopped')
   t.alike((await r.all()).map(f => f.at), ['done/*[@offset=1795399999999]', 'done/*[@offset=1795312345678]'], 'all(): what is left')
   t.alike([await r.iterateNext(), r.metadata().done], [null, true], 'at the end: null')
   // ascending: the same topic from its earliest on; from a pointer on

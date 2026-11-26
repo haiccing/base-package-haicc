@@ -39,20 +39,22 @@ test('haicc/mrepos: the registry\'s mrepos, each its unique URI, its position fr
     await mrepo(work, 'swarm-1/node-1', 'haiccing/base-component-node')
     await mrepo(work, 'local/stray', 'haiccing/base-package-runtime')
     const all = await mrepos(exec(work, 'local/boot'), { uri: ['main', '.'] })
-    t.alike(all.map(m => [m.uri, m.position, m.package, m.running]), [
-      ['local/boot', '.', 'haiccing/base-component-boot', false],
-      ['local/docs', 'workbench/docs', 'haiccing/base-component-docs', false],
-      ['local/stray', null, 'haiccing/base-package-runtime', false],
-      ['local/workbench', 'workbench', 'haiccing/base-solution-workbench', false],
-      ['swarm-1/node-1', 'workbench/swarms/swarm-1/node-1', 'haiccing/base-component-node', false]
-    ], 'every mrepo in the registry by its unique URI (the boot mrepo\'s its identity\'s, its folder mrepos/boot); its position through the links, forward only, the mrepo asked itself .; one linked nowhere: none; none running')
+    t.alike(all.split('\n'), [
+      '5 mrepos in the install\'s registry.',
+      'local/boot at ., from haiccing/base-component-boot, not running.',
+      'local/docs at workbench/docs, from haiccing/base-component-docs, not running.',
+      'local/stray, not reached from here, from haiccing/base-package-runtime, not running.',
+      'local/workbench at workbench, from haiccing/base-solution-workbench, not running.',
+      'swarm-1/node-1 at workbench/swarms/swarm-1/node-1, from haiccing/base-component-node, not running.'
+    ], 'every mrepo in the registry, a line each, its unique URI first (the boot mrepo\'s its identity\'s, its folder mrepos/boot); its position through the links, forward only, the mrepo asked itself .; one linked nowhere: said; none running')
     const asker = exec(work, 'local/boot')
-    t.alike((await mrepos(asker, { uri: ['main', 'local/docs'] })).map(m => [m.uri, m.position]), [['local/docs', 'workbench/docs']], 'one by its unique URI: where it is, from here')
-    t.alike((await mrepos(asker, { uri: ['main', 'local/*'] })).map(m => m.uri), ['local/boot', 'local/docs', 'local/stray', 'local/workbench'], 'a namespace\'s')
-    t.alike((await mrepos(asker, { uri: ['main', "*/*[package='haiccing/base-component-docs']"] })).map(m => m.uri), ['local/docs'], 'filtered on its record')
-    t.alike((await mrepos(exec(work, 'local/workbench'), { uri: ['main', 'local/docs'] }))[0].position, 'docs', 'from another mrepo: its own links')
-    t.alike((await mrepos(exec(work, 'local/docs'), { uri: ['main', 'local/workbench'] }))[0].position, null, 'not forward of the mrepo asked: none')
-    t.alike(await mrepos(asker, { uri: ['main', 'local/none'] }), [], 'nothing selected: an empty list')
+    const lines = async (e, uri) => (await mrepos(e, { uri })).split('\n').slice(1)
+    t.alike(await lines(asker, ['main', 'local/docs']), ['local/docs at workbench/docs, from haiccing/base-component-docs, not running.'], 'one by its unique URI: where it is, from here')
+    t.alike((await lines(asker, ['main', 'local/*'])).map(l => l.split(/[ ,]/)[0]), ['local/boot', 'local/docs', 'local/stray', 'local/workbench'], 'a namespace\'s')
+    t.alike((await lines(asker, ['main', "*/*[package='haiccing/base-component-docs']"])).map(l => l.split(' ')[0]), ['local/docs'], 'filtered on its record')
+    t.ok((await lines(exec(work, 'local/workbench'), ['main', 'local/docs']))[0].startsWith('local/docs at docs,'), 'from another mrepo: its own links')
+    t.ok((await lines(exec(work, 'local/docs'), ['main', 'local/workbench']))[0].startsWith('local/workbench, not reached from here,'), 'not forward of the mrepo asked: said')
+    t.is(await mrepos(asker, { uri: ['main', 'local/none'] }), 'None of the install\'s 5 mrepos selected by local/none.', 'nothing selected: said')
     await t.exception(mrepos({ runtime: {}, log () {}, step: async (e, d, fn) => fn() }, { uri: ['.'] }), /no work folder/, 'no work folder: said')
   } finally { rmSync(work, { recursive: true, force: true }) }
 })

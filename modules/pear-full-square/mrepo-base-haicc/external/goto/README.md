@@ -30,11 +30,13 @@ The command that follows, its parts: `<protocol>/<action> <URI>
 
 ## Returns
 
-- A URI that names one position: what the command returns: executed
-  here, its value; sent on, the response of the mrepo it was sent to.
-- A URI that selects (a `*` or a filter in it): a list, what the command
-  gave at each position, in order: `[{ "at": "swarms/swarm-1", "value":
-  ... }]`. Nothing selected: an empty list.
+- A URI that names one position: what the command says: executed here,
+  its own answer (its message, its attachments); sent on, what the mrepo
+  it was sent to returned.
+- A URI that selects (a `*` or a filter in it): `Run at <n> positions.`,
+  then what the command said at each, in order, each under its position
+  (`== swarms/swarm-1`); their attachments together. Nothing selected:
+  said, `No position selected by <URI>: nothing run.`, not an error.
 
 ## Errors
 
@@ -65,7 +67,7 @@ The command that follows, its parts: `<protocol>/<action> <URI>
 - **At an ordinary node** the command is executed here, in the context of
   the position: forward visibility only, nothing above it is reachable.
   The command that follows stands at the position: its URI is read
-  behind the position, as its prefix. A position is a folder in `main`;
-  the mrepo itself (`.` written at its root) is one for its own commands.
+  behind the position, as its prefix. A position is a folder in `main`
+  (`.`: main itself), for the mrepo's own commands as for anyone's.
 - **A command is a map over the positions**: the same command at each,
   one after the other, in this one request.

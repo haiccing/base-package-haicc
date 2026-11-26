@@ -19,8 +19,9 @@ Splectral's components are made so (`splectral/install`).
 
 ## Returns
 
-`{ laid, from }`: the files laid, as the runtime layer has them
-(`runtime/hooks/start.haicc`), and the package's path.
+What it did, said: `Laid the runtime config of <path> into the runtime
+layer: <n> files.` Which files: what the request changed, in its
+processing (`changed`, the runtime layer's paths added).
 
 ## Errors
 

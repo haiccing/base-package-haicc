@@ -25,9 +25,14 @@ The target is the rest of the first argument after the package: `/test/<set>`,
 
 ## Returns
 
-- A test: its result, `{ target, ok, units }`, each unit with its tests,
-  its asserts and its failures. A line a unit goes into the request's log.
-- `/protocol`, `/deploy`: `{ target, offers }`, the names the entry offers.
+What it says, natural language:
+
+- A test: `Passed: <target> of <package>, <n> units.`, then a line a
+  unit: passed or failed, its tests, its asserts, each test not ok
+  below it. A unit that failed fails the request: `the tests at <target>
+  of <package> did not pass`, the same lines after.
+- `dry-run`: what the target would run, a line each; nothing run.
+- `/protocol`, `/deploy`: the names the entry offers.
 - With `dry-run`: `{ target, runs }`, the units the target would run.
 
 ## Errors

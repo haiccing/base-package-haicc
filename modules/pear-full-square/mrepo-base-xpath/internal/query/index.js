@@ -24,12 +24,17 @@ export const CONFIG = '.layer.json'
 //    metadata()     the result's: the logical query, its physical translation
 // log: query, when it is made (its URI, how it is read); its batches, through exec.step (batch)
 // (ascending: a topic read from its earliest on; when not said, from its latest back)
+// What a step of a query says of itself, as a line: its facts, each its
+// name and its value (the engine gives them by name; a structure of their
+// own for a query's log: later).
+const said = d => (typeof d === 'string' ? d : `${Object.entries(d ?? {}).map(([k, v]) => `${k} ${typeof v === 'string' ? v : JSON.stringify(v)}`).join(', ')}.`)
+
 export async function query (exec, uri, { mode = 'physical', ascending = false } = {}) {
   const whole = joined(segmented(uri))
   if (whole === ROOT) throw new Error('not a node: . (the mrepo itself; a layer first: main)')
   const [layer, ...steps] = stepsOf(whole)
   if (!isName(layer)) throw new Error(`not a layer: ${layer} (in ${whole}: a name first, without a filter)`)
-  return exec.step('query', () => ({ uri: whole, mode }), async () => {
+  return exec.step('query', () => `Query ${whole}, read ${mode === 'logical' ? 'logically' : 'as it is stored'}.`, async () => {
     const root = await exec.node(layer)
     if (!root) return { layer, iterateNext: async () => null, take: async () => [], all: async () => [], stopped: () => [], metadata: () => null, xpath: null }
     // a folder's listing, asked once a query: its children, and what is
@@ -73,7 +78,7 @@ export async function query (exec, uri, { mode = 'physical', ascending = false }
       // a document's key is a data name: in a URI it takes its URI form
       // (the URI documentation, base-docs-uri: publicKey is public-key), in a filter too
       name: uriFormOf,
-      step: (event, data, fn) => exec.step(event, data, fn)
+      step: (event, data, fn) => exec.step(event, typeof data === 'function' ? r => said(data(r)) : said(data), fn)
     }
     // what the query answers: a node set (mycelium-xpath), logical: the
     // request, its storage's structure type; its data loaded a batch at a
@@ -89,7 +94,7 @@ export async function query (exec, uri, { mode = 'physical', ascending = false }
     // and its batches come from that structure's generator.
     const logical = steps.join('/')
     const run = text => select(tree, root, text)
-    const observe = (event, fn) => exec.step('batch', r => ({ ...event, returned: r.found.length }), fn)
+    const observe = (event, fn) => exec.step('batch', r => `${said(event)} Returned ${r.found.length}.`, fn)
     let topic = null
     if (mode === 'logical') {
       let [node, at] = [root, []]

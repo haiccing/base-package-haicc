@@ -16,8 +16,12 @@ itself.
 
 ## Returns
 
-`{ keywords, pages, changed, problems }`: how many keywords and pages,
-whether the layer changed, how many problems.
+What it did, said, a fact a line: `Extracted the info of <n> packages:
+<k> keywords, <p> pages.`; whether the layer changed (`The info layer
+changed: <n> put, <n> removed.`, or `Nothing changed: the info layer as
+it was.`); its problems (`<n> problems in its pages:
+info/problems.json.`, or `No problems in its pages.`). Which files: what
+the request changed, in its processing.
 
 What it writes, in the `info` layer:
 

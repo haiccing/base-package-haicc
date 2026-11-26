@@ -16,8 +16,9 @@ Splectral component's `stop` hook its renderer).
 
 ## Returns
 
-`{ stopped, ended }`: the package's path, and `{ pid, how }` (`how`
-being `SIGTERM` or `SIGKILL`); `ended` is `null` when none was running.
+What it did, said: `Ended the program of <path>, pid <pid> (<how>).`,
+`how` being `SIGTERM` or `SIGKILL`; none running: `The program of
+<path> was not running: nothing ended.`
 
 ## Errors
 

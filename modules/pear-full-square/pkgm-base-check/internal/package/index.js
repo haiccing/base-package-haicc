@@ -96,7 +96,8 @@ export function checkSets (pkg, what) {
 
 // Its tests: each a folder with its run.js and its README, the generic
 // ones too; one of its own also with a test file, and named in validate
-// and in full. And at least one test of its own: what is specific to the
+// and in full (one that runs where the package is deployed, named
+// <name>-in-situ: in validate-in-situ instead). And at least one test of its own: what is specific to the
 // package tested there; where nothing is, a dummy that says so, running
 // nothing (0 of 0): an explicit decision, written for the package, never
 // part of the template. The template itself is asked for none: its folder
@@ -114,7 +115,9 @@ export function checkTests (pkg, what) {
   }
   for (const t of own) {
     if (!readdirSync(join(pkg, 'test', t)).some(n => n.endsWith('.test.js'))) at(`test/${t}: no test file (*.test.js)`)
-    for (const s of ['validate', 'full']) if (!inSet(s).includes(t)) at(`test/${t}: not in the ${s} set`)
+    // (one that runs where the package is deployed, <name>-in-situ: in the
+    // in-situ set; the others where the package is built)
+    for (const s of t.endsWith('-in-situ') ? ['validate-in-situ'] : ['validate', 'full']) if (!inSet(s).includes(t)) at(`test/${t}: not in the ${s} set`)
   }
   if (what.protocols === null) at('protocol.js: could not be loaded, its protocols unknown')
   if (what.template || own.length) return out

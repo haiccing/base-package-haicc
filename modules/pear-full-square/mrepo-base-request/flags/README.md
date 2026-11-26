@@ -28,6 +28,12 @@ module's test fails for a folder not listed).
   last command of a chain only: a rewrite).
 - `values`: a list, a pattern its value is written to, or `null` (it
   stands alone).
+- In a request's form: a field of its flags' record, by its `values`: a
+  boolean where it stands alone, a text where it takes a value. A flag
+  added is a field added to the request's type, the runtime package's
+  (`haiccing/base-package-runtime`, `types/request.avsc`,
+  `requestFlags`), with its default: its test fails for a flag with no
+  field.
 - `tail`: every word after it, to the end of the command, is its value,
   joined by spaces (a `--` among them too): the last flag written. On a
   command that passes its words on, its `--` still closes it.
@@ -39,6 +45,6 @@ module's test fails for a folder not listed).
 A flag that is not one, a value its flag does not take (a tail flag
 with no text after it), a rewrite on a command that is not the last, a
 rewrite whose protocol is not here, more than one rewrite:
-nothing of the command is executed. The request completes, not failed:
-its output `{ run: false, command, why }`, the reasons, each a warning
-in its log (`request.flag`). The `haicc` command exits 1 for it.
+nothing of the command is executed. The request is returned `failed`:
+`Not run: its flags.`, then the reasons, a line each, each a warning in
+its log too (`request.flag`).

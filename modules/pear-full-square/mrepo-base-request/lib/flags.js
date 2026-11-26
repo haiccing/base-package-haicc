@@ -4,8 +4,13 @@
 // the end of the command:
 //   crud/read swarms/* --flags log=debug
 //   haicc host --flags log=debug -- crud/read swarms/*
-// A flag stands alone (its value true) or carries a value, key=value, no
-// space. In a request's form they are a map: { log: 'debug' }.
+// A flag stands alone (as written: true) or carries a value, key=value, no
+// space: the map as written, { log: 'debug', help: true }. In a request's
+// form they are a record, a field a flag, each its own type (typed; the
+// runtime package's type, requestFlags): one that stands alone a boolean,
+// false when not written; one that takes a value a text, null when not
+// written. Every function here reads either: a flag that is null or false
+// is not written.
 // Which flags there are: the folders of flags/, each its declaration
 // (its kind, its scope, the values it takes: a list, a pattern, or null,
 // it stands alone). This file names none of them. One that is not among
@@ -30,6 +35,10 @@ export function flagsOf (words) {
   return flags
 }
 
+// The flags written: not those that are null or false (a form's record
+// holds every flag there is).
+const entries = flags => Object.entries(flags ?? {}).filter(([, value]) => value !== null && value !== false && value !== undefined)
+
 const takes = (spec, value) => (Array.isArray(spec) ? spec.includes(value) : typeof value === 'string' && spec.test(value))
 
 // The layer a command's own URI is read at, by the flags in force: the
@@ -47,7 +56,7 @@ export const modeOf = flags => (sorted(flags).flags.physical ? 'physical' : 'log
 export function sorted (written = {}) {
   const flags = {}
   const ignored = []
-  for (const [flag, value] of Object.entries(written ?? {})) {
+  for (const [flag, value] of entries(written)) {
     const spec = Object.hasOwn(FLAGS, flag) ? FLAGS[flag].values : undefined
     if (spec === undefined) ignored.push({ flag, value, why: `no flag: ${flag} (${Object.keys(FLAGS).sort().join(', ')})` })
     else if (spec === null ? value !== true : !takes(spec, value)) ignored.push({ flag, value, why: spec === null ? `${flag} takes no value` : FLAGS[flag].tail ? `${flag}: its text follows it (${WORD} ${flag} <text>)` : `${flag}=${value === true ? '' : value}: not ${Array.isArray(spec) ? `one of ${spec.join(', ')}` : 'a value it takes'}` })
@@ -56,13 +65,20 @@ export function sorted (written = {}) {
   return { flags, ignored }
 }
 
+// The flags as a request's form has them: a field each flag there is; those
+// written with a value they take, the others not written (NONE). What is
+// written and is no flag, or takes no such value, has no place in it: said
+// before a form is made (lib/command.js, problems).
+export const NONE = Object.fromEntries(Object.entries(FLAGS).map(([flag, f]) => [flag, f.values === null ? false : null]))
+export const typed = written => ({ ...NONE, ...sorted(written).flags })
+
 // The flags that hold down a chain: those a command sent on takes with it.
 export function chained (flags = {}) {
-  return Object.fromEntries(Object.entries(flags ?? {}).filter(([flag]) => !Object.hasOwn(FLAGS, flag) || FLAGS[flag].scope === 'chain'))
+  return Object.fromEntries(entries(flags).filter(([flag]) => !Object.hasOwn(FLAGS, flag) || FLAGS[flag].scope === 'chain'))
 }
 
 // The rewrite flags of a map, by name, with their declarations.
-export const rewrites = (flags = {}) => Object.keys(flags ?? {}).filter(flag => Object.hasOwn(FLAGS, flag) && FLAGS[flag].kind === 'rewrite').map(flag => [flag, FLAGS[flag]])
+export const rewrites = (flags = {}) => entries(flags).map(([flag]) => flag).filter(flag => Object.hasOwn(FLAGS, flag) && FLAGS[flag].kind === 'rewrite').map(flag => [flag, FLAGS[flag]])
 
 // A command's parts with its flag list taken out. The list follows the
 // command's URI (its first word, when no URI is written): the flags are
@@ -81,7 +97,9 @@ export const rewrites = (flags = {}) => Object.keys(flags ?? {}).filter(flag => 
 //                              by spaces, to the end of the command (a --
 //                              among them too); after the URI of a command
 //                              that passes on, to the -- that closes the
-//                              list: written there, it is not the last
+//                              list: written there, it is not the last;
+//                              written with no text it stands alone, and
+//                              is said (sorted)
 export function split (parts, { command = false } = {}) {
   const i = command ? ([1, 2].find(k => parts[k] === WORD) ?? -1) : parts.indexOf(WORD, 1)
   if (i < 0) return { parts, flags: {}, listed: false }

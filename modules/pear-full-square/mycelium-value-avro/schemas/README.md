@@ -9,4 +9,4 @@ The module's own schemas, the record and the json type, always known to every re
   encoding. The first level of the cascade, read by what carries records.
 - `json.json`: the declared `json` type (`json`): any JSON value as its
   text, in memory the value; for the named edges where nothing is typed
-  yet (`base-docs-uri`, "Data shapes").
+  yet (`base-docs-avro`, "Data shapes").

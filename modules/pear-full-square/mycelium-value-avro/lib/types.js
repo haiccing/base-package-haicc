@@ -1,6 +1,6 @@
 // AVRO types (avsc, Bare's fork), with our logical types:
 //   json              a record of one string, its JSON text: in memory any
-//                     JSON value (base-docs-uri, "Data shapes": the declared
+//                     JSON value (base-docs-avro, "Data shapes": the declared
 //                     json type, for the named edges)
 //   timestamp-millis  a long, milliseconds since the epoch: in memory its
 //                     ISO 8601 text, as a record's timestamp is in JSON
@@ -51,7 +51,7 @@ export const wholeOf = type => type.schema({ exportAttrs: true })
 // says (avsc compares full names unless told: ignoreNamespaces).
 //   is        the same core type (the name; any variant, its namespace),
 //             or a declared alias: versions and variants of one type,
-//             evolved within the rules (base-docs-uri, "Core types")
+//             evolved within the rules (base-docs-avro, "Core types")
 //   is-like   a different core type read as another: aliases generated
 //             for the read, the writer's schema and the reader's walked
 //             side by side, each named type of the reader's whose core

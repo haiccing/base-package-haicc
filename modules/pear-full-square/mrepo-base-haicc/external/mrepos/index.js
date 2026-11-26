@@ -42,7 +42,7 @@ export async function mrepos (exec, { uri = ['.'] }) {
   const work = exec.runtime.work
   if (!work) throw new Error('no work folder: the install\'s registry is not here')
   const base = join(work, MREPOS)
-  const folders = await exec.step('registry', r => ({ mrepos: r.length }), async () => registered(base))
+  const folders = await exec.step('registry', r => `The install's registry read, ${base}: ${r.length} ${r.length === 1 ? 'folder' : 'folders'}.`, async () => registered(base))
   // each by its unique URI: its identity's, else its folder's path
   const read = {}
   const folder = {}
@@ -56,7 +56,7 @@ export async function mrepos (exec, { uri = ['.'] }) {
   if (me) { position[me] = '.'; walk(me, '') }
   // each as a record; running: its runtime answering over its socket
   const records = {}
-  await exec.step('records', r => ({ records: Object.keys(r).length }), async () => {
+  await exec.step('records', r => `Each read, its runtime asked: ${Object.keys(r).length}.`, async () => {
     for (const u of uris) records[u] = { uri: u, position: position[u] ?? null, package: read[u].package, running: Boolean(await ask({ repo: folder[u], op: 'status', timeout: 2000 })) }
     return records
   })
@@ -67,7 +67,10 @@ export async function mrepos (exec, { uri = ['.'] }) {
   const s = segmented(uri)
   const written = joined(s[0] === 'main' && s.length > 1 ? s.slice(1) : s)
   const text = written === '.' || written === 'main' ? null : written
-  if (text === null) { exec.log('info', 'mrepos', { found: uris.length }); return uris.map(u => records[u]) }
+  // What is said: a line each mrepo, its unique URI first, exact; where
+  // it is from here, the package that defines it, whether it runs.
+  const line = r => `${r.uri}${r.position ? ` at ${r.position}` : ', not reached from here'}, from ${r.package ?? 'no package'}, ${r.running ? 'running' : 'not running'}.`
+  if (text === null) return [`${uris.length} ${uris.length === 1 ? 'mrepo' : 'mrepos'} in the install's registry.`, ...uris.map(u => line(records[u]))].join('\n')
   const tree = { children: {}, record: null }
   for (const u of uris) { let n = tree; for (const s of u.split('/')) n = n.children[s] ??= { children: {}, record: null }; n.record = records[u] }
   const { found } = await query({
@@ -75,6 +78,5 @@ export async function mrepos (exec, { uri = ['.'] }) {
     document: node => (node.record ? { position: node.record.position, package: node.record.package, running: node.record.running } : null)
   }, tree, text)
   const out = found.map(f => f.node?.record).filter(Boolean)
-  exec.log('info', 'mrepos', { query: text, found: out.length })
-  return out
+  return out.length ? [`${out.length} of the install's ${uris.length} mrepos selected by ${text}.`, ...out.map(line)].join('\n') : `None of the install's ${uris.length} mrepos selected by ${text}.`
 }

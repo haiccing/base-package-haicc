@@ -50,13 +50,15 @@ export async function run (exec, { args: [subject, ...args] = [] }) {
       packages: listed,
       linked
     }))
-    exec.log('debug', 'situ', { packages: Object.keys(listed).length, linked: Object.values(linked).filter(Boolean).length })
-    r = await exec.step('run', x => ({ package: pkg, target: t, dryRun, units: x?.units?.length ?? null }), () => dispatcher.run(t, { dryRun, env: { MREPO: exec.runtime.dir, PACKAGE: pkg, SITU: join(situ, 'situ.json') } }))
+    exec.log('debug', 'situ', `Its state handed over: ${Object.keys(listed).length} packages listed, ${Object.values(linked).filter(Boolean).length} linked.`)
+    r = await exec.step('run', x => `Ran ${t} of ${pkg}${dryRun ? ', dry' : ''}${x?.units ? `: ${x.units.length} units` : ''}.`, () => dispatcher.run(t, { dryRun, env: { MREPO: exec.runtime.dir, PACKAGE: pkg, SITU: join(situ, 'situ.json') } }))
   } finally { rmSync(situ, { recursive: true, force: true }) }
-  if (dryRun) return { target: t, runs: r }
-  if (t === '/protocol' || t === '/deploy') return { target: t, offers: Object.keys(r).filter(k => k !== 'default') }
-  // a test's result: summarised in the log, whole in the output
-  for (const u of r.units || []) exec.log(u.ok ? 'info' : 'error', 'unit', { unit: u.unit, ok: u.ok, tests: u.tests, failures: u.failures })
-  return r
+  if (dryRun) return [`Would run at ${t} of ${pkg}, nothing run:`, ...(Array.isArray(r) ? r : Object.keys(r ?? {}))].join('\n')
+  if (t === '/protocol' || t === '/deploy') return `${pkg} offers at ${t}: ${Object.keys(r).filter(k => k !== 'default').join(', ')}.`
+  // a test's result: said, a unit a line; one that failed fails the request
+  const n = c => (c ? `${c.passed} of ${c.total}` : 'no')
+  const units = (r.units || []).map(u => `${u.unit}: ${u.ok ? 'passed' : 'failed'}, ${n(u.tests)} tests, ${n(u.asserts)} asserts${(u.failures || []).map(f => `\n  not ok: ${f}`).join('')}`)
+  const bad = (r.units || []).filter(u => !u.ok).length
+  if (!r.ok) throw new Error([`the tests at ${t} of ${pkg} did not pass: ${bad} of ${units.length} units failed`, ...units].join('\n'))
+  return [`Passed: ${t} of ${pkg}, ${units.length} ${units.length === 1 ? 'unit' : 'units'}.`, ...units].join('\n')
 }
-

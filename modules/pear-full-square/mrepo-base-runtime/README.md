@@ -20,8 +20,8 @@ mrepo's own packages: `bare
 ## Design
 
 - `index.js`: the library. No protocol is built in: every action comes
-  from a package. `test/runtime.js`: a command line for the tests, started
-  with `crud` and `service` as packages would offer them.
+  from a package. `test/runtime.js`: a command line for the tests, with no
+  protocol of its own.
 - The protocols its linked packages offer (`protocolsOf`): each package
   in its `packages` layer with a `protocol` entry, imported from its
   `packages/` (the bundle's dispatcher, `run('/protocol')`: nothing else
@@ -51,8 +51,12 @@ mrepo's own packages: `bare
   run, the answer when they are done (`{ ok, decommission: none | done }`,
   or `{ ok: false, error }`, the line that failed).
 - A line of a hook, the mrepo's own (`ctx.own`): queued, placed by the
-  next pass as an internal request, its completed form waited for in
+  next pass as an internal request, the request returned waited for in
   `request/done`.
+- The schema registry (`ctx.registry`, `registryOf(work)`): the one way
+  to a type, where the install has it
+  (`<work>/mrepos/local/avro-registry/avro`); handed to the request
+  protocol's pass, which takes nothing in without it.
 - Its unique URI, `<swarm>/<node>`, a path, read from its runtime layer
   (`/runtime/mrepo.json`) as it starts; its name where it has none. It is
   how the mrepo is addressed: its inbox's topic, its requests'. In its
@@ -62,8 +66,8 @@ mrepo's own packages: `bare
   `runtime/run .
   packages/<org>/<package><target> [dry-run]`: a linked package's
   entry through its dispatcher, its tests above all (a floating instance of
-  the package, each unit its own process); the result the request's output,
-  a line a unit in its log. `/protocol`, `/deploy`: the names offered.
+  the package, each unit its own process); what it says: passed, a line a
+  unit; a unit that failed fails the request, said the same way. `/protocol`, `/deploy`: the names offered.
   `/run` refused (a package's program, not run inside the runtime).
   `runtime/start . <path>` and `runtime/stop . <path>`: a package's
   program beside the mrepo, its own process, ended with the runtime
@@ -111,8 +115,12 @@ mrepo's own packages: `bare
   (`wait`, 30 minutes); a parent's deploy waits on it.
   `decommission({ repo })`: its decommission asked and waited for; a
   parent's teardown runs it before `stop`.
-- `test/fixture.js`: a booted host, for the tests.
+- The runtime as a process, a request through it and back: its
+  package's `start` test (`haiccing/base-package-runtime`), where its
+  types are. Not here yet: the cycle on the p2p host and on native git,
+  the commission and the decommission, a start detached: with the
+  packages their protocols are in, as those are brought to the request.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the cycle on p2p and on git, from the preloaded initialise to the shutdown; where the layers live; the runtime from the command line, started detached, asked over its connection, stopped; each test by its name in [test/](test/).
+- `brittle-bare test/*.test.js` (Bare installed): the runtime from the command line (its version, a bad call); a package's program placed, started, stopped, its config laid; the registry asked for a type; each test by its name in [test/](test/).

@@ -1,22 +1,15 @@
-// The runtime for the module's tests, from the command line: started with
-// the crud, service and protocol protocols as packages would offer them
-// (their actions and their configs passed as its own).
+// The runtime for the module's tests, from the command line, with no
+// protocol of its own (its package gives it its own; the protocols of
+// others come with their packages).
 //   bare test/runtime.js start --work=<host folder>   the runtime, in the
 //       foreground (`start` in the library detaches it)
 //   bare test/runtime.js version
 // Exit 0 done; 1 not done (the store held by another, no repository); 2 a bad call.
 import process from 'bare-process'
 import { resolve } from 'bare-path'
-import { create, read, remove } from 'mrepo-base-crud'
-import { initialise, start, stop, shutdown } from 'mrepo-base-service'
-import { activate, deactivate } from 'mrepo-base-protocol'
-import { PROTOCOLS } from './fixture.js'
 import { version, run } from '../index.js'
 
-const own = {
-  actions: { crud: { create, read, delete: remove }, service: { initialise, start, stop, shutdown }, protocol: { activate, deactivate } },
-  protocols: PROTOCOLS
-}
+const own = { actions: {}, protocols: {} }
 
 const argv = process.argv.slice(2)
 const flags = Object.fromEntries(argv.filter(a => a.startsWith('--')).map(a => { const i = a.indexOf('='); return i < 0 ? [a.slice(2), true] : [a.slice(2, i), a.slice(i + 1)] }))

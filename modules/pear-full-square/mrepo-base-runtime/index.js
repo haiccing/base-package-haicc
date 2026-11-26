@@ -57,7 +57,7 @@ import { openStore } from 'p2p-store'
 import { mrepos } from 'p2p-mrepo'
 import { openRepo, writer } from 'mycelium-git'
 import { nativeBackend, p2pgitBackend } from 'mycelium-git'
-import { INBOX, OUTBOX, MREPOS, inboxFolder, inboxOf, post, viewOf, gitdirOf, setting, request, principals, layer, internal, hookOf, parse, runLines, DONE, OUTSIDE, nameOf, tick, drop, wrap, checkpoint } from 'mrepo-base-request'
+import { INBOX, OUTBOX, MREPOS, inboxFolder, inboxOf, post, viewOf, gitdirOf, setting, request, principals, layer, internal, hookOf, parse, runLines, DONE, nameOf, tick, drop, record, checkpoint } from 'mrepo-base-request'
 import { execute, failed, XPATH_LOG } from 'mrepo-base-execute'
 import { IDENTITY } from 'mrepo-base-xpath'
 export { run as runtimeRun } from './external/run/index.js'
@@ -65,6 +65,8 @@ export { lay as runtimeLay } from './external/lay/index.js'
 export { start as runtimeStart } from './external/start/index.js'
 export { stop as runtimeStop } from './external/stop/index.js'
 export { programAt, stateOf as programState, launch as launchProgram, end as endProgram } from './internal/program/index.js'
+import { registryOf, mountOf } from './internal/registry/index.js'
+export { registryOf, mountOf }
 import { pathToFileURL } from 'bare-url'
 import pkg from './package.json' with { type: 'json' }
 
@@ -163,30 +165,35 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
   // Its unique URI (<swarm>/<node>, a path), from its runtime layer; its name where
   // it has none: how it is addressed (its inbox's topic, its requests').
   ctx.uri = await ctx.repo.read(IDENTITY).then(b => JSON.parse(b.toString()).uri, () => null) ?? repo.name
-  // A record into its own inbox, as its storage takes one: the inbox layer
+  // The schema registry, the one way to a type: where the install has it
+  // (its work folder: <work>/mrepos/local/avro-registry/avro, mounted by
+  // the warm boot, the registry component's after). The inbox takes
+  // nothing in without it (mrepo-base-request, wrong).
+  ctx.registry = work ? registryOf(work) : null
+  // A request into its own inbox, as its storage takes one: the inbox layer
   // straight on git, the inbox folder otherwise (taken in from there).
   // A line of a hook or a script, as the mrepo's own: queued here, placed by
   // the runtime's next pass as an internal request (standing at main, as a
-  // line is written), its completed form waited for in request/done.
+  // line is written), the request returned waited for in request/done.
   ctx.queued = []
   // Its clock: the offsets of what arrives, its own requests' too: its
   // inbox folder's (the one every sender takes); on git alone, its own.
   ctx.offset = repo.storage === 'git' ? () => tick() : () => inboxOf(dir ?? viewOf(work, repo.name)).reserve()
-  ctx.own = parts => new Promise((resolve, reject) => {
+  ctx.own = line => new Promise((resolve, reject) => {
     const name = nameOf(ctx.offset())
-    ctx.queued.push({ name, parts })
+    ctx.queued.push({ name, line })
     wake()
     // catch: not in done yet: looked at again
-    const look = () => layer(ctx, DONE).read(name).then(done => resolve(done.value.value), () => setTimeout(look, 30))
+    const look = () => layer(ctx, DONE).read(name).then(done => resolve(done.value), () => setTimeout(look, 30))
     setTimeout(look, 30)
   })
-  // a request's completed form, from its outbox layer: null until it is there
+  // a request returned, from its outbox layer: null until it is there
   // catch: not in the outbox yet: none
-  ctx.answer = offset => layer(ctx, 'outbox').read(nameOf(offset)).then(out => out.value.value, () => null)
-  // (a core record, no offset yet: given as it arrives; -> its offset)
-  ctx.submit = async core => {
+  ctx.answer = offset => layer(ctx, 'outbox').read(nameOf(offset)).then(out => out.value, () => null)
+  // (a request, no offset yet: given as it arrives; -> its offset)
+  ctx.submit = async asked => {
     let offset
-    if (repo.storage === 'git') { offset = ctx.offset(); await post(ctx, wrap(`/${ctx.uri}/inbox`, { ...core, offset })) } else offset = drop(dir ?? viewOf(work, repo.name), ctx.uri, core)
+    if (repo.storage === 'git') { offset = ctx.offset(); await post(ctx, record(`/${ctx.uri}/inbox`, asked, offset)) } else offset = drop(dir ?? viewOf(work, repo.name), ctx.uri, asked)
     wake()
     return offset
   }
@@ -208,7 +215,7 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
   // in (intake 'internal', tagged by the trigger), the rest wait in the
   // inbox until the boot is done. Otherwise the runtime names no protocol:
   // what is activated, extracted or made ready at boot is the hook's.
-  const starting = [(await internal(ctx, { command: ['protocol/activate', '.', 'protocol'] })).name]
+  const starting = [(await internal(ctx, 'protocol/activate . protocol')).name]
   const boot = await hookOf(ctx.repo, 'boot')
   // Its commission: what the mrepo does once deployed, after its boot: its
   // components deployed (each commissioned by its own), its service
@@ -349,7 +356,7 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
       }
       // the lines queued as the mrepo's own: placed now, between passes
       stage = 'own'
-      for (const q of ctx.queued.splice(0)) await internal(ctx, { command: q.parts }, q.name, { at: OUTSIDE })
+      for (const q of ctx.queued.splice(0)) await internal(ctx, q.line, q.name)
       stage = 'request'
       await request(ctx)
       stage = 'execute'
@@ -369,7 +376,7 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
         // nothing moved: wait for what arrives: the inbox, and the answers
         // the requests waiting here wait for
         stage = 'waiting'
-        const waiting = dir ? (await principals(ctx)).filter(p => p.waits && !p.response && p.core.value?.remote?.folder).map(p => join(dir, p.core.value.remote.folder, 'outbox')) : []
+        const waiting = dir ? (await principals(ctx)).filter(p => p.waits && !p.response && p.request.processing?.waiting?.folder).map(p => join(dir, p.request.processing.waiting.folder, 'outbox')) : []
         const { all, added } = watch([inbox, ...new Set(waiting)])
         next = added ? 0 : all ? idle : every
       }
