@@ -71,10 +71,12 @@ export const isReturned = request => Boolean(request) && typeof request === 'obj
 
 // Completed: how it ended and what is said of it, natural language (the
 // outcome first, a fact a line); its data where data is the product, each
-// attachment its name, its type's URI and where its value is.
+// attachment the wrapper as it is (its name, its type's URI, its content or
+// where its value is): kept, never converted here (lib/attachment.js is
+// where a value becomes one).
 export function returned (request, status, message, attachments = []) {
   if (!STATUS.includes(status)) throw new Error(`not a status: ${status} (${STATUS.join(', ')})`)
   if (typeof message !== 'string' || !message.trim()) throw new Error('nothing said: what is returned says what happened')
   if (isReturned(request)) throw new Error('returned already')
-  return { ...request, returned: { status, message, attachments: attachments.map(({ name, type, at = null }) => ({ name, type, at })) } }
+  return { ...request, returned: { status, message, attachments: attachments.map(({ name, type, content = null, at = null }) => ({ name, type, content, at })) } }
 }

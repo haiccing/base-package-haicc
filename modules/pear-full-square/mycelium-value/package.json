@@ -1,0 +1,14 @@
+{
+  "name": "mycelium-value",
+  "version": "0.1.0",
+  "description": "Module: value transformations, a value to bytes and back by a handler: JSON, and AVRO's binary by a type; the handler interface the storage containers take.",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "test": "brittle-bare test/*.test.js"
+  },
+  "license": "MIT",
+  "devDependencies": {
+    "brittle": "4.5.0"
+  }
+}

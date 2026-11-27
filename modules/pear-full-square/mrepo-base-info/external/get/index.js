@@ -3,9 +3,8 @@
 import { segmented, joined } from 'mycelium-uri'
 import { LAYER, TOP, keyword, parse, MENU, INCLUDED } from '../../internal/info/index.js'
 
-// The type of what is attached: a page of the info layer, its text (a
-// text is of type string: no type of the package's own to declare).
-export const PAGE = 'string'
+// The type of what is attached: a page, its text, one of AVRO's own.
+export const PAGE = 'avro/string'
 
 // A page's text without its menus: what it says, its keywords listed apart.
 const said = text => {
@@ -76,19 +75,19 @@ export async function get (exec, { uri = ['.'], args = [] }) {
   if (index === null) throw new Error('no info extracted in this mrepo yet (info/extract)')
   const packages = (await doc(exec, 'packages.json')) ?? {}
   const of = async pkg => (await doc(exec, `packages/${pkg}/index.json`)) ?? {}
-  // What is said: the page asked for, as it is written, and the keywords
-  // below it, each as it is asked, with what it is; several choices: each
-  // apart, under its keyword. Its pages attached: where each is.
+  // What is said: the keyword asked for and what it is, then the keywords
+  // below it, each as it is asked, with what it is: what to ask next;
+  // several choices: each apart, under its keyword. The page itself is
+  // the product: attached, a text, as it is written, not also said.
   const answer = (keyword, choices, context = null) => {
     exec.log('verbose', 'found', `${keyword}${context ? `, in ${context}` : ''}: ${choices.length} ${choices.length === 1 ? 'choice' : 'choices'}, ${choices.reduce((n, c) => n + c.below.length, 0)} keywords below.`)
     const one = c => [
-      c.page,
       ...(c.see ? [`See: ${c.see}`] : []),
-      ...(c.below.length ? ['', 'Below it:', ...c.below.map(b => `- ${b.keyword}: ${b.oneliner}${b.choices > 1 ? ` (${b.choices} choices)` : ''}`)] : [])
-    ].join('\n')
+      ...(c.below.length ? ['Below it:', ...c.below.map(b => `- ${b.keyword}: ${b.oneliner}${b.choices > 1 ? ` (${b.choices} choices)` : ''}`)] : [])
+    ]
     const head = choices.length === 1 ? `${keyword}: ${choices[0].oneliner || choices[0].title}` : `${keyword}: ${choices.length} choices, each apart.`
-    const body = choices.length === 1 ? one(choices[0]) : choices.map(c => [`== ${c.keyword ?? keyword}${c.context ? ` (${c.context})` : ''}: ${c.oneliner || c.title}`, one(c)].join('\n')).join('\n\n')
-    return { message: `${head}\n\n${body}`, attachments: choices.map(c => ({ name: c.title || keyword, type: PAGE, at: c.at })) }
+    const body = choices.length === 1 ? one(choices[0]) : choices.flatMap((c, n) => [...(n ? [''] : []), `== ${c.keyword ?? keyword}${c.context ? ` (${c.context})` : ''}: ${c.oneliner || c.title}`, ...one(c)])
+    return { message: [head, ...body].join('\n'), attachments: choices.map(c => ({ name: c.title || keyword, type: PAGE, value: c.page })) }
   }
   const { context, rest } = index[k] ? { context: null, rest: k } : contextOf(k, packages)
   exec.log('debug', 'asked', `Asked: ${k}${context ? `, in ${context}, ${rest || 'its top'}` : ''}.`)

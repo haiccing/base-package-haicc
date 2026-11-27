@@ -27,8 +27,13 @@ branch is squashed into its target, one commit there; a failure resets instead. 
 - **What an action answers**: `fn(exec, form)` gives what it says
   happened, natural language (the outcome first, a fact a line, names
   exact): a text, or `{ message, attachments }` where data is its
-  product, each attachment its name, its type's URI and where its value
-  is. The request is returned `done` with it. An action that says
+  product, each attachment its name, its type's URI and its value
+  (`{ name, type, value }`), or where its value is (`{ name, type, at }`).
+  A value is written as the wrapper, its content the value's bytes by
+  its type, by the types the mrepo holds, while the request can still
+  fail whole: one that does not fit, or of a type not held, fails it
+  (`not attached: <name> (<type>)`, then why). The request is returned
+  `done` with it. An action that says
   nothing fails its request; what it throws fails it too: `Failed,
   nothing of it kept.`, its message, its causes a line each. Refused as
   it executes (the check, an action there is none of): `Refused, nothing
@@ -40,7 +45,7 @@ branch is squashed into its target, one commit there; a failure resets instead. 
   request returned into the mrepo's own `waiting/outbox` under an offset
   of the mrepo's, collected as a linked mrepo's answer is, and the
   action executed again with it: `exec.resumed`, `{ status, message,
-  attachments }`. One wait a request.
+  attachments }`, its attachments as values. One wait a request.
 - **A command sent on** (`exec.forward(to, command)`, `lib/remote.js`): an
   action that finds its position a shortcut sends the command that follows
   to the mrepo linked there, a request of its own dropped into its inbox
@@ -69,7 +74,9 @@ branch is squashed into its target, one commit there; a failure resets instead. 
 - **A command executed here** (`exec.run(command, { own })`): a line or its
   words, the flags in force written into it, understood, checked as the
   request itself is, its action run in the same execution; what it says
-  returned (`{ message, attachments }`). `own`: as the mrepo's own, not held
+  returned (`{ message, attachments }`, its attachments as values; one of
+  a type not held here the wrapper as it is, to pass on, its `value`
+  refused). `own`: as the mrepo's own, not held
   at the door; the service runs its hooks so.
 
 The mrepo execute protocol, base variant: a request in `request/execute`

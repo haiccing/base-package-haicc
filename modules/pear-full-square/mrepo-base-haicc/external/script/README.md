@@ -22,7 +22,9 @@ its lines at `swarms/swarm-1` in the host.
 ## Returns
 
 `Ran <n> lines at <position>.`, then each line and what it said, each
-under its line (`> <line>`); their attachments together. A line that
+under its line (`> <line>`); their attachments together, passed on as
+they came, the wrappers untouched (which line each came from is not
+kept). A line that
 fails ends it: failed, `line <n>: <line>: <what it said>`.
 
 ## Errors

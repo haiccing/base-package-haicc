@@ -42,6 +42,19 @@ setting.
   giving a new request: `asked`, `filled`, `understood`, `noted`,
   `measured`, `returned`, `isReturned`; `unread`, what stands for
   something that came in and is no request.
+- **An answer's attachments, a value and its wrapper**
+  (`lib/attachment.js`): the one place a value becomes the wrapper it is
+  kept and sent as, and back, on `mycelium-value`'s `avro` handler by
+  the types the mrepo holds. `wrapped(types, attachments)`, as an answer
+  is written: a value (`{ name, type, value }`) the wrapper, its content
+  the value's bytes by its type, base64; a pointer (`{ name, type, at }`)
+  kept; a wrapper already built passed on as it is; one that does not
+  fit, or of a type not held: `not attached: <name> (<type>)`, its cause
+  why. `opened(types, attachments)`, as action code is handed an answer:
+  each wrapper its value; one of a type not held the wrapper as it is,
+  its `value` refused when asked for, said. `handed(types, returned)`:
+  what was returned, so. Told apart by their keys, never by content. A
+  script's lines (`runLines`) hand them so when given the types.
 - **A request's identity is its offset** (`lib/record.js`): the
   milliseconds since the epoch when it arrived at the mrepo, a number,
   never two the same there: on every record around it (`offset`), and
@@ -159,10 +172,10 @@ setting.
   (`joined`). The URI functions are `mycelium-uri`'s, offered here too:
   `relative`, `segmented`, `joined`, `positionOf`, `slashed`.
 - **Checked by its types at the inbox** (`wrong(ctx, record)`): the
-  record without its value and the request, each asked of the schema
-  registry as the runtime reaches it (`ctx.registry`, `valid(uri,
-  value)`), strict; what is wrong said, where. No registry: nothing is
-  taken in.
+  record without its value and the request, each checked by the types
+  the mrepo holds, its `avro` layer's, as the runtime read them
+  (`ctx.types`, `valid(uri, value)`), strict; what is wrong said, where.
+  Its types not held: nothing is taken in.
 - **One way into pending** (`admit(ctx, request, { origin })`): the
   inbox's requests and internal ones (`internal(ctx, command)`, the
   mrepo's own, a line or its words) pass the same handler, validated by

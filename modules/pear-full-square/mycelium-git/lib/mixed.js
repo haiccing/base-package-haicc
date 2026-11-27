@@ -12,9 +12,10 @@
 import { transfer } from './transfer.js'
 
 // The layers stored on disk, not atomic: request/*, the boxes (inbox,
-// outbox), xpath/* (the XPath machinery's own) and execute/* (the
-// execution branches).
-export const isLocal = name => ['request', 'inbox', 'outbox', 'execute', 'xpath'].includes(name.split('/')[0])
+// outbox), xpath/* (the XPath machinery's own), avro (the mrepo's cache
+// of the types it uses, this machine's) and execute/* (the execution
+// branches).
+export const isLocal = name => ['request', 'inbox', 'outbox', 'execute', 'xpath', 'avro'].includes(name.split('/')[0])
 
 export function mixedBackend ({ atomic, local, isLocal: routed = isLocal }) {
   const has = (b, oid) => b.hasObject(oid)

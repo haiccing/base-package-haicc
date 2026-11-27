@@ -10,4 +10,5 @@ The tests of mrepo-base-execute, a section per file, each test by its name.
 - a command run in the execution: its answer its own, the flags in force with it; a continuation
 - sent on: the command in a request of its own, the flags in force in its line; the principal waiting; returned with the answer, the request it became linked
 - a job waited for: the request parked, the runtime free; resumed with what the job returned
+- attached: a value written as the wrapper, its content the value's bytes; handed to an action as a value; one that does not fit fails the request whole
 - executed: a request returned elsewhere handed over as execute hands one; failed: a runtime's error in the request executing

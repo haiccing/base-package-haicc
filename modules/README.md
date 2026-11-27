@@ -21,6 +21,7 @@ modules for linux-x64, linux-arm64, each with its version, licence and source in
 - [mycelium-container-document](pear-full-square/mycelium-container-document/)
 - [mycelium-git](pear-full-square/mycelium-git/)
 - [mycelium-uri](pear-full-square/mycelium-uri/)
+- [mycelium-value](pear-full-square/mycelium-value/)
 - [mycelium-value-avro](pear-full-square/mycelium-value-avro/)
 - [mycelium-value-json](pear-full-square/mycelium-value-json/)
 - [mycelium-xpath](pear-full-square/mycelium-xpath/)

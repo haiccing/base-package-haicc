@@ -31,7 +31,7 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 
 - a request from the inbox: checked by its types, understood from its line, queued, begun on its branch; returned: in done, sent back
 - refused at the inbox: returned failed, saying why in words; in done, sent back; the next one taken in
-- no schema registry: nothing is taken in
+- its types not held: nothing is taken in
 - the mrepo's own: a line or its words, written as anyone writes one; trusted, its URI and its arguments still checked; nobody waits
 - a request waiting for another mrepo's answer: collected from its outbox, by the offset it has there; on the principal's branch, its key that offset
 
@@ -42,3 +42,4 @@ The tests of mrepo-base-request, a section per file, each test by its name.
 - filled: a request whose form came filled in, no line
 - noted, measured: an entry a line, its metrics; a new request each, the one given unchanged
 - returned: completed, done or failed, with what is said; its attachments by their base
+- attachments: a value into the wrapper and back; a pointer kept; a wrapper passed on unchanged; what does not fit, a type not held: said

@@ -1,10 +1,12 @@
 // AVRO types (avsc, Bare's fork), with our logical types:
 //   json              a record of one string, its JSON text: in memory any
-//                     JSON value (base-docs-avro, "Data shapes": the declared
-//                     json type, for the named edges); the behaviour here,
-//                     the type declared by a package
+//                     JSON value; the first build's, not used by what is
+//                     brought to the request (base-docs-avro, "Data shapes")
 //   timestamp-millis  a long, milliseconds since the epoch: in memory its
 //                     ISO 8601 text, as a record's timestamp is in JSON
+//   base64            bytes: in memory and in JSON its base64 text (ours,
+//                     not AVRO's JSON form of bytes); strict: only text
+//                     that decodes and encodes back to itself
 // And is-like: whether a writer's data reads as a reader's schema, AVRO's
 // resolution with record names not required to match.
 import avsc from 'avsc'
@@ -31,7 +33,35 @@ class Timestamp extends avsc.types.LogicalType {
   }
 }
 
-export const LOGICAL = { json: Json, 'timestamp-millis': Timestamp }
+class Base64 extends avsc.types.LogicalType {
+  _fromValue (bytes) { return Buffer.from(bytes).toString('base64') }
+  _toValue (text) {
+    if (typeof text !== 'string') return undefined
+    let bytes
+    // catch: not base64 at all: not a value of it
+    try { bytes = Buffer.from(text, 'base64') } catch { return undefined }
+    // canonical only: padding, alphabet, no white space: the same text back
+    return bytes.toString('base64') === text ? bytes : undefined
+  }
+
+  _resolve (type) {
+    if (avsc.Type.isType(type, 'logical:base64')) return v => v
+    if (avsc.Type.isType(type, 'bytes')) return v => this._fromValue(v)
+  }
+}
+
+export const LOGICAL = { json: Json, 'timestamp-millis': Timestamp, base64: Base64 }
+
+// AVRO's own types, each by a URI, avro/<name>: held by everyone, no schema
+// file. A URI -> its type; null when it is none of them.
+export const PRIMITIVES = ['null', 'boolean', 'int', 'long', 'float', 'double', 'bytes', 'string']
+const AVRO = 'avro/'
+export const isPrimitive = uri => typeof uri === 'string' && uri.startsWith(AVRO) && PRIMITIVES.includes(uri.slice(AVRO.length))
+export function primitiveOf (uri) {
+  if (typeof uri !== 'string' || !uri.startsWith(AVRO)) return null
+  if (!PRIMITIVES.includes(uri.slice(AVRO.length))) throw new Error(`not a type of AVRO's own: ${uri} (${PRIMITIVES.map(p => AVRO + p).join(', ')})`)
+  return avsc.Type.forSchema(uri.slice(AVRO.length))
+}
 
 // A schema (JSON) -> its type (a union of several records wrapped, as
 // AVRO's JSON does: { <fullname>: value }; others plain); named types it refers to found in `named`
@@ -40,12 +70,20 @@ export function typeOf (schema, named = {}) {
   return avsc.Type.forSchema(schema, { logicalTypes: LOGICAL, registry: named, wrapUnions: 'auto' })
 }
 
-// A type's Parsing Canonical Form and its fingerprint; and the schema whole,
-// self-contained (every named type it uses defined in it, its attributes
-// kept): what the registry stores.
+// A type's Parsing Canonical Form (AVRO's: what a writer's bytes are parsed
+// by); the schema whole, self-contained (every named type it uses defined
+// in it, its attributes kept); its contract form, the whole without its
+// descriptions: what a read depends on, defaults, aliases and logical types
+// with it; and its fingerprint, of its contract form (the human, 2026-11-27:
+// "can't you amend how the fingerprint is created?"): a schema's identity,
+// changed by anything that changes how its data is written or read, not by
+// its descriptions.
 export const canonicalOf = type => JSON.stringify(type.schema())
-export const fingerprint = type => fingerprintOf(canonicalOf(type))
 export const wholeOf = type => type.schema({ exportAttrs: true })
+// (a default is a value, kept as it is: a key doc in it is data)
+const undocumented = s => (Array.isArray(s) ? s.map(undocumented) : s && typeof s === 'object' ? Object.fromEntries(Object.entries(s).filter(([k]) => k !== 'doc').map(([k, v]) => [k, k === 'default' ? v : undocumented(v)])) : s)
+export const contractOf = type => JSON.stringify(undocumented(wholeOf(type)))
+export const fingerprint = type => fingerprintOf(contractOf(type))
 
 // Is and is-like, one mechanism: AVRO's own resolution, unchanged, a
 // record matched by its name without the namespace, as the specification

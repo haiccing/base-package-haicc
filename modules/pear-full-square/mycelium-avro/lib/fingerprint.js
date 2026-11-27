@@ -1,5 +1,6 @@
-// A schema's identity: the CRC-64-AVRO fingerprint (Rabin) of its Parsing
-// Canonical Form, as the AVRO specification defines both: the same schema,
+// A schema's identity: the CRC-64-AVRO fingerprint (Rabin), as the AVRO
+// specification defines it, of the text it is given: the schema's contract
+// form (types.js, contractOf: the whole without its descriptions): the same schema,
 // the same fingerprint, anywhere; a schema never changes, a new version is a
 // new fingerprint. Written as 16 lowercase hex digits (the number, most
 // significant first), a valid name; in a single-object header, its 8 bytes
@@ -23,7 +24,7 @@ export function rabin (bytes) {
   return fp
 }
 
-// The Parsing Canonical Form's text -> the fingerprint, 16 hex digits.
+// A schema's text (its contract form) -> the fingerprint, 16 hex digits.
 export const fingerprintOf = canonical => rabin(Buffer.from(canonical, 'utf8')).toString(16).padStart(16, '0')
 
 // 16 hex digits <-> the 8 bytes of a single-object header (little-endian).

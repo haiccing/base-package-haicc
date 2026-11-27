@@ -12,6 +12,8 @@ const STREAMING = ['inbox', 'outbox', 'request/done']
 // The status transitions a hook can hang on: boot (the runtime's), the rest the service's.
 const TRANSITIONS = ['boot', 'commission', 'initialise', 'start', 'stop', 'shutdown', 'decommission']
 const json = f => JSON.parse(readFileSync(f, 'utf8'))
+// The one package that lays types into an mrepo's avro layer at deploy.
+const AVRO_BRINGER = 'base-package-runtime'
 
 // The leaves of a structure: each folder holding a .layer.json, by its path.
 export function leaves (root, rel = '') {
@@ -41,6 +43,15 @@ export function checkStructure (pkg) {
   if (!existsSync(root)) return out
   const ls = leaves(root)
   for (const n of readdirSync(root).sort()) if (!statSync(join(root, n)).isDirectory() && n !== 'README.md') at(`mrepo/${n}: a file outside a layer`)
+  // the avro layer: laid in at deploy by the runtime package alone, its
+  // essential types, the exception for bootstrapping; an mrepo's other
+  // types come from the schema registry, never from a package's structure
+  if (existsSync(join(root, 'avro'))) {
+    // catch: no package.json that reads: no name (said by the package check)
+    const { name = null, docs = false } = (() => { try { return json(join(pkg, 'package.json')) } catch { return {} } })()
+    // (a documentation package brings no structure at deploy: its mrepo/ is pages, the layer's among them)
+    if (name !== AVRO_BRINGER && docs !== true) at(`mrepo/avro: a package lays nothing into the avro layer (the ${AVRO_BRINGER} alone does, its essential types; any other type comes from the schema registry)`)
+  }
   // every name it lays in: a URI's name, and then data; or hidden, a name
   // starting with a dot, and then one of those there are (a layer's
   // config, a node's document, its shortcuts); a README is external

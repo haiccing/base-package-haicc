@@ -9,7 +9,7 @@
   },
   "license": "MIT",
   "dependencies": {
-    "avsc": "github:bare-for-pear/avsc#deedf716c9d529dfaac38de4676ab3cba2073468"
+    "avsc": "github:bare-for-pear/avsc#27bebb2c7ffa2ee891a726b7315bd28dea58dafc"
   },
   "devDependencies": {
     "brittle": "4.5.0"

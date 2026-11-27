@@ -8,7 +8,8 @@ import { parse, runLines as run } from 'mrepo-base-request'
 export const positionAt = uri => { const whole = joined(segmented(uri)); return whole === ROOT || whole === MAIN ? '.' : whole.startsWith(`${MAIN}/`) ? whole.slice(MAIN.length + 1) : whole }
 
 // lines run through the mrepo's own inbox; the request waits for them,
-// then says what each said, each under its line
+// then says what each said, each under its line; what they attached
+// passed on as it came, the wrappers untouched
 export async function runLines (exec, text, uri) {
   if (exec.resumed) {
     if (exec.resumed.status === 'failed') throw new Error(exec.resumed.message)

@@ -192,6 +192,7 @@ export function contract (name, makeBackend) {
     await t.exception(w.createLayer('execute/main', 'x', { author, time }), /not a layer/)
     await t.exception(w.createLayer('publish/x', 'x', { author, time }), /not a layer/)
     await t.exception(w.createLayer('main/x', 'x', { author, time }), /not a layer/)
+    await t.exception(w.createLayer('avro/x', 'x', { author, time }), /not a layer/, 'avro: a layer on its own, nothing below its name')
     await t.exception(w.createLayer('other/x', 'x', { author, time }), /not a layer/)
   })
 

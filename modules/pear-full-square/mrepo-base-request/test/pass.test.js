@@ -5,12 +5,12 @@ import { tmpdir } from 'bare-os'
 import { p2pgitBackend, openRepo, writer } from 'mycelium-git'
 import { request, admit, internal, ensure, AUTHOR, principals, begin, wrong, refusal, drop, post, layer, record, asked, returned, noted, isReturned, isInternal, outboxOf, nameOf, PENDING, EXECUTE, DONE, TYPES, NONE } from '../index.js'
 
-// The schema registry as the runtime reaches it, stood in for: what it is
+// The types the mrepo holds, as the runtime read them, stood in for: what it is
 // asked noted, a value refused where it carries `odd` (the types themselves
 // and the registry are tested where they are: the runtime's package).
-const registry = () => {
+const types = () => {
   const asked = []
-  return { asked, valid: (type, value) => { asked.push(type); return value && typeof value === 'object' && !('odd' in value) ? { valid: true } : { valid: false, problems: [{ at: 'odd', expected: 'nothing there' }] } } }
+  return { asked, held: Object.values(TYPES), valid: (type, value) => { asked.push(type); return value && typeof value === 'object' && !('odd' in value) ? { valid: true } : { valid: false, problems: [{ at: 'odd', expected: 'nothing there' }] } } }
 }
 const protocols = {
   crud: { actions: { read: { uris: ['**'] }, create: { uris: ['<name>/**'], args: ['document'] } } },
@@ -22,7 +22,7 @@ async function mrepo (t, more = {}) {
   const dir = join(work, 'mrepos', 'local', 'x')
   const backend = p2pgitBackend(join(dir, '.git'), { fs })
   await backend.init()
-  const ctx = { work, dir, name: 'x', uri: 'local/x', backend, repo: openRepo(backend), writer: writer(backend), protocols, registry: registry(), ...more }
+  const ctx = { work, dir, name: 'x', uri: 'local/x', backend, repo: openRepo(backend), writer: writer(backend), protocols, types: types(), ...more }
   for (const b of [PENDING, EXECUTE, DONE]) await ensure(ctx, b)
   return ctx
 }
@@ -34,7 +34,7 @@ test('a request from the inbox: checked by its types, understood from its line, 
   const ctx = await mrepo(t)
   const o = drop(ctx.dir, ctx.uri, asked('crud/read notes/hello --flags log=debug', from))
   await pass(ctx)
-  t.alike(ctx.registry.asked, [TYPES.record, TYPES.request], 'the record and the request, each asked of the registry')
+  t.alike(ctx.types.asked, [TYPES.record, TYPES.request], 'the record and the request, each checked by the types the mrepo holds')
   const [p] = await principals(ctx)
   t.alike([p.id, p.waits, p.response], [nameOf(o), null, null], 'begun on its own branch, under its offset')
   t.alike([p.request.command, p.request.form, p.request.returned], ['crud/read notes/hello --flags log=debug', { protocol: 'crud', action: 'read', uri: ['main', 'notes/hello'], args: [], flags: { ...NONE, log: 'debug' } }, null], 'its line as typed; its form understood where the outside stands, its flags each its type')
@@ -88,12 +88,12 @@ test('refused at the inbox: returned failed, saying why in words; in done, sent 
   t.is(refusal('a', 'b'), 'Refused, nothing run.\na\nb')
 })
 
-test('no schema registry: nothing is taken in', async (t) => {
-  const ctx = await mrepo(t, { registry: null })
+test('its types not held: nothing is taken in', async (t) => {
+  const ctx = await mrepo(t, { types: { held: [TYPES.record], valid: () => ({ valid: true }) } })
   const o = drop(ctx.dir, ctx.uri, asked('crud/read x', from))
   await pass(ctx)
-  t.alike(wrong(ctx, {}), ['no schema registry here: nothing is taken in without it'])
-  t.alike((await read(ctx, DONE, nameOf(o))).value.returned, { status: 'failed', message: 'Refused, nothing run.\nno schema registry here: nothing is taken in without it', attachments: [] })
+  t.alike(wrong(ctx, {}), ['its types are not held here: haiccing/base-package-runtime/request (the mrepo\'s avro layer; nothing is taken in without them)'])
+  t.alike((await read(ctx, DONE, nameOf(o))).value.returned, { status: 'failed', message: 'Refused, nothing run.\nits types are not held here: haiccing/base-package-runtime/request (the mrepo\'s avro layer; nothing is taken in without them)', attachments: [] })
   t.alike(await principals(ctx), [])
 })
 

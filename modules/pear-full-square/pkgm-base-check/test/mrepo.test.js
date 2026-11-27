@@ -158,3 +158,22 @@ test('the names a package lays into its layers: a URI\'s, or hidden and one of t
     ], 'a hidden name the rules do not know, an uppercase name, an underscore: each said; layer.json without its dot is data like any other')
   } finally { rmSync(d, { recursive: true, force: true }) }
 })
+
+test('the avro layer: laid in by the runtime package alone; any other package bringing it, or a file into it: said', (t) => {
+  const d = mkdtempSync(join(tmpdir(), 'mrepo-'))
+  try {
+    const avro = { 'mrepo/avro/.layer.json': { mode: 'non-atomic', description: 'The types it uses.' }, 'mrepo/avro/types/org/p/thing.avsc': { type: 'record', name: 'org.p.thing', fields: [] } }
+    write(d, { ...good, ...avro, 'package.json': { name: 'base-package-runtime', type: 'module', main: 'main.js' }, 'mrepo/packages/.layer.json': { mode: 'replicated', description: 'The packages.', packages: ['org/base-package-runtime'] } })
+    t.alike(checkStructure(d), [], 'the runtime package: its avro layer, its essential types in it: none')
+    write(d, { 'package.json': { name: 'p', type: 'module', main: 'main.js' }, 'mrepo/packages/.layer.json': { mode: 'replicated', description: 'The packages.', packages: ['org/p'] } })
+    t.alike(checkStructure(d).map(p => p.detail), ['mrepo/avro: a package lays nothing into the avro layer (the base-package-runtime alone does, its essential types; any other type comes from the schema registry)'], 'another package bringing the layer: said')
+    write(d, { 'package.json': { name: 'p', type: 'module', main: 'main.js', docs: true } })
+    t.absent(checkStructure(d).some(p => p.detail.startsWith('mrepo/avro:')), 'a documentation package: its mrepo/ is pages, the layer\'s page among them: not said')
+  } finally { rmSync(d, { recursive: true, force: true }) }
+  const c = mkdtempSync(join(tmpdir(), 'mrepo-'))
+  try {
+    write(c, { ...good, 'mrepo/avro/types/org/p/thing.avsc': { type: 'record', name: 'org.p.thing', fields: [] } })
+    t.ok(checkStructure(c).some(p => p.detail.startsWith('mrepo/avro: a package lays nothing into the avro layer')), 'a file into it without the layer\'s config, a contribution: said too')
+  } finally { rmSync(c, { recursive: true, force: true }) }
+})
+

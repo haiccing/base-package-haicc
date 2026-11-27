@@ -24,8 +24,15 @@
 // An action: fn(exec, form) -> what it says happened, natural language (the
 // outcome first, a fact a line, names exact): a text, or { message,
 // attachments } where data is its product, each attachment its name, its
-// type's URI and where its value is. One that says nothing fails its
-// request. What it throws fails it: its message what is said.
+// type's URI and its value ({ name, type, value }), or where its value is
+// ({ name, type, at }). A value is written as the wrapper, its content the
+// value's bytes by its type (mrepo-base-request, lib/attachment.js), by the
+// types the mrepo holds (ctx.types), while the request can still fail
+// whole: a value that does not fit, a type not held, fails it. An answer
+// handed to an action (exec.run, exec.resumed) has its attachments as
+// values; one passed on untouched (a command sent on) is not converted.
+// One that says nothing fails its request. What it throws fails it: its
+// message what is said.
 // executed(ctx, name, record): step 4 alone, a request returned elsewhere
 // (the boot's own) handed over the same way; a runtime running on the
 // repository may merge it first: found done then.
@@ -72,7 +79,7 @@
 // run here (exec.run) can set it from there on, one sent on takes the flags
 // in force with it, written into its line; the entries of the request it
 // became are that request's own, there.
-import { record, continuationOf, logger, sorted, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, asked, understood, measured, returned, isReturned, refusal, carrying, words, lineOf, joined, slashed, STANDING } from 'mrepo-base-request'
+import { record, continuationOf, logger, sorted, AUTHOR, EXECUTE, check, runtimeData, isInternal, principals, asked, understood, measured, returned, isReturned, refusal, carrying, words, lineOf, joined, slashed, STANDING, wrapped, opened, handed } from 'mrepo-base-request'
 
 
 // The XPath machinery's own layers, and its log of physical queries there
@@ -189,6 +196,8 @@ const runtimeView = ctx => Object.freeze({
   branches: async () => (await ctx.backend.listBranches()).map(([b]) => b),
   // the protocols the runtime loaded, their configs by name
   protocols: ctx.protocols ?? {},
+  // the types the mrepo holds (its avro layer), for what reads an answer
+  types: ctx.types ?? null,
   select: uri => ctx.repo.select(abs(uri)),
   read: uri => ctx.repo.read(abs(uri)),
   find: uri => ctx.repo.find(abs(uri)),
@@ -216,7 +225,16 @@ export async function execute (ctx, { actions = {} } = {}) {
     // (exec.resumed), below.
     if (p.waits && !isReturned(p.response)) continue
     const was = request.processing.waiting
-    const resumed = was?.resume ? p.response.returned : null
+    // (what the job returned, as action code is handed it; what cannot be
+    // read fails the request here, said: not the runtime's pass)
+    let resumed = null
+    if (was?.resume) {
+      // catch: the job's answer not read: the request returned failed with why
+      try { resumed = handed(ctx.types ?? null, p.response.returned) } catch (err) {
+        await written(returned({ ...request, processing: { ...request.processing, waiting: null } }, 'failed', ['Failed, nothing of it kept.', `what the job returned: ${err.message}`, ...causesOf(err).map(c => `caused by: ${c}`)].join('\n')))
+        continue
+      }
+    }
     if (was && !resumed) {
       const r = p.response
       // What was returned there is this request's answer. What happened
@@ -370,7 +388,9 @@ export async function execute (ctx, { actions = {} } = {}) {
         if (!fn) throw new Error(unknown(actions, inner.protocol, inner.action))
         // its flags in force from here on; its entries under its own name
         take(inner.flags)
-        return said(await fn(Object.freeze({ ...exec, log: logOf(inner.protocol, inner.action), step: stepOf(logOf(inner.protocol, inner.action)) }), inner), inner.protocol, inner.action)
+        // (what it attached: values to who ran it, whichever way it attached them)
+        const a = said(await fn(Object.freeze({ ...exec, log: logOf(inner.protocol, inner.action), step: stepOf(logOf(inner.protocol, inner.action)) }), inner), inner.protocol, inner.action)
+        return { message: a.message, attachments: opened(ctx.types ?? null, a.attachments) }
       },
       // The command sent on to the mrepo a shortcut leads to (to: xpath's
       // resolve): this request waits for its response, nothing of it is
@@ -424,7 +444,13 @@ export async function execute (ctx, { actions = {} } = {}) {
       const fn = actions[protocol]?.[action]
       if (!fn) throw Object.assign(new Error(unknown(actions, protocol, action)), { refused: true })
       const answer = await fn(exec, form)
-      result = forwarded || waited ? { ok: true } : { ok: true, ...said(answer, protocol, action) }
+      if (forwarded || waited) result = { ok: true }
+      else {
+        // what it attached written as wrappers here, where a value that
+        // does not fit still fails the request whole
+        const a = said(answer, protocol, action)
+        result = { ok: true, message: a.message, attachments: wrapped(ctx.types ?? null, a.attachments) }
+      }
       if (!forwarded && !waited) await flush()
     } catch (err) {
       // The one place an error ends a request: what stopped it, the chain

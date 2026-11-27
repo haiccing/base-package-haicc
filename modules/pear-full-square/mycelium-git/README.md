@@ -70,7 +70,8 @@ stored names, valid when they come in.
   never squashed into each other.
 - `createLayer(name, message, { author, time })`: a new layer, an orphan
   branch whose first commit has an empty tree. Its first segment must be a
-  layer's: `main`, `packages` and `runtime` (each on its own), `request`,
+  layer's: `main`, `packages`, `runtime`, `inbox`, `outbox`, `info`,
+  `protocols`, `links` and `avro` (each on its own), `request`, `xpath`,
   `pending`, `overlay`, `data` or `capability` (with more segments after
   it). `execute` and `publish` branches are derived, not layers.
 - `advance(name, commit)`: a branch set to a commit whose objects are
@@ -100,8 +101,9 @@ same oid. One the target already has is skipped, with what it reaches.
 `mixedBackend({ atomic, local, isLocal })` is the backend contract over
 two backends: a repository's atomic layers in one (a Corestore's
 Hyperdrive), its non-atomic layers in the other (git on disk), routed by
-the branch's layer. `isLocal(name)`, the default routing: `request/*` and
-`execute/*` on disk, every other layer atomic. Branches live in their
+the branch's layer. `isLocal(name)`, the default routing: `request/*`,
+`execute/*`, `inbox`, `outbox`, `xpath/*` and `avro` on disk, every
+other layer atomic. Branches live in their
 store and are listed together. Objects are written to the disk side; a
 commit or tree written there gets what it refers to first, so the disk
 side holds the whole history of what it has. When an atomic branch moves,

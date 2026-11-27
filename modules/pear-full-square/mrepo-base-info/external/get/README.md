@@ -32,15 +32,15 @@ any other's. The keywords are read in a package's context:
 
 ## Returns
 
-The page asked for, said: its first line the keyword as it is asked, in
-its context, and what it is (`haiccing/base-package-boot/deploy: Deploys
-a child.`); then its text without its menus (a section: its text); then
-`Below it:`, a line each keyword below it, written as it is asked, with
-what it is (`- <keyword>: <oneliner>`): what to ask next, as it is.
+What is said: its first line the keyword as it is asked, in its context,
+and what it is (`haiccing/base-package-boot/deploy: Deploys a child.`);
+then `Below it:`, a line each keyword below it, written as it is asked,
+with what it is (`- <keyword>: <oneliner>`): what to ask next, as it is.
 Several choices (a short keyword several packages have): each apart,
-under `== <keyword> (<package>): <oneliner>`. Each page attached: its
-title, its type (`string`: a page is its text; `PAGE`), where it is
-in the info layer (`info/packages/...`). The structure itself, for what
+under `== <keyword> (<package>): <oneliner>`. Attached: the page itself,
+a text (`avro/string`), without its menus (a section: its text), named
+by its title, one a choice; the page is the product, attached and not
+also said. The structure itself, for what
 needs it exactly: the info layer's indexes (`info/index.json`, each
 package's `index.json`, `keywords.json`).
 

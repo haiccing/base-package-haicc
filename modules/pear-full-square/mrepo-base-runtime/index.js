@@ -49,7 +49,7 @@
 import process from 'bare-process'
 import Pipe from 'bare-pipe'
 import { spawnSync } from 'bare-subprocess'
-import fs, { existsSync, rmSync, writeFileSync } from 'bare-fs'
+import fs, { existsSync, rmSync, readFileSync, writeFileSync } from 'bare-fs'
 import { join, dirname, basename } from 'bare-path'
 import os from 'bare-os'
 import crypto from 'bare-crypto'
@@ -65,8 +65,8 @@ export { lay as runtimeLay } from './external/lay/index.js'
 export { start as runtimeStart } from './external/start/index.js'
 export { stop as runtimeStop } from './external/stop/index.js'
 export { programAt, stateOf as programState, launch as launchProgram, end as endProgram } from './internal/program/index.js'
-import { registryOf, mountOf } from './internal/registry/index.js'
-export { registryOf, mountOf }
+import { typesOf, HELD, fileOf } from './internal/types/index.js'
+export { typesOf, HELD, fileOf }
 import { pathToFileURL } from 'bare-url'
 import pkg from './package.json' with { type: 'json' }
 
@@ -80,6 +80,11 @@ export { INBOX, OUTBOX, inboxFolder, viewOf, gitdirOf, setting }
 export const version = { name: pkg.name, version: pkg.version }
 export const HOST = 'host'
 export const SOCKET = 'runtime.sock'
+// Why a runtime bailed out as it started (its boot hook failed): a file in
+// the mrepo's folder, its text the reason; gone at the next start.
+export const FAILED = 'runtime.failed'
+// catch: no such file: it did not bail out
+export const whyFailed = ({ repo }) => { try { return readFileSync(join(repo, FAILED), 'utf8').trim() || null } catch { return null } }
 export const bundleOf = work => join(viewOf(work, setting(work).name), 'packages', 'haiccing', 'base-package-mrepo.bundle')
 
 // An mrepo's socket: <dir>/runtime.sock, when the path fits a Unix socket's
@@ -165,11 +170,10 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
   // Its unique URI (<swarm>/<node>, a path), from its runtime layer; its name where
   // it has none: how it is addressed (its inbox's topic, its requests').
   ctx.uri = await ctx.repo.read(IDENTITY).then(b => JSON.parse(b.toString()).uri, () => null) ?? repo.name
-  // The schema registry, the one way to a type: where the install has it
-  // (its work folder: <work>/mrepos/local/avro-registry/avro, mounted by
-  // the warm boot, the registry component's after). The inbox takes
-  // nothing in without it (mrepo-base-request, wrong).
-  ctx.registry = work ? registryOf(work) : null
+  // What it checks by: the types its own mrepo holds, in its avro layer
+  // (the three essential types there from its deploy), read once, now. The
+  // inbox takes nothing in without them (mrepo-base-request, wrong).
+  ctx.types = await typesOf(ctx.repo)
   // A request into its own inbox, as its storage takes one: the inbox layer
   // straight on git, the inbox folder otherwise (taken in from there).
   // A line of a hook or a script, as the mrepo's own: queued here, placed by
@@ -246,7 +250,11 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
     } catch (err) { return { ok: false, error: `decommission: ${err.message}` } }
   }
   ctx.intake = false
-  const status = () => ({ ok: true, pid: process.pid, started, repository: { name: repo.name, uri: ctx.uri, storage: repo.storage, id: repo.id, key: repo.key }, commission: { state: ctx.commission.state, ...(ctx.commission.error ? { error: ctx.commission.error } : {}) }, version })
+  // its boot hook: none, pending, running, done; failed: the runtime bails out
+  ctx.boot = { state: 'pending' }
+  const here = dir ?? viewOf(work, repo.name)
+  rmSync(join(here, FAILED), { force: true })
+  const status = () => ({ ok: true, pid: process.pid, started, boot: { ...ctx.boot }, repository: { name: repo.name, uri: ctx.uri, storage: repo.storage, id: repo.id, key: repo.key }, commission: { state: ctx.commission.state, ...(ctx.commission.error ? { error: ctx.commission.error } : {}) }, version })
   let stopping = null
   let stopped = false
   let server = null
@@ -346,12 +354,23 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
       // operational once its own requests are done: the inbox taken in
       // catch: not in done yet: its own requests still going, not operational yet
       if (ctx.intake === false && !booting && (await Promise.all(starting.map(n => layer(ctx, DONE).read(n).then(() => true, () => false)))).every(Boolean)) {
-        if (boot === null) { ctx.intake = true; commissioning() } else {
+        if (boot === null) { ctx.boot = { state: 'none' }; ctx.intake = true; commissioning() } else {
           booting = true
-          // the boot hook's lines, each its own request; whatever came of
-          // them, the inbox open after
-          // catch: a line that failed is in its own record; the boot goes on
-          Promise.resolve().then(() => runLines({ dir: dir ?? viewOf(work, repo.name), uri: ctx.uri, own: ctx.own }, parse(boot), '.')).catch(() => null).then(() => { ctx.intake = true; commissioning(); wake() })
+          ctx.boot = { state: 'running' }
+          // the boot hook's lines, each its own request; done, the inbox
+          // open after. A line that fails: the runtime bails out (the human,
+          // 2026-11-27: "bail out with failure, stop runtime"): nothing
+          // taken in, why said in a file beside its repository
+          // (runtime.failed) and in its status while it lasts, then stopped,
+          // its exit code 1.
+          Promise.resolve().then(() => runLines({ dir: here, uri: ctx.uri, own: ctx.own }, parse(boot), '.')).then(
+            () => { ctx.boot = { state: 'done' }; ctx.intake = true; commissioning(); wake() },
+            err => {
+              ctx.boot = { state: 'failed', error: err.message }
+              writeFileSync(join(here, FAILED), `${err.message}\n`)
+              process.exitCode = 1
+              stop('its boot hook failed')
+            })
         }
       }
       // the lines queued as the mrepo's own: placed now, between passes
@@ -439,9 +458,26 @@ export function ask ({ work, repo = null, op, timeout = 5000 }) {
 export async function commissioned ({ work, repo = null, wait = 30 * 60 * 1000 }) {
   for (const end = Date.now() + wait; ;) {
     const s = await ask({ work, repo, op: 'status', timeout: 2000 })
-    if (!s) return null
+    // gone: bailed out at its boot hook (why, in its folder), or just gone
+    if (!s) { const why = repo ? whyFailed({ repo }) : null; return why ? { state: 'failed', error: `its boot hook failed: ${why}` } : null }
+    if (s.boot?.state === 'failed') return { state: 'failed', error: `its boot hook failed: ${s.boot.error}` }
     const c = s.commission ?? { state: 'none' }
     if (c.state !== 'pending' && c.state !== 'running') return c
+    if (Date.now() >= end) return { state: 'failed', error: `not done in ${Math.round(wait / 1000)} s` }
+    await new Promise(resolve => setTimeout(resolve, 200))
+  }
+}
+
+// booted({ repo }): an mrepo's boot hook waited for, as its status says it:
+// until it is done (or it has none), or its runtime bailed out. What puts
+// an mrepo in place waits on it. -> { state: none | done | failed, error }
+export async function booted ({ work = null, repo = null, wait = 30 * 60 * 1000 }) {
+  for (const end = Date.now() + wait; ;) {
+    const s = await ask({ work, repo, op: 'status', timeout: 2000 })
+    if (!s) return { state: 'failed', error: whyFailed({ repo: repo ?? whereOf({ work }).dir }) ?? 'its runtime is gone' }
+    const b = s.boot ?? { state: 'none' }
+    if (b.state === 'failed') return b
+    if (b.state === 'done' || b.state === 'none') return b
     if (Date.now() >= end) return { state: 'failed', error: `not done in ${Math.round(wait / 1000)} s` }
     await new Promise(resolve => setTimeout(resolve, 200))
   }

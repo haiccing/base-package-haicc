@@ -10,7 +10,7 @@ import { join, dirname } from 'bare-path'
 import { fileURLToPath } from 'bare-url'
 import { parse, check, extract, keyword, packageKeyword, packageKey, withSteps, WANTED } from '../internal/info/index.js'
 import { extractAction } from '../external/extract/index.js'
-import { get, PAGE } from '../external/get/index.js'
+import { get } from '../external/get/index.js'
 import { clear } from '../external/clear/index.js'
 
 const B = s => Buffer.from(s)
@@ -176,12 +176,11 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
     const top = await get(exec, {})
     t.is(first(top), '.: The y component.', 'nothing asked: the top page, its keyword and what it is first')
     t.alike(below(top).map(l => l.slice(2).split(':')[0]), ['org', 'modules', 'third-party', 'schemas'], 'its keywords below it, a line each: its organisations, the three made here')
-    t.absent(top.message.includes('## Links'), 'the page without its menus: they are its keywords')
-    t.alike(top.attachments, [{ name: 'base-component-y', type: PAGE, at: 'info/packages/org/base-component-y/README.md' }], 'the page itself attached: its type, where it is')
+    t.alike(top.attachments.map(a => [a.name, a.type, typeof a.value, a.value.includes('## Links'), top.message.includes(a.value)]), [['base-component-y', 'avro/string', 'string', false, false]], 'the page itself attached, a text, without its menus (they are its keywords); not also said')
     const run = await get(exec, { args: ['org/base-package-x/run'] })
     t.alike([first(run), below(run)], ['org/base-package-x/run: Runs x.', ['- org/base-package-x/run/signature: `run(exec, form)`.']], 'in a package\'s context, its name in front: an action, its sections below it, each written as it is asked')
     const sig = await get(exec, { args: ['org', 'base-package-x', 'run', 'signature'] })
-    t.alike([sig.message, sig.attachments[0].name], ['org/base-package-x/run/signature: `run(exec, form)`.\n\n`run(exec, form)`.', 'Signature'], 'a section, the keywords as words: its text')
+    t.alike([sig.message, sig.attachments], ['org/base-package-x/run/signature: `run(exec, form)`.', [{ name: 'Signature', type: 'avro/string', value: '`run(exec, form)`.' }]], 'a section, the keywords as words: what it is said, its text attached')
     t.is(first(await get(exec, { args: ['base-package-x/run'] })), 'org/base-package-x/run: Runs x.', 'its name alone, the only one of that name here: the same context')
     t.alike(below(await get(exec, { args: ['org'] })), ['- org/base-component-y: The y component.', '- org/base-package-x: The x protocol.', '- org/package-docs-mrepo: The mrepo, documented.'], 'an organisation: its packages, the contexts')
     t.is(first(await get(exec, { args: ['mrepo'] })), 'org/base-component-y/mrepo: Its list.', 'a short keyword: the mrepo\'s own package\'s first, written in its context')
@@ -245,7 +244,7 @@ test('get: a short keyword several packages have: a choice each, kept apart, eac
   }
   const exec = { read: async p => { if (!(p in files)) throw new Error(`nothing at ${p}`); return files[p] }, find: async p => files[p] ?? null, log () {} }
   const r = await get(exec, { args: ['test-reports'] })
-  t.alike([r.message.split('\n')[0], r.message.split('\n').filter(l => l.startsWith('== ')), r.attachments.map(a => a.at)], ['test-reports: 2 choices, each apart.', ['== org/b/test-reports (org/b): The proof.', '== org/c/test-reports (org/c): The proof.'], ['info/packages/org/b/test-reports/README.md', 'info/packages/org/c/test-reports/README.md']], 'one choice a package, the same page twice: packages are apart; each under the keyword to go on with in its context, its page attached')
+  t.alike([r.message.split('\n')[0], r.message.split('\n').filter(l => l.startsWith('== ')), r.attachments.length], ['test-reports: 2 choices, each apart.', ['== org/b/test-reports (org/b): The proof.', '== org/c/test-reports (org/c): The proof.'], 2], 'one choice a package, the same page twice: packages are apart; each under the keyword to go on with in its context, its page attached')
 })
 
 // the template's bundle, as a runtime reads it

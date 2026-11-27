@@ -5,6 +5,7 @@ import { tmpdir } from 'bare-os'
 import { p2pgitBackend, openRepo, writer } from 'mycelium-git'
 import { request, internal, principals, ensure, drop, post, layer, record, asked, returned, outboxOf, inboxOf, nameOf, AUTHOR, PENDING, EXECUTE, DONE, NONE } from 'mrepo-base-request'
 import { execute, executed, failed, branchOf, LISTED } from '../index.js'
+import { primitiveOf } from 'mycelium-avro'
 
 // Actions as a package would offer them, each saying what happened.
 const leaf = uri => uri.at(-1).split('/').pop()
@@ -30,6 +31,31 @@ const actions = {
     both: async (exec, { args }) => { const r = await exec.run(args); exec.continuation('haicc . note/get a\n'); return `Ran it. It said: ${r.message}` },
     // sent on to the mrepo linked at y
     there: async (exec, { args }) => exec.forward({ at: 'y', mrepo: 'local/y', folder: 'mrepos/y', dir: join(exec.runtime.dir, 'mrepos', 'y') }, args),
+    // data its product: attached as a value, by a type of AVRO's own
+    attach: async (exec, { args: [how] }) => ({ message: 'Its text attached.', attachments: [how === 'misfit' ? { name: 'the text', type: 'avro/string', value: 5 } : how === 'unheld' ? { name: 'the text', type: 'haiccing/base-package-note/text', value: 'hello' } : { name: 'the text', type: 'avro/string', value: 'hello' }, ...(how === 'both' ? [{ name: 'where it is', type: 'avro/string', at: 'main/a.txt' }] : [])] }),
+    // what another attached, read as a value; passed on as it was handed
+    reads: async (exec, { args }) => { const r = await exec.run(args); return { message: `It attached ${r.attachments[0].name}: ${r.attachments[0].value}`, attachments: r.attachments } },
+    // what another attached, passed on without reading it
+    passes: async (exec, { args }) => { const r = await exec.run(args); return { message: 'Passed on.', attachments: r.attachments } },
+    // a wrapper of a type not held here, passed on as it came
+    carry: async () => ({ message: 'Carried.', attachments: [{ name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }),
+    // a misfit attached beside a write: nothing of it kept
+    spoil: async (exec) => { exec.put('main/spoilt.txt', Buffer.from('x')); return { message: 'Wrote it.', attachments: [{ name: 'the text', type: 'avro/string', value: 5 }] } },
+    // a job whose answer carries content that is no value of its type
+    garbled: async (exec) => {
+      if (exec.resumed) return 'Never here.'
+      return exec.wait(async () => ({ message: 'Done.', attachments: [{ name: 'the text', type: 'avro/string', content: 'yA==' }] }))
+    },
+    // a job passing on a wrapper of a type not held here
+    relay: async (exec) => {
+      if (exec.resumed) return { message: 'Relayed.', attachments: exec.resumed.attachments }
+      return exec.wait(async () => ({ message: 'Done.', attachments: [{ name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }))
+    },
+    // a job that attaches; resumed with its value
+    job: async (exec) => {
+      if (exec.resumed) return `The job attached: ${exec.resumed.attachments[0].value}`
+      return exec.wait(async () => ({ message: 'Counted.', attachments: [{ name: 'the count', type: 'avro/long', value: 3 }] }))
+    },
     // a job waited for, then said
     later: async (exec, { args: [how] }) => {
       if (exec.resumed) return exec.resumed.status === 'failed' ? `The job failed: ${exec.resumed.message}` : `The job ended. ${exec.resumed.message}`
@@ -39,8 +65,9 @@ const actions = {
 }
 const config = { uris: ['**'] }
 // (both, there: commands that pass their words on)
-const protocols = { note: { default: 'get', actions: Object.fromEntries(Object.keys(actions.note).map(a => [a, ['both', 'there'].includes(a) ? { ...config, command: true } : config])) } }
-const registry = { valid: () => ({ valid: true }) }
+const protocols = { note: { default: 'get', actions: Object.fromEntries(Object.keys(actions.note).map(a => [a, ['both', 'there', 'reads', 'passes'].includes(a) ? { ...config, command: true } : config])) } }
+// what the mrepo holds, stood in for: nothing asked at the door, AVRO's own types by their URI
+const types = { held: ['haiccing/base-package-runtime/record', 'haiccing/base-package-runtime/request'], valid: () => ({ valid: true }), type: uri => { const t = primitiveOf(uri); if (!t) throw new Error(`type not held: ${uri}`); return t } }
 
 async function mrepo (t, name = 'x') {
   const work = mkdtempSync(join(tmpdir(), 'execute-'))
@@ -48,7 +75,7 @@ async function mrepo (t, name = 'x') {
   const dir = join(work, 'mrepos', 'local', name)
   const backend = p2pgitBackend(join(dir, '.git'), { fs })
   await backend.init()
-  const ctx = { work, dir, name, uri: `local/${name}`, backend, repo: openRepo(backend), writer: writer(backend), protocols, registry }
+  const ctx = { work, dir, name, uri: `local/${name}`, backend, repo: openRepo(backend), writer: writer(backend), protocols, types }
   for (const b of [PENDING, EXECUTE, DONE]) await ensure(ctx, b)
   for (const b of ['main', 'protocols']) await ctx.writer.createLayer(b, `Create ${b}`, { author: AUTHOR })
   return ctx
@@ -75,7 +102,7 @@ test('execute: its action run on its own branches, squashed into each target; th
   const twice = await own(ctx, 'note/put b hello twice')
   t.alike([twice.returned.status, twice.processing.changed], ['done', [{ target: 'main', added: ['b.txt'], changed: [], removed: [] }]], 'a local commit undone in the action: not in the target')
   const got = await own(ctx, 'note/get a --flags log=debug')
-  t.alike(got.returned, { status: 'done', message: 'Read a.txt.', attachments: [{ name: 'the document', type: 'haiccing/base-package-note/text', at: 'main/a.txt' }] }, 'data its product: attached, by its type, where it is')
+  t.alike(got.returned, { status: 'done', message: 'Read a.txt.', attachments: [{ name: 'the document', type: 'haiccing/base-package-note/text', content: null, at: 'main/a.txt' }] }, 'data its product: attached, by its type, where it is')
   t.alike(lines(got), [['verbose', 'note.get.read', 'Read a.txt, 5 bytes. (N ms; 1 read)'], ['debug', 'note.get.bytes', 'Its text: hello.']], 'its log as much as its flag asks: the action\'s entries under its name, a step measured behind its line')
   const many = await own(ctx, 'note/many .')
   t.alike([many.processing.changed[0].added.length, lines(many)], [LISTED, [['info', 'request.changed', `${LISTED + 1} paths changed in main: the first ${LISTED} listed.`]]], 'more than it lists of a target: said')
@@ -91,7 +118,7 @@ test('failed: what stopped it said, its causes; nothing of it kept; an action th
   t.alike([r.processing.changed, r.processing.metrics.puts], [[], 1], 'nothing changed; its metrics still its own')
   t.alike((await own(ctx, 'note/quiet .')).returned.message, 'Failed, nothing of it kept.\nnothing said: note/quiet answers with what happened, in words', 'an action says what happened')
   t.alike((await own(ctx, 'note/old .')).returned.message, 'Failed, nothing of it kept.\nnot a log entry: note.old.old (what happened, said: a line)', 'a log entry is a line')
-  t.alike((await own(ctx, 'note/nope .')).returned.message, 'Refused, nothing run.\nno action: note nope (both, break, get, later, many, old, put, quiet, there)', 'an action there is none of: refused')
+  t.alike((await own(ctx, 'note/nope .')).returned.message, 'Refused, nothing run.\nno action: note nope (attach, both, break, carry, garbled, get, job, later, many, old, passes, put, quiet, reads, relay, spoil, there)', 'an action there is none of: refused')
 })
 
 test('from the inbox: refused as it executes while its protocol is not active; active: run, sent back', async (t) => {
@@ -131,12 +158,12 @@ test('sent on: the command in a request of its own, the flags in force in its li
   t.alike([sent.topic, sent.value.command, sent.value.from, sent.value.to, sent.value.reply, sent.value.origin], ['/local/y/inbox', 'note/get a --flags log=debug --', 'local/x', 'local/y', `/local/x/execute/${name}`, Number(name)], 'asked of the linked mrepo: its line, the flags that hold down a chain written into it; its answer for this request\'s branch')
   t.alike(Object.keys(await heads(ctx)).filter(b => b.startsWith('execute/')), [branchOf(name, EXECUTE)], 'only its request branch left: nothing of it executed here')
   // the linked mrepo's part, stood in for: the request returned, in its outbox
-  const answer = { ...returned(sent.value, 'done', 'Read a.txt.'), processing: { ...sent.value.processing, log: [{ time: '2026-11-26T10:00:00.000Z', level: 'debug', event: 'note.get.bytes', line: 'Its text: hello.' }], metrics: { ms: 3, reads: 1, selects: 0, puts: 0, removes: 0, commits: 0 }, path: ['z'], continuation: { at: 'z', script: 'true\n' } } }
+  const answer = { ...returned(sent.value, 'done', 'Read a.txt.', [{ name: 'the document', type: 'haiccing/base-package-note/text', content: 'CmhlbGxv' }]), processing: { ...sent.value.processing, log: [{ time: '2026-11-26T10:00:00.000Z', level: 'debug', event: 'note.get.bytes', line: 'Its text: hello.' }], metrics: { ms: 3, reads: 1, selects: 0, puts: 0, removes: 0, commits: 0 }, path: ['z'], continuation: { at: 'z', script: 'true\n' } } }
   outboxOf(y).put(there, record('/outbox', answer, there))
   await pass(ctx)
   await pass(ctx)
   const r = (await layer(ctx, DONE).read(name)).value
-  t.alike(r.returned, answer.returned, 'what was returned there: its own')
+  t.alike(r.returned, answer.returned, 'what was returned there: its own, what it attached carried as it is, its type not held here')
   t.alike([r.processing.waiting, r.processing.sent, r.processing.continuation], [null, { at: 'y', mrepo: 'local/y', offset: there }, { at: 'y/z', script: 'true\n' }], 'waiting for nothing; the request it became linked: its mrepo, its offset there; its continuation seen from here')
   t.alike([r.processing.log, r.processing.metrics], [[], null], 'what happened to it there is that request\'s own, in that mrepo\'s request/done: not copied')
 })
@@ -154,6 +181,42 @@ test('a job waited for: the request parked, the runtime free; resumed with what 
     const r = (await layer(ctx, DONE).read(name)).value
     t.alike([r.returned.status, r.returned.message, r.processing.waiting], ['done', said, null], `${how}: its action run again with what the job returned`)
   }
+})
+
+test('attached: a value written as the wrapper, its content the value\'s bytes; handed to an action as a value; one that does not fit fails the request whole', async (t) => {
+  const ctx = await mrepo(t)
+  const r = await own(ctx, 'note/attach . both')
+  // (avro/string: its length, then its text: 0a 'hello')
+  t.alike(r.returned, { status: 'done', message: 'Its text attached.', attachments: [{ name: 'the text', type: 'avro/string', content: Buffer.from([10, ...Buffer.from('hello')]).toString('base64'), at: null }, { name: 'where it is', type: 'avro/string', content: null, at: 'main/a.txt' }] }, 'in request/done: the wrapper, its content base64; a pointer kept')
+  await layer(ctx, 'protocols').put('note', {}, 'Activate note')
+  const o = drop(ctx.dir, ctx.uri, asked('note/attach .', { from: 'terminal', reply: '/terminal' }))
+  await pass(ctx)
+  t.alike(outboxOf(ctx.dir).read(o).value.returned.attachments, [{ name: 'the text', type: 'avro/string', content: 'CmhlbGxv', at: null }], 'sent back as the wrapper')
+  const read = await own(ctx, 'note/reads . note/attach .')
+  t.alike([read.returned.message, read.returned.attachments], ['It attached the text: hello', [{ name: 'the text', type: 'avro/string', content: 'CmhlbGxv', at: null }]], 'a command run in the execution: what it attached handed as a value; passed on, the wrapper again')
+  for (const [how, why] of [['misfit', 'caused by: not a value of its type: ., expected string'], ['unheld', 'caused by: type not held: haiccing/base-package-note/text']]) {
+    const bad = await own(ctx, `note/attach . ${how}`)
+    t.alike([bad.returned.status, bad.returned.message, bad.returned.attachments], ['failed', `Failed, nothing of it kept.\nnot attached: the text (${how === 'misfit' ? 'avro/string' : 'haiccing/base-package-note/text'})\n${why}`, []], `${how}: the request failed whole, the place said`)
+  }
+  const wrapperIn = { name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }
+  t.alike((await own(ctx, 'note/passes . note/carry .')).returned.attachments, [wrapperIn], 'a wrapper of a type not held here, through exec.run: passed on untouched')
+  t.ok(/value not read: a node \(type not held/.test((await own(ctx, 'note/reads . note/carry .')).returned.message), 'its value refused to the action that asks for it, said')
+  t.alike((await own(ctx, 'note/passes . note/attach .')).returned.attachments, [{ name: 'the text', type: 'avro/string', content: 'CmhlbGxv', at: null }], 'one held here, handed as a value and passed on: carried as it came')
+  const before = (await heads(ctx)).main
+  const spoilt = await own(ctx, 'note/spoil .')
+  t.alike([spoilt.returned.status, (await heads(ctx)).main, spoilt.processing.changed], ['failed', before, []], 'a misfit beside a write: failed, nothing of it kept')
+  for (const [line, check] of [['note/garbled .', r => t.alike([r.returned.status, r.returned.message.split('\n').slice(0, 2)], ['failed', ['Failed, nothing of it kept.', 'what the job returned: not read: the text (avro/string)']], 'a job\'s answer that cannot be read: the request failed, said; the runtime goes on')], ['note/relay .', r => t.alike(r.returned.attachments, [wrapperIn], 'a job passing on a wrapper of a type not held here: carried untouched')]]) {
+    const q = await internal(ctx, line)
+    await pass(ctx)
+    await new Promise(resolve => setTimeout(resolve, 50))
+    await pass(ctx); await pass(ctx)
+    check((await layer(ctx, DONE).read(q.name)).value)
+  }
+  const j = await internal(ctx, 'note/job .')
+  await pass(ctx)
+  await new Promise(resolve => setTimeout(resolve, 50))
+  await pass(ctx); await pass(ctx)
+  t.alike((await layer(ctx, DONE).read(j.name)).value.returned.message, 'The job attached: 3', 'a job waited for: what it attached written as the wrapper, handed back as a value')
 })
 
 test('executed: a request returned elsewhere handed over as execute hands one; failed: a runtime\'s error in the request executing', async (t) => {

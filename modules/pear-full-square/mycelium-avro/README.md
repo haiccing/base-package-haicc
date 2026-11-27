@@ -45,16 +45,30 @@ isLike(writer, reader)                 // { like, aliases } or { like: false, wh
   by its name without the namespace, the core type; is-like, aliases
   generated on the reader where the core types differ, returned with
   the answer.
-- **The fingerprint, the specification's**: CRC-64-AVRO of the Parsing
-  Canonical Form; the full name is part of it, so a variant has its own.
-- **Logical types**: `json` (a record of one string, its JSON text; in
-  memory any JSON value) and `timestamp-millis` (in memory its ISO 8601
-  text): the behaviour here; the `json` type itself is declared by a
-  package.
+- **The fingerprint, of the contract form** (the human, 2026-11-27:
+  "can't you amend how the fingerprint is created?"): the
+  specification's CRC-64-AVRO, of the schema whole without its
+  descriptions, not of AVRO's Parsing Canonical Form, which also
+  leaves out defaults, aliases and logical types: those change how
+  data is read, so they change the fingerprint. The full name is part
+  of it, so a variant has its own. AVRO's own form is `canonicalOf`.
+- **Logical types**: `timestamp-millis` (in memory its ISO 8601 text);
+  `base64` (bytes: in memory and in JSON their base64 text, ours, not
+  AVRO's JSON form of bytes; strict: only text that decodes and encodes
+  back to itself); `json` (a record of one string, its JSON text), the
+  first build's, not used by what is brought to the request. Each part
+  of the contract form, so of the fingerprint.
+- **AVRO's own types by a URI** (the human, 2026-11-27: "Wouldn't we
+  have an AVRO URI type?"): `avro/string`, `avro/long`, ... (`null`,
+  `boolean`, `int`, `long`, `float`, `double`, `bytes`, `string`):
+  `primitiveOf(uri)`, `isPrimitive(uri)`; no schema file, held by
+  everyone.
+- **No encoding here**: a value's bytes by a type are
+  `mycelium-value`'s.
 - **Copied from `mycelium-value-avro`** (2026-11-26), its types, names
   and fingerprints as they were; that module is not changed and not
   used.
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the fingerprint against the specification's values, names both ways, a JSON value checked and read as another type, is and is-like, the logical types; each test by its name in [test/](test/).
+- `brittle-bare test/*.test.js` (Bare installed): the fingerprint against the specification's values, names both ways, a JSON value checked and read as another type, is and is-like, the logical types, AVRO's own types by URI; each test by its name in [test/](test/).

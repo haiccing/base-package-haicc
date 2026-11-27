@@ -5,4 +5,4 @@ The methods the actions call directly, never requested.
 ## Links
 
 - [program](program/)
-- [registry](registry/)
+- [types](types/)

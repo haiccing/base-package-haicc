@@ -24,7 +24,7 @@ import { join } from 'bare-path'
 import { existsSync, readFileSync, watch } from 'bare-fs'
 import { stream, documents, nameOf, BUCKETS } from 'mycelium-container-document'
 import { record, stamp, tick } from './record.js'
-import * as json from 'mycelium-value-json'
+import { json } from 'mycelium-value'
 import { viewOf, setting } from './view.js'
 import { layer, AUTHOR, CONFIG, declarationOf } from './layer.js'
 

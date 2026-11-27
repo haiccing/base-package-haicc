@@ -21,6 +21,7 @@ Shared by the tests, not a test itself. The runtime from the command line, with 
 - version: the module and its version
 - a bad call: exit 2
 
-## `registry.test.js`
+## `types.test.js`
 
-- the registry: a type asked by its name, where the registry is; the types it names read with it; a value checked, strictly
+- the types an mrepo holds: read from its avro layer as its runtime starts; a type by its name, the types it names made with it; a value checked, strictly
+- an mrepo with no avro layer, or nothing in it: it holds none

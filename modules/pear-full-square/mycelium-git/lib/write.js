@@ -18,7 +18,8 @@ const TREE = '040000'
 // configs of the protocols it offers); pending and capability go when the
 // code using them is rebuilt.
 // xpath: the XPath machinery's own layers (its log of physical queries).
-const LAYERS = ['main', 'request', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links', 'xpath', 'pending', 'overlay', 'data', 'capability']
+// avro: the mrepo's register of the types and variants it uses, a cache.
+const LAYERS = ['main', 'request', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links', 'xpath', 'avro', 'pending', 'overlay', 'data', 'capability']
 // Every reserved first segment: a branch name starts with one.
 const RESERVED = [...LAYERS, 'execute', 'publish']
 // Permanent: never deleted.
@@ -26,8 +27,8 @@ const PERMANENT = ['main', 'pending/default']
 
 // A layer's name: its first segment is a layer's, with more segments after
 // it, except main, packages, runtime, inbox, outbox, info,
-// protocols and links, each a layer on its own.
-const SOLO = ['main', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links']
+// protocols, links and avro, each a layer on its own.
+const SOLO = ['main', 'packages', 'runtime', 'inbox', 'outbox', 'info', 'protocols', 'links', 'avro']
 function layerName (name) {
   const first = name.split('/')[0]
   if (!LAYERS.includes(first) || (SOLO.includes(first) ? name !== first : name === first)) {

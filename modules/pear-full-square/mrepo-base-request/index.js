@@ -1,8 +1,8 @@
 // mrepo-base-request: the request protocol, base variant
 //. One pass over its data states, given the runtime's
-// context ({ work, name, backend, repo, writer, seen, registry }: read
-// access to the repository, the writer held by the runtime, the schema
-// registry as the runtime reaches it). A stream holds records
+// context ({ work, name, backend, repo, writer, seen, types }: read
+// access to the repository, the writer held by the runtime, the types
+// the mrepo holds, its avro layer's, as the runtime read them). A stream holds records
 // (lib/record.js), one level: the transport's envelope around a request
 // (lib/request.js), self-contained; each hand-over is a new record around
 // the same request.
@@ -11,8 +11,8 @@
 //                                 inbox is the root's validation point):
 //                                 addressed to this repository's inbox; its
 //                                 envelope a record and its value a request,
-//                                 as their types say (asked of the schema
-//                                 registry, strict); its form understood from
+//                                 as their types say (the mrepo's own,
+//                                 strict); its form understood from
 //                                 its line; its URI canonical, its protocol
 //                                 and action offered there; then queued, in
 //                                 request/pending/default; else refused: the
@@ -40,8 +40,9 @@ import { words, lineOf, parse, send, run as runLines } from './lib/lines.js'
 
 export { follow } from './lib/follow.js'
 import { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS } from './lib/request.js'
+import { wrapped, opened, handed } from './lib/attachment.js'
 
-export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS }
+export { asked, filled, understood, unread, noted, measured, returned, isReturned, STATUS, wrapped, opened, handed }
 export { read, carrying, lineOf, NONE, typed, MREPOS, SCRIPTS, post, checkpoint, ensure, inboxFolder, inboxOf, outboxOf, drop, answered, offsetOf, queueOf, keyed, streamOf, nameOf, STREAMS, declarationOf, INBOX, OUTBOX, record, stamp, tick, guid, continuationOf, CEILING, logger, LEVELS, ALWAYS, DETAIL, FLAGS, LAYER, MODES, flagsOf, sorted, layerOf, modeOf, chained, rewrites, problems, passesOn, layerFor, layer, AUTHOR, viewOf, gitdirOf, setting, isWork, SETTING, interpret, relative, from, within, slashed, unslashed, segmented, joined, positionOf, ROOT, MAIN, STANDING, hookOf, hookAt, HOOKS, TRANSITIONS, words, parse, send, runLines }
 
 export const PENDING = 'request/pending/default'
@@ -169,13 +170,15 @@ export const unrunLines = why => ['Not run: its flags.', ...why].join('\n')
 
 // What is wrong with something given as a record around a request, by the
 // declared types, strict: the envelope (the record without its value) and
-// its value, each asked of the schema registry. -> the lines; [] when
-// nothing is. No registry: said, an install is not operational without it.
+// its value, each checked by the types the mrepo holds (ctx.types, its avro
+// layer's). -> the lines; [] when nothing is. Its types not held: said, an
+// mrepo takes nothing in without them.
 export function wrong (ctx, rec) {
-  if (!ctx.registry) return ['no schema registry here: nothing is taken in without it']
+  const missing = Object.values(TYPES).filter(t => !ctx.types?.held.includes(t))
+  if (missing.length) return [`its types are not held here: ${missing.join(', ')} (the mrepo's avro layer; nothing is taken in without them)`]
   if (!rec || typeof rec !== 'object' || Array.isArray(rec)) return ['not a record']
   const { value, ...envelope } = rec
-  const said = (what, type, v) => { const r = ctx.registry.valid(type, v); return r.valid ? [] : r.problems.map(p => `not a ${what} (${type}): ${p.at || '.'}, expected ${p.expected}`) }
+  const said = (what, type, v) => { const r = ctx.types.valid(type, v); return r.valid ? [] : r.problems.map(p => `not a ${what} (${type}): ${p.at || '.'}, expected ${p.expected}`) }
   return [...said('record', TYPES.record, envelope), ...said('request', TYPES.request, value)]
 }
 

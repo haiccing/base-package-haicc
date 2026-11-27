@@ -9,10 +9,11 @@
 //   park(ctx, name, request, job)
 //     job       an async function, run outside the execution: -> what it
 //               says happened, as an action says it (a text, or { message,
-//               attachments }); what it throws: failed, its message
+//               attachments }, its values written as wrappers); what it
+//               throws, or attaches that does not fit: failed, its message
 //     -> what the request waits for: { at, folder, offset, resume: true }
 import { join } from 'bare-path'
-import { record, filled, returned, offsetOf, outboxOf } from 'mrepo-base-request'
+import { record, filled, returned, wrapped, offsetOf, outboxOf } from 'mrepo-base-request'
 
 export const WAITING = 'waiting'
 
@@ -27,8 +28,8 @@ export function park (ctx, name, request, job) {
   // what it returns, or what failed, written when it ends: collected
   Promise.resolve()
     .then(job)
-    .then(v => { const { message, attachments } = say(v); return returned(child, 'done', message, attachments) })
-    .catch(err => returned(child, 'failed', err.message))
+    .then(v => { const { message, attachments } = say(v); return returned(child, 'done', message, wrapped(ctx.types ?? null, attachments)) })
+    .catch(err => returned(child, 'failed', err.cause ? `${err.message}\ncaused by: ${err.cause.message ?? err.cause}` : err.message))
     .then(r => out.put(offset, record('/outbox', r, offset)))
   return { at: '.', folder: WAITING, offset, resume: true }
 }

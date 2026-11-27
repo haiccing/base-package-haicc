@@ -9,7 +9,7 @@
 // [5, 6] by default); a record is named by
 // its offset alone. The others (pending, execute: a handful of records) are
 // flat, the same names.
-import * as json from 'mycelium-value-json'
+import { json } from 'mycelium-value'
 import { placeOf, isOffset, BUCKETS } from 'mycelium-container-document'
 
 export const STREAMS = ['inbox', 'outbox', 'request/done']

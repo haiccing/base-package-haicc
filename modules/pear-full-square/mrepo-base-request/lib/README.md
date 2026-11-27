@@ -4,6 +4,7 @@ The parts of mrepo-base-request, a file each, imported by its `index.js`.
 
 | file | |
 |---|---|
+| `attachment.js` | An answer's attachments between a value and the wrapper it is kept and sent as (`wrapped`, `opened`, `handed`): on `mycelium-value`'s `avro` handler, by the types the mrepo holds; a wrapper handed to action code passed on as it came. |
 | `boxes.js` | A repository's boxes, as layers: `inbox` and `outbox`, non-atomic (git on disk), streaming: a record a document under its offset, in folders by its digits; the drop method, the one way a record is dropped into an inbox; nothing removed (housekeeping later). |
 | `command.js` | A command: a request as it is typed, its parts in order, `<protocol>/<action> <URI> <argument>...`, interpreted into the form the mrepo works with. |
 | `flags.js` | A request's flags: what is asked of the way a request is handled, beside what it asks for; the flags there are, `flags/`, read, none named. |
@@ -12,6 +13,5 @@ The parts of mrepo-base-request, a file each, imported by its `index.js`.
 | `lines.js` | A script's lines: each split into its words as the shell splits them (`words`, `parse`), sent through the mrepo's own inbox as its own (`send`: its completed form back, its request's offset beside it, to read its record after), its response waited for; run one after the other, the first that fails ending them (`run`). |
 | `layer.js` | Records in a layer of the repository (a git branch): one JSON document a record, its name its offset; a streaming layer's in folders by its digits. |
 | `record.js` | A record: the base's minimum, { topic, offset, timestamp, headers, value }; its offset its identity; the headers left empty for now (their use to be planned). |
-| `request.js` | A request as the runtime package's types have it (`types/request.avsc`): made from a line as typed (`asked`) or a form filled in (`filled`), its form understood from its line (`understood`), an entry added to its log (`noted`), its metrics (`measured`), completed with a status and what is said (`returned`). Pure: each gives a new request. What the runtime is brought to; it calls none of these yet. |
-| `typed.js` | A request record as AVRO, the cascade: the record (mycelium's), its value the form completed (`schemas/request.json`), in that its arguments and its output, the action's own when given, else `json`; a node's log, a record each (`logHandler`). |
+| `request.js` | A request as the runtime package's types have it (`types/request.avsc`): made from a line as typed (`asked`) or a form filled in (`filled`), its form understood from its line (`understood`), an entry added to its log (`noted`), its metrics (`measured`), completed with a status and what is said (`returned`). Pure: each gives a new request. |
 | `view.js` | A repository's folder: `<work>/mrepos/<name>/`, its git on disk (.git), and a layer's files at the path of its URI (/inbox at `<work>/mrepos/<name>/inbox).` |

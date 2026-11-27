@@ -2,6 +2,7 @@
 // run one after the other through the mrepo's own inbox.
 import { asked } from './request.js'
 import { drop, answered } from './boxes.js'
+import { handed } from './attachment.js'
 
 // A line's words, as the shell splits them: on blanks, a quoted part ('…'
 // or "…") one word with its quotes taken off; a backslash in "…" keeps the
@@ -67,13 +68,15 @@ export async function send ({ dir, uri, submit = null, answer = null, own = null
 
 // The lines run where the script was sent (at: a position in main, `.`
 // the mrepo itself), each after the one before, the first that fails
-// ending it. -> [{ line, returned }]
+// ending it. -> [{ line, returned }]; given the mrepo's types (runtime.types),
+// what each returned is as action code is handed it, its attachments their
+// values (lib/attachment.js); without, as it is stored
 export async function run (runtime, lines, at = '.') {
   const out = []
   for (const l of lines) {
     const { request } = await send(runtime, at === '.' ? l.line : `${lineOf(['haicc', at])} ${l.line}`)
     if (request.returned.status === 'failed') throw new Error(`line ${l.n}: ${l.line}: ${request.returned.message}`)
-    out.push({ line: l.line, returned: request.returned })
+    out.push({ line: l.line, returned: runtime.types ? handed(runtime.types, request.returned) : request.returned })
   }
   return out
 }

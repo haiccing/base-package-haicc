@@ -20,6 +20,7 @@ The tests of pkgm-base-check, a section per file, each test by its name.
 - a layer's structure: a structure type there is, with what it needs
 - explicit, always: a streaming layer declares its structure; without it the layer is a folder: said
 - the names a package lays into its layers: a URI's, or hidden and one of those there are
+- the avro layer: laid in by the runtime package alone; any other package bringing it, or a file into it: said
 
 ## `package.test.js`
 

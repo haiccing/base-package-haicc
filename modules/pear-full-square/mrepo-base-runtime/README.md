@@ -53,10 +53,10 @@ mrepo's own packages: `bare
 - A line of a hook, the mrepo's own (`ctx.own`): queued, placed by the
   next pass as an internal request, the request returned waited for in
   `request/done`.
-- The schema registry (`ctx.registry`, `registryOf(work)`): the one way
-  to a type, where the install has it
-  (`<work>/mrepos/local/avro-registry/avro`); handed to the request
-  protocol's pass, which takes nothing in without it.
+- What it checks by (`ctx.types`, `typesOf(repo)`): the types its own
+  mrepo holds, in its `avro` layer (`/avro/types/<org>/<package>/
+  <name>.avsc`), read once as it starts; handed to the request
+  protocol's pass, which takes nothing in without them.
 - Its unique URI, `<swarm>/<node>`, a path, read from its runtime layer
   (`/runtime/mrepo.json`) as it starts; its name where it has none. It is
   how the mrepo is addressed: its inbox's topic, its requests'. In its
@@ -110,9 +110,19 @@ mrepo's own packages: `bare
 - `stop({ repo, pid })`: a runtime ended, waited for until its process has
   ended: asked over its connection, then SIGTERM, then SIGKILL. Used by a
   parent's teardown and by the `haicc` app's.
+- **A boot hook that fails stops the runtime**: nothing taken in, why
+  written beside its repository (`<dir>/runtime.failed`, `FAILED`;
+  `whyFailed({ repo })` reads it; gone at its next start), its status
+  saying so while it lasts (`boot: { state, error }`), then stopped, its
+  exit code 1.
+- `booted({ repo })`: its boot hook waited for, as its status says it,
+  until it is done (or it has none), or its runtime bailed out:
+  `{ state: none | done | failed, error }`; the boot program waits on
+  it.
 - `commissioned({ repo })`: its commission waited for, as its status says
-  it, until it is done or failed (or the runtime gone: `null`), bounded
-  (`wait`, 30 minutes); a parent's deploy waits on it.
+  it, until it is done or failed (its boot hook failed among it; the
+  runtime gone with no reason left: `null`), bounded (`wait`, 30
+  minutes); a parent's deploy waits on it.
   `decommission({ repo })`: its decommission asked and waited for; a
   parent's teardown runs it before `stop`.
 - The runtime as a process, a request through it and back: its
@@ -123,4 +133,4 @@ mrepo's own packages: `bare
 
 ## Tests
 
-- `brittle-bare test/*.test.js` (Bare installed): the runtime from the command line (its version, a bad call); a package's program placed, started, stopped, its config laid; the registry asked for a type; each test by its name in [test/](test/).
+- `brittle-bare test/*.test.js` (Bare installed): the runtime from the command line (its version, a bad call); a package's program placed, started, stopped, its config laid; the types an mrepo holds, from its avro layer; each test by its name in [test/](test/).
