@@ -8,7 +8,7 @@ import { ROOT } from 'mycelium-uri'
 export const MAIN = 'main'
 
 // An mrepo's identity, in its runtime layer: { uri }, its unique URI, a
-// path from its namespace down: <swarm>/<node>, a how-to's
+// path from its namespace down: <swarm>/<peer>, a how-to's
 // <org>/<package>/howto/<name>/<mrepo> (local/<name> for what the boot
 // mrepo creates).
 export const IDENTITY = '/runtime/mrepo.json'

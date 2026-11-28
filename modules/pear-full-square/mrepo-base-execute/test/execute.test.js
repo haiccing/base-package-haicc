@@ -38,7 +38,7 @@ const actions = {
     // what another attached, passed on without reading it
     passes: async (exec, { args }) => { const r = await exec.run(args); return { message: 'Passed on.', attachments: r.attachments } },
     // a wrapper of a type not held here, passed on as it came
-    carry: async () => ({ message: 'Carried.', attachments: [{ name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }),
+    carry: async () => ({ message: 'Carried.', attachments: [{ name: 'a peer', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }),
     // a misfit attached beside a write: nothing of it kept
     spoil: async (exec) => { exec.put('main/spoilt.txt', Buffer.from('x')); return { message: 'Wrote it.', attachments: [{ name: 'the text', type: 'avro/string', value: 5 }] } },
     // a job whose answer carries content that is no value of its type
@@ -49,7 +49,7 @@ const actions = {
     // a job passing on a wrapper of a type not held here
     relay: async (exec) => {
       if (exec.resumed) return { message: 'Relayed.', attachments: exec.resumed.attachments }
-      return exec.wait(async () => ({ message: 'Done.', attachments: [{ name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }))
+      return exec.wait(async () => ({ message: 'Done.', attachments: [{ name: 'a peer', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }] }))
     },
     // a job that attaches; resumed with its value
     job: async (exec) => {
@@ -198,9 +198,9 @@ test('attached: a value written as the wrapper, its content the value\'s bytes; 
     const bad = await own(ctx, `note/attach . ${how}`)
     t.alike([bad.returned.status, bad.returned.message, bad.returned.attachments], ['failed', `Failed, nothing of it kept.\nnot attached: the text (${how === 'misfit' ? 'avro/string' : 'haiccing/base-package-note/text'})\n${why}`, []], `${how}: the request failed whole, the place said`)
   }
-  const wrapperIn = { name: 'a node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }
+  const wrapperIn = { name: 'a peer', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }
   t.alike((await own(ctx, 'note/passes . note/carry .')).returned.attachments, [wrapperIn], 'a wrapper of a type not held here, through exec.run: passed on untouched')
-  t.ok(/value not read: a node \(type not held/.test((await own(ctx, 'note/reads . note/carry .')).returned.message), 'its value refused to the action that asks for it, said')
+  t.ok(/value not read: a peer \(type not held/.test((await own(ctx, 'note/reads . note/carry .')).returned.message), 'its value refused to the action that asks for it, said')
   t.alike((await own(ctx, 'note/passes . note/attach .')).returned.attachments, [{ name: 'the text', type: 'avro/string', content: 'CmhlbGxv', at: null }], 'one held here, handed as a value and passed on: carried as it came')
   const before = (await heads(ctx)).main
   const spoilt = await own(ctx, 'note/spoil .')

@@ -68,15 +68,15 @@ test('attachments: a value into the wrapper and back; a pointer kept; a wrapper 
   t.alike(opened(TYPES, w), [{ name: 'A text', type: 'avro/string', value: 'said' }, { name: 'A count', type: 'avro/long', value: 3 }, { name: 'Nothing', type: 'avro/null', value: null }, { name: 'The log', type: 'haiccing/base-package-runtime/request', at: 'local/host/request/done' }], 'and back: each its value; a pointer its name, its type, where')
   t.alike(wrapped(TYPES, w), w, 'a wrapper already built: passed on unchanged, told by its key')
   t.alike(wrapped(null, w), w, 'no types held: wrappers and pointers still passed on')
-  const other = [{ name: 'A node', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }]
+  const other = [{ name: 'A peer', type: 'haiccing/base-package-rns/lookup-entry', content: 'AAE=', at: null }]
   const [kept] = opened(TYPES, other)
   t.alike({ ...kept }, other[0], 'a type not held: the wrapper handed as it is')
-  t.exception(() => kept.value, /value not read: A node \(type not held: haiccing\/base-package-rns\/lookup-entry\)/, 'its value refused when asked for, said')
+  t.exception(() => kept.value, /value not read: A peer \(type not held: haiccing\/base-package-rns\/lookup-entry\)/, 'its value refused when asked for, said')
   t.alike(wrapped(TYPES, [kept]), other, 'passed on untouched')
   t.exception(() => opened(null, w)[0].value, /value not read: A text \(no types held here\)/, 'no types held: no value read')
   const why = f => { try { f() } catch (err) { return [err.message, err.cause?.message] } }
   t.alike(why(() => wrapped(TYPES, [{ name: 'A text', type: 'avro/string', value: 5 }])), ['not attached: A text (avro/string)', 'not a value of its type: ., expected string'], 'a value that does not fit: said, with its place')
-  t.alike(why(() => wrapped(TYPES, [{ name: 'A node', type: 'haiccing/base-package-rns/lookup-entry', value: {} }])), ['not attached: A node (haiccing/base-package-rns/lookup-entry)', 'type not held: haiccing/base-package-rns/lookup-entry'], 'a type not held: said')
+  t.alike(why(() => wrapped(TYPES, [{ name: 'A peer', type: 'haiccing/base-package-rns/lookup-entry', value: {} }])), ['not attached: A peer (haiccing/base-package-rns/lookup-entry)', 'type not held: haiccing/base-package-rns/lookup-entry'], 'a type not held: said')
   t.alike(why(() => wrapped(null, [{ name: 'A text', type: 'avro/string', value: 'x' }])), ['not attached: A text (avro/string)', 'no types held here'], 'no types held: no value written')
   t.exception(() => wrapped(TYPES, [{ name: 'A text', type: 'avro/string' }]), /neither a value nor where its value is/, 'neither a value nor a pointer: refused')
   t.exception(() => wrapped(TYPES, [{ type: 'avro/string', value: 'x' }]), /not an attachment/, 'no name: refused')

@@ -57,7 +57,7 @@ export async function run (exec, { args: [subject, ...args] = [] }) {
   if (t === '/protocol' || t === '/deploy') return `${pkg} offers at ${t}: ${Object.keys(r).filter(k => k !== 'default').join(', ')}.`
   // a test's result: said, a unit a line; one that failed fails the request
   const n = c => (c ? `${c.passed} of ${c.total}` : 'no')
-  const units = (r.units || []).map(u => `${u.unit}: ${u.ok ? 'passed' : 'failed'}, ${n(u.tests)} tests, ${n(u.asserts)} asserts${(u.failures || []).map(f => `\n  not ok: ${f}`).join('')}`)
+  const units = (r.units || []).map(u => `${u.unit}: ${u.ok ? 'passed' : 'failed'}, ${n(u.tests)} tests, ${n(u.asserts)} asserts${(u.failures || []).map(f => `\n  not ok: ${typeof f === 'string' ? f : [f.test, ...(f.died ? ['ended with no result'] : []), ...(f.asserts || []).map(a => `${a.message}${a.actual != null || a.expected != null ? ` (actual ${a.actual ?? '-'}, expected ${a.expected ?? '-'})` : ''}`)].join(' | ')}`).join('')}`)
   const bad = (r.units || []).filter(u => !u.ok).length
   if (!r.ok) throw new Error([`the tests at ${t} of ${pkg} did not pass: ${bad} of ${units.length} units failed`, ...units].join('\n'))
   return [`Passed: ${t} of ${pkg}, ${units.length} ${units.length === 1 ? 'unit' : 'units'}.`, ...units].join('\n')

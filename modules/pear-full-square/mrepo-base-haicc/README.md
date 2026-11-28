@@ -18,8 +18,8 @@ structure is moved: only the position it is sent to changes. Offered by
 ```
 haicc . boot/deploy host haiccing/base-component-haicc
 haicc host service/stop
-haicc host haicc swarms/swarm-1 boot/deploy node-1
-haicc host/swarms/swarm-1 boot/deploy node-1
+haicc host haicc swarms/swarm-1 boot/deploy peer-1
+haicc host/swarms/swarm-1 boot/deploy peer-1
 haicc "swarms/*[state='started']" crud/read .
 ```
 

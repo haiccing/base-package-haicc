@@ -32,7 +32,6 @@ const UNITS = {
   "/test/modules/pear-full-square/mycelium-git": () => Promise.all([import("./modules/pear-full-square/mycelium-git/test/bundle.test.js"), import("./modules/pear-full-square/mycelium-git/test/engines.test.js"), import("./modules/pear-full-square/mycelium-git/test/hyperdrive.test.js"), import("./modules/pear-full-square/mycelium-git/test/isogit.test.js"), import("./modules/pear-full-square/mycelium-git/test/mixed.test.js"), import("./modules/pear-full-square/mycelium-git/test/native.test.js"), import("./modules/pear-full-square/mycelium-git/test/p2pgit.test.js"), import("./modules/pear-full-square/mycelium-git/test/split.test.js")]),
   "/test/modules/pear-full-square/mycelium-uri": () => Promise.all([import("./modules/pear-full-square/mycelium-uri/test/names.test.js"), import("./modules/pear-full-square/mycelium-uri/test/relative.test.js"), import("./modules/pear-full-square/mycelium-uri/test/uri.test.js")]),
   "/test/modules/pear-full-square/mycelium-value": () => Promise.all([import("./modules/pear-full-square/mycelium-value/test/value.test.js")]),
-  "/test/modules/pear-full-square/mycelium-value-avro": () => Promise.all([import("./modules/pear-full-square/mycelium-value-avro/test/avro.test.js")]),
   "/test/modules/pear-full-square/mycelium-value-json": () => Promise.all([import("./modules/pear-full-square/mycelium-value-json/test/json.test.js")]),
   "/test/modules/pear-full-square/mycelium-xpath": () => Promise.all([import("./modules/pear-full-square/mycelium-xpath/test/query.test.js"), import("./modules/pear-full-square/mycelium-xpath/test/xpath.test.js")]),
   "/test/modules/pear-full-square/mycelium-xpath-physical": () => Promise.all([import("./modules/pear-full-square/mycelium-xpath-physical/test/offset-files.test.js"), import("./modules/pear-full-square/mycelium-xpath-physical/test/physical.test.js")]),
@@ -69,37 +68,55 @@ export async function run (target = '/run', { dryRun = false, print = null, env 
   return runUnits(target, units, { print, env })
 }
 
-// brittle's summary: '# tests = a/b pass', '# asserts = c/d pass'; a failed
-// test: 'not ok n - name' at the top level, its failed asserts indented
-// above it ('    not ok n - message', then its actual and expected): each
-// failure the test's name, then the asserts that failed in it, so a report
-// says which assert, not only which test.
+// brittle's summary: '# tests = a/b pass', '# asserts = c/d pass'. A
+// failed test: '# <name>' heading it, its failed asserts indented below
+// ('    not ok n - message', its YAML block after: actual, expected),
+// then 'not ok n - name' at the top level. Each failure a record, so its
+// reader acts on it exactly: { test, asserts: [{ message, actual,
+// expected }], died? }; died: the test ended with no result line (a
+// throw, a timeout), its failed asserts kept. A value on its key's line
+// or on the more indented lines after it (an array, an object, a text
+// block), joined, cut to 200 characters.
 export function summary (tap) {
   const count = re => { const m = tap.match(re); return m ? { passed: Number(m[1]), total: Number(m[2]) } : null }
   const lines = tap.split('\n')
   const failures = []
+  let test = null
   let failed = []
+  const close = died => { if (failed.length || died === false) failures.push({ test: test ?? '(a test not named)', asserts: failed, ...(died ? { died: true } : {}) }); failed = [] }
+  const stop = j => j >= lines.length || /^\s*(?:not )?ok \d+/.test(lines[j]) || /^\s*\.\.\.\s*$/.test(lines[j]) || /^# /.test(lines[j])
   for (let i = 0; i < lines.length; i++) {
     const l = lines[i]
-    const a = l.match(/^\s+not ok \d+ - (.*?)(?: # .*)?$/)
+    const a = l.match(/^(\s+)not ok \d+ - (.*?)(?: # (?:time = .*|todo.*|skip.*))?$/i)
     if (a) {
-      const said = []
-      for (let j = i + 1; j < lines.length && j < i + 60 && !/^\s*(?:not )?ok \d+/.test(lines[j]); j++) {
-        const m = lines[j].match(/^\s+(actual|expected): (.+)$/)
-        if (m) said.push(`${m[1]} ${m[2].slice(0, 200)}`)
+      const assert = { message: a[2], actual: null, expected: null }
+      const indent = a[1].length + 2
+      for (let j = i + 1; !stop(j); j++) {
+        const m = lines[j].match(/^(\s+)(actual|expected):(?: (.*))?$/)
+        if (!m || m[1].length !== indent) continue
+        const inline = (m[3] ?? '').trim()
+        const more = []
+        for (let k = j + 1; !stop(k) && lines[k].match(/^\s*/)[0].length > indent; k++) more.push(lines[k].trim())
+        assert[m[2]] = [inline === '|' || inline === '>' || inline === '|-' ? '' : inline, ...more].filter(Boolean).join(' ').slice(0, 200)
       }
-      failed.push(said.length ? `${a[1]} (${said.join(', ')})` : a[1])
+      failed.push(assert)
       continue
     }
-    if (/^ok \d+/.test(l)) { failed = []; continue }
+    const h = l.match(/^# (.*)$/)
+    if (h && !/^# (?:tests|asserts|pass|fail|time|ok|not ok)\b/.test(l)) { close(true); test = h[1]; continue }
+    if (/^ok \d+/.test(l)) { failed = []; test = null; continue }
     if (/^not ok \d+/.test(l)) {
-      const name = l.replace(/^not ok \d+ - /, '').replace(/ # time = .*$/, '')
-      failures.push(failed.length ? `${name}: ${failed.join('; ')}` : name)
-      failed = []
+      test = l.replace(/^not ok \d+ - /, '').replace(/ # time = .*$/, '')
+      close(false)
+      test = null
     }
   }
+  close(true)
   return { tests: count(/^# tests = (\d+)\/(\d+)/m), asserts: count(/^# asserts = (\d+)\/(\d+)/m), failures }
 }
+// A failure said in a line: its test, then each failed assert with its
+// values; died said.
+export const failureLine = f => typeof f === 'string' ? f : [f.test, ...(f.died ? ['(ended with no result: a throw or a timeout)'] : []), ...f.asserts.map(a => `${a.message}${a.actual !== null || a.expected !== null ? ` (actual ${a.actual ?? '-'}, expected ${a.expected ?? '-'})` : ''}`)].join(' | ')
 
 // The units, each its own process (bare <program> <unit>), in order: the
 // result { target, ok, units: [{ unit, ok, tests, asserts, failures }] }.
@@ -172,7 +189,7 @@ async function runEach (target, units, program, print, extra) {
       child.stderr.on('data', d => { out += d })
       // a unit that reports no summary ran no test: not a pass (one that has
       // nothing to test says so: a dummy, reported as 0 of 0)
-      child.on('exit', code => { const s = summary(out); if (!s.tests) s.failures.push('no test ran: no summary reported'); resolve({ unit: u, ok: code === 0 && !s.failures.length, ...s }) })
+      child.on('exit', code => { const s = summary(out); if (!s.tests) s.failures.push({ test: 'no test ran: no summary reported', asserts: [] }); resolve({ unit: u, ok: code === 0 && !s.failures.length, ...s }) })
     }))
   }
   return { target, ok: results.every(r => r.ok), units: results }

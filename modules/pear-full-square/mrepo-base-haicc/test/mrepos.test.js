@@ -34,9 +34,9 @@ test('haicc/mrepos: the registry\'s mrepos, each its unique URI, its position fr
   const work = mkdtempSync(join(tmpdir(), 'mrepos-'))
   try {
     await mrepo(work, 'boot', 'haiccing/base-component-boot', [{ uri: 'local/workbench', at: 'workbench' }])
-    await mrepo(work, 'local/workbench', 'haiccing/base-solution-workbench', [{ uri: 'local/docs', at: 'docs' }, { uri: 'swarm-1/node-1', at: 'swarms/swarm-1/node-1' }])
+    await mrepo(work, 'local/workbench', 'haiccing/base-solution-workbench', [{ uri: 'local/docs', at: 'docs' }, { uri: 'swarm-1/peer-1', at: 'swarms/swarm-1/peer-1' }])
     await mrepo(work, 'local/docs', 'haiccing/base-component-docs')
-    await mrepo(work, 'swarm-1/node-1', 'haiccing/base-component-node')
+    await mrepo(work, 'swarm-1/peer-1', 'haiccing/base-component-peer')
     await mrepo(work, 'local/stray', 'haiccing/base-package-runtime')
     const all = await mrepos(exec(work, 'local/boot'), { uri: ['main', '.'] })
     t.alike(all.split('\n'), [
@@ -45,7 +45,7 @@ test('haicc/mrepos: the registry\'s mrepos, each its unique URI, its position fr
       'local/docs at workbench/docs, from haiccing/base-component-docs, not running.',
       'local/stray, not reached from here, from haiccing/base-package-runtime, not running.',
       'local/workbench at workbench, from haiccing/base-solution-workbench, not running.',
-      'swarm-1/node-1 at workbench/swarms/swarm-1/node-1, from haiccing/base-component-node, not running.'
+      'swarm-1/peer-1 at workbench/swarms/swarm-1/peer-1, from haiccing/base-component-peer, not running.'
     ], 'every mrepo in the registry, a line each, its unique URI first (the boot mrepo\'s its identity\'s, its folder mrepos/boot); its position through the links, forward only, the mrepo asked itself .; one linked nowhere: said; none running')
     const asker = exec(work, 'local/boot')
     const lines = async (e, uri) => (await mrepos(e, { uri })).split('\n').slice(1)

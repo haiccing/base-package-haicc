@@ -47,7 +47,7 @@ test('a name is its URI, exact both ways; its core type and its variant', (t) =>
   t.is(avro.uriOf('haiccing.basePackageRuntime.request.done.request'), 'haiccing/base-package-runtime/request/done/request')
   t.is(avro.uriOf('org.apache.avro.Thing_1'), null, 'a name from elsewhere: no URI')
   t.is(avro.uriOf('Plain'), null)
-  t.exception(() => avro.fullnameOf('haiccing/node-1/x'), /data name/, 'a segment that is no data name')
+  t.exception(() => avro.fullnameOf('haiccing/peer-1/x'), /data name/, 'a segment that is no data name')
   t.alike(avro.partsOf('haiccing.basePackageRns.logEntry'), { type: 'logEntry', variant: 'haiccing.basePackageRns' }, 'the name the core type, the namespace its variant')
   t.alike(avro.partsOf('plain'), { type: 'plain', variant: null })
 })
@@ -85,16 +85,16 @@ test('is and is-like, one mechanism: a core type\'s variant read as AVRO is; a d
   const line = { type: 'record', name: 'splectral.baseComponentLogViewer.line', fields: [{ name: 'timestamp', type: 'long' }, { name: 'uri', type: 'string' }, { name: 'output', type: ['null', 'string'], default: null }] }
   const variant = { ...line, name: 'splectral.baseComponentLogViewer.logEntry' }
   const writer = typeOf(entry)
-  const value = { key: 'k', timestamp: 5, uri: 'swarm-1/node-2', output: 'ok' }
+  const value = { key: 'k', timestamp: 5, uri: 'swarm-1/peer-2', output: 'ok' }
   t.ok(is(writer, typeOf(variant)).is, 'is: one core type (logEntry), another variant (its namespace): read as AVRO reads it')
   t.alike(isLike(writer, typeOf(variant)).aliases, {}, 'no alias generated for a variant')
-  t.alike(plain(readAs(writer, typeOf(variant), value, { like: false })), { timestamp: 5, uri: 'swarm-1/node-2', output: 'ok' }, 'the variant reads it, key skipped')
+  t.alike(plain(readAs(writer, typeOf(variant), value, { like: false })), { timestamp: 5, uri: 'swarm-1/peer-2', output: 'ok' }, 'the variant reads it, key skipped')
   t.absent(is(writer, typeOf(line)).is, 'is: not the same core type')
   t.exception(() => readAs(writer, typeOf(line), value, { like: false }), 'read as is: refused')
   const like = isLike(writer, typeOf(line))
   t.ok(like.like, 'is-like: the same thing, with less detail')
   t.alike(like.aliases, { 'splectral.baseComponentLogViewer.line': ['haiccing.basePackageRns.logEntry'] }, 'the aliases generated for the read, said with the answer')
-  t.alike(plain(readAs(writer, typeOf(line), value)), { timestamp: 5, uri: 'swarm-1/node-2', output: 'ok' }, 'read as the line: key skipped')
+  t.alike(plain(readAs(writer, typeOf(line), value)), { timestamp: 5, uri: 'swarm-1/peer-2', output: 'ok' }, 'read as the line: key skipped')
   t.ok(is(writer, typeOf({ ...entry, fields: [...entry.fields, { name: 'more', type: 'int', default: 0 }] })).is, 'is: a version of the same type, evolved within the rules')
   t.ok(is(writer, typeOf({ ...line, aliases: ['haiccing.basePackageRns.logEntry'] })).is, 'is: a declared alias')
   const box = typeOf({ type: 'record', name: 'a.Box', fields: [{ name: 'in', type: ['null', { type: 'record', name: 'a.Small', fields: [{ name: 'x', type: 'int' }] }] }] })

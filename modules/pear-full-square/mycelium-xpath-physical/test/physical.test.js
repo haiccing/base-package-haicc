@@ -2,7 +2,7 @@ import test from 'brittle'
 import { query, nodeset, reader, XPathResult } from 'mycelium-xpath'
 import { next, took, addressOf, isType, TYPES } from '../index.js'
 
-const root = { swarms: { 'swarm-1': { nodes: { 'node-1': {}, 'node-2': {} } }, 'swarm-2': { nodes: {} } }, notes: {} }
+const root = { swarms: { 'swarm-1': { nodes: { 'peer-1': {}, 'peer-2': {} } }, 'swarm-2': { nodes: {} } }, notes: {} }
 const tree = { children: node => (node !== null && typeof node === 'object' ? Object.entries(node) : null) }
 const paths = nodes => nodes.map(n => n.path)
 
@@ -30,7 +30,7 @@ test('a node set read: nothing loaded until it is asked; a batch by a physical q
   const read = reader(set, { next, took, run: text => { ran.push(text); return query(tree, root, text) }, observe: async (event, fn) => { const r = await fn(); seen.push({ ...event, returned: r.found.length }); return r } })
   t.alike([set.nodes, set.done, ran], [[], false, []], 'made: no data in it, nothing run')
   const batch = await read.more()
-  t.alike(paths(batch), ['/swarms/swarm-1/nodes/node-1', '/swarms/swarm-1/nodes/node-2'], 'its first batch')
+  t.alike(paths(batch), ['/swarms/swarm-1/nodes/peer-1', '/swarms/swarm-1/nodes/peer-2'], 'its first batch')
   t.alike(paths(batch), paths((await query(tree, root, 'swarms/*/nodes/*')).found), 'what the engine answers for the query')
   t.alike([set.reached, set.done, paths(set.nodes)], ['end', true, paths(batch)], 'the node set now: read to its end, its nodes loaded')
   t.alike(seen, [{ logical: 'swarms/*/nodes/*', mode: 'physical', type: 'tree', from: null, physical: 'swarms/*/nodes/*', returned: 2 }], 'the physical query seen: from where, its text, how many came')

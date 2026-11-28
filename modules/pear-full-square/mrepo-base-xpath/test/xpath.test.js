@@ -29,11 +29,11 @@ const files = () => ({
   'main/swarms/.node.json': {},
   'main/swarms/swarm-1/.node.json': { name: 'sam', size: 3, state: 'started', owner: { name: 'ann', publicKey: 'k1' } },
   'main/swarms/swarm-1/nodes/.node.json': {},
-  'main/swarms/swarm-1/nodes/node-1/.node.json': { state: 'started' },
+  'main/swarms/swarm-1/nodes/peer-1/.node.json': { state: 'started' },
   'main/swarms/swarm-2/.node.json': { name: 'tom', size: 1, state: 'stopped' },
   'main/swarms/notes/readme': 'a text',
   'main/host/.node.json': {},
-  'main/host/.shortcuts.json': [{ mrepo: 'local/host', link: 'k-host' }, { mrepo: 'swarm-2/node-9' }],
+  'main/host/.shortcuts.json': [{ mrepo: 'local/host', link: 'k-host' }, { mrepo: 'swarm-2/peer-9' }],
   'links/k-host.json': { key: 'k-host', uri: 'local/host', at: 'host', how: 'deployed', folder: '../local/host', package: 'haiccing/x' },
   'main/records/.node.json': {},
   'main/records/local/.node.json': {},
@@ -74,7 +74,7 @@ test('query: what a URI selects, each a reference with what it is', async (t) =>
 test('query: filters read the documents', async (t) => {
   const exec = context(files())
   t.alike(at(await query(exec, ['main', "swarms/*[state='started']"])), [['swarms/swarm-1', 'node']])
-  t.alike(at(await query(exec, ['main', "swarms/*[size<2 or owner/name='ann']/nodes/*"])), [['swarms/swarm-1/nodes/node-1', 'node']])
+  t.alike(at(await query(exec, ['main', "swarms/*[size<2 or owner/name='ann']/nodes/*"])), [['swarms/swarm-1/nodes/peer-1', 'node']])
   t.alike(at(await query(exec, ['main', "swarms/*[readme='a text']"])), [['swarms/notes', 'folder']], 'a file that is a text: its value')
   t.alike(at(await query(exec, ['main', "[name='boot']/swarms"])), [['swarms', 'node']], 'a filter in front: the layer itself filtered')
   t.alike(at(await query(exec, ["request/done/*[value/uri='main/host']"])), [['done/r1.json', 'file']], 'records: each file its own document')
@@ -96,7 +96,7 @@ test('query: a shortcut: found as one, and where the URI stops', async (t) => {
   t.alike([(await linked(exec, 'k-host'))?.uri, await linked(exec, 'none'), await linked(exec, undefined)], ['local/host', null, null], 'linked: a link\'s record in the links layer, by its key; none: null')
   t.alike((await query(exec, ['links', "*[uri='local/host']/at"])).found.map(f => f.value), ['host'], 'the links, for the mrepo\'s own lookups: by what a record says, either way')
   t.alike((await query(exec, ['main', "records/local/*[how='deployed']"])).found.map(f => [f.at, f.kind]), [['records/local/host', 'node']], 'nodes by what their documents say, a path deep: queried as any')
-  t.alike([await shortcutsAt(exec, 'host'), await shortcutsAt(exec, 'swarms'), (await shortcutsAt(exec, 'empty')).length], [[{ mrepo: 'local/host', link: 'k-host' }, { mrepo: 'swarm-2/node-9' }], [], 0], 'shortcutsAt: the sources recorded at a position, none: []')
+  t.alike([await shortcutsAt(exec, 'host'), await shortcutsAt(exec, 'swarms'), (await shortcutsAt(exec, 'empty')).length], [[{ mrepo: 'local/host', link: 'k-host' }, { mrepo: 'swarm-2/peer-9' }], [], 0], 'shortcutsAt: the sources recorded at a position, none: []')
 })
 
 test('query: measured: its rounds through the context\'s step; a listing asked once', async (t) => {
@@ -113,13 +113,13 @@ test('query: measured: its rounds through the context\'s step; a listing asked o
 test('the paths: a shortcut\'s entry, a link\'s record, the unique URIs', (t) => {
   t.is(shortcutOf('host'), 'main/host/.shortcuts.json', 'in main, beside the node\'s document, hidden')
   t.is(SHORTCUTS, '.shortcuts.json')
-  t.is(shortcutOf('swarms/swarm-1/node-1'), 'main/swarms/swarm-1/node-1/.shortcuts.json')
+  t.is(shortcutOf('swarms/swarm-1/peer-1'), 'main/swarms/swarm-1/peer-1/.shortcuts.json')
   t.alike([LINKS, linkPath('k-host')], ['links', 'links/k-host.json'], 'a link\'s record: in the links layer, by the link\'s own key')
   t.is(IDENTITY, '/runtime/mrepo.json')
   t.is(swarmOf('local/boot'), 'local')
   t.is(swarmOf('boot'), 'local', 'no swarm: local')
   t.is(uriOf('local/boot', 'host'), 'local/host', 'what the boot mrepo creates: local/<name>')
-  t.is(uriOf('swarm-1/node-1', 'x'), 'swarm-1/x')
+  t.is(uriOf('swarm-1/peer-1', 'x'), 'swarm-1/x')
   t.is(namespaceOf('haiccing/base-package-crud/howto/query/boot'), 'haiccing/base-package-crud/howto/query', 'a namespace a path: all but the name')
   t.is(namespaceOf('boot'), 'local', 'no namespace: local')
   t.is(uriOf('haiccing/base-package-crud/howto/query/boot', 'host'), 'haiccing/base-package-crud/howto/query/host', 'what a how-to\'s boot deploys: beside it, in its namespace')

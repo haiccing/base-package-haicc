@@ -84,7 +84,7 @@ test('extract: the keywords from the top down, split on package; a jump, a categ
   const out = extract(mrepo())
   const index = J(out['/index.json'])
   const [y, x, d] = ['org/base-component-y', 'org/base-package-x', 'org/package-docs-mrepo'].map(p => idx(out, p))
-  t.alike(index['.'][0].below, ['org', 'modules', 'third-party', 'schemas'], 'the top: its organisations, the three made here')
+  t.alike(index['.'][0].below, ['org', 'modules', 'third-party'], 'the top: its organisations, the two made here')
   t.is(index['.'][0].page, 'packages/org/base-component-y/README.md', 'the top page: the mrepo\'s own package\'s README')
   t.alike(index.org[0].below, ['org/base-component-y', 'org/base-package-x', 'org/package-docs-mrepo'], 'an organisation: its packages in full form, the mrepo\'s own first, then its included ones')
   t.ok(index.org[0].generated && out['/packages/org/README.md'].toString().includes('- [base-package-x](base-package-x/)'), 'its page made here')
@@ -102,9 +102,8 @@ test('extract: the keywords from the top down, split on package; a jump, a categ
   t.ok(out['/modules/org/mod-base-x/external/run/README.md'] && !Object.keys(out).some(p => p.startsWith('/packages/org/base-package-x/modules/org')), 'its pages written once, at the module\'s place')
   t.ok(out['/modules/README.md'].toString().includes('- [mod-base-x](mod-base-x/)'), 'modules: a page made here')
   t.ok(out['/third-party/README.md'].toString().includes('| [brittle]() | 3.0.0 | Apache-2.0 | 2 packages |'), 'third-party: a page made here, each module once')
-  const schemas = out['/schemas/README.md'].toString()
-  t.ok(/\| `org\/base-package-x\/answer` \| `[0-9a-f]{16}` \| `said` \| 1 packages \|/.test(schemas) && schemas.includes('| `org/mod-base-x/thing` |'), 'schemas: a page made here, each once by its URI, its fingerprint, its fields: the package\'s own, its modules\'')
-  t.ok(index.modules[0].generated && index['third-party'][0].generated && index.schemas[0].generated, 'all marked as made here')
+  t.ok(!Object.keys(out).some(k => k.startsWith('/schemas/')), 'a package\'s schemas/ not read: no page made of them')
+  t.ok(index.modules[0].generated && index['third-party'][0].generated && !index.schemas, 'both marked as made here; no schemas page (types are the schema registry\'s: avro-registry/types)')
 })
 
 test('extract: what does not fit is a problem, never resolved silently', (t) => {
@@ -175,7 +174,7 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
     const first = r => r.message.split('\n')[0]
     const top = await get(exec, {})
     t.is(first(top), '.: The y component.', 'nothing asked: the top page, its keyword and what it is first')
-    t.alike(below(top).map(l => l.slice(2).split(':')[0]), ['org', 'modules', 'third-party', 'schemas'], 'its keywords below it, a line each: its organisations, the three made here')
+    t.alike(below(top).map(l => l.slice(2).split(':')[0]), ['org', 'modules', 'third-party'], 'its keywords below it, a line each: its organisations, the two made here')
     t.alike(top.attachments.map(a => [a.name, a.type, typeof a.value, a.value.includes('## Links'), top.message.includes(a.value)]), [['base-component-y', 'avro/string', 'string', false, false]], 'the page itself attached, a text, without its menus (they are its keywords); not also said')
     const run = await get(exec, { args: ['org/base-package-x/run'] })
     t.alike([first(run), below(run)], ['org/base-package-x/run: Runs x.', ['- org/base-package-x/run/signature: `run(exec, form)`.']], 'in a package\'s context, its name in front: an action, its sections below it, each written as it is asked')
@@ -186,7 +185,7 @@ test('the actions: extract writes the layer, get reads it by keywords', async (t
     t.is(first(await get(exec, { args: ['mrepo'] })), 'org/base-component-y/mrepo: Its list.', 'a short keyword: the mrepo\'s own package\'s first, written in its context')
     t.is(first(await get(exec, { args: ['run'] })), 'org/base-package-x/run: Runs x.', 'a short keyword not its own: the one package that has it, in its context')
     await t.exception(get(exec, { args: ['org/base-package-x/nothing'] }), /no org\/base-package-x\/nothing here: nearest org\/base-package-x, below it run, howto, test, modules, config/, 'a keyword not there in a context: the nearest there, and what is below it')
-    await t.exception(get(exec, { args: ['nothing'] }), /no nothing here: nearest \., below it org, modules, third-party, schemas/, 'not there at all: the top, and what is below it')
+    await t.exception(get(exec, { args: ['nothing'] }), /no nothing here: nearest \., below it org, modules, third-party/, 'not there at all: the top, and what is below it')
   } finally { rmSync(dir, { recursive: true, force: true }) }
 })
 
@@ -259,7 +258,7 @@ test('the template, extracted from its bundle: its keywords, nothing against its
   const index = J(out['/index.json'])
   const own = idx(out, 'haiccing/base-docs-package')
   for (const k of ['.', 'mrepo', 'test', 'test/info', 'test-reports', 'name', 'example', 'example/hello', 'example/hello/notes/mrepo', 'readmes', 'a-new-package']) t.ok(own[k], `its own: ${k}`)
-  for (const k of ['haiccing', 'modules', 'third-party', 'schemas']) t.ok(index[k], `the mrepo's: ${k}`)
+  for (const k of ['haiccing', 'modules', 'third-party']) t.ok(index[k], `the mrepo's: ${k}`)
   const mine = J(out['/problems.json']).filter(p => (p.page ?? '').startsWith('packages/'))
   for (const p of mine) t.comment(`${p.page}: ${p.check}: ${p.detail}`)
   t.is(mine.length, 0, 'its own pages: no problem (the modules it carries are theirs)')

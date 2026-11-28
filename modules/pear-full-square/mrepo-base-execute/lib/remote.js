@@ -10,8 +10,8 @@
 //     the child request asked: its line the command; from this mrepo, for
 //     the linked one, its answer to this request's own branch
 //     (/<this mrepo>/execute/<key>), its origin this request's offset;
-//     dropped into the linked mrepo's inbox folder (the same node: direct;
-//     another node needs dispatch)
+//     dropped into the linked mrepo's inbox folder (the same peer: direct;
+//     another peer needs dispatch)
 //     -> what the request waits for: { at, folder, offset, resume: false }:
 //        the child's offset, at the linked mrepo
 import { existsSync } from 'bare-fs'

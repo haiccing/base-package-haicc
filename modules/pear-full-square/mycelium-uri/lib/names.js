@@ -3,7 +3,7 @@
 // arguments, external files); inside, names are valid.
 //
 // A name is a URI segment without extensions: lowercase a-z, 0-9, words
-// joined by single '-' (`node-1`, `hosts`). Names of swarms, nodes,
+// joined by single '-' (`peer-1`, `hosts`). Names of swarms, peers,
 // resources, repositories and requests are names.
 //
 // A data name is the name of a property in a record, a value or a header:

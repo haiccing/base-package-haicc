@@ -44,8 +44,8 @@ test('goto: at the root executed here; at a shortcut sent on; no command', async
   const { exec, seen } = context(FILES())
   t.alike(await goto(exec, { uri: ['main', '.'], args: ['boot/deploy', 'host', 'haiccing/base-component-haicc'] }), said(['boot/deploy', 'host', 'haiccing/base-component-haicc']), 'main, the root position: the command executed here, what it says returned')
   t.alike(seen.at, [['main']], 'the command that follows stands at the position: its URI is read behind that prefix')
-  t.is(await goto(exec, { uri: ['main', 'host'], args: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'node-1'] }), null, 'a shortcut: sent on')
-  t.alike(seen.sent, [{ to: HOST, command: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'node-1'] }], 'the command that follows, unchanged, to the mrepo linked there')
+  t.is(await goto(exec, { uri: ['main', 'host'], args: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'peer-1'] }), null, 'a shortcut: sent on')
+  t.alike(seen.sent, [{ to: HOST, command: ['haicc', 'swarms/swarm-1', 'boot/deploy', 'peer-1'] }], 'the command that follows, unchanged, to the mrepo linked there')
   t.is(seen.ran.length, 1, 'nothing of it executed here')
   await t.exception(goto(exec, { uri: ['main', 'host'] }), /missing argument: command/)
   await t.exception(goto(exec, { uri: ['main', '/host'], args: ['service/start'] }), /not a relative URI/)
@@ -60,7 +60,7 @@ test('goto: a position inside main: the command executed there, the current root
   t.alike(await goto(exec, { uri: ['main', 'swarms', 'swarm-2'], args: ['crud/read', '.'] }), said(['crud/read', '.']), 'a goto at a position: its URI read behind it')
   t.alike(seen.at.at(-1), ['main', 'swarms/swarm-2'])
   await t.exception(goto(exec, { uri: ['main', 'nowhere'], args: ['crud/read', '.'] }), /haicc nowhere: no node there/, 'a position named that is not there: an error')
-  await t.exception(goto(exec, { uri: ['main', 'swarm-1/node-2'], args: ['crud/read', '.'] }), /haicc swarm-1\/node-2: no node there$/, 'a unique URI that is no position here, in an mrepo that does not dispatch: the same')
+  await t.exception(goto(exec, { uri: ['main', 'swarm-1/peer-2'], args: ['crud/read', '.'] }), /haicc swarm-1\/peer-2: no node there$/, 'a unique URI that is no position here, in an mrepo that does not dispatch: the same')
   await t.exception(goto(exec, { uri: ['main', 'swarms/swarm-1/state'], args: ['crud/read', '.'] }), /haicc swarms\/swarm-1\/state: not a position \(a node; a value inside a document is none\)/)
   await t.exception(goto(exec, { uri: ['main', 'notes.txt'], args: ['crud/read', '.'] }), /haicc notes\.txt: not a position \(a node; a file is none\)/)
   t.alike(exec.entries.filter(e => e.event === 'executed here').map(e => e.line), ['Executed here, at swarms/swarm-1: crud/read .', 'Executed here, at swarms/swarm-2: crud/read .'])
@@ -106,17 +106,17 @@ test('haicc/script: the lines, each a simple command, run where the URI points; 
   await t.exception(script({ ...exec, resumed: { status: 'failed', message: 'line 2: service/start: not now', attachments: [] } }, { uri: ['main', '.'], args: ['x'] }), /line 2: service\/start: not now/, 'resumed with a failure: the line that failed said')
 })
 
-test('a node of the swarm by its unique URI: no position here, handed to dispatch where the mrepo has it active', async (t) => {
+test('a peer of the swarm by its unique URI: no position here, handed to dispatch where the mrepo has it active', async (t) => {
   const { exec, seen } = context({ ...FILES(), 'protocols/dispatch.json': {} })
-  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/node-2', 'crud/read', '.']), 'haicc swarm-1/node-2 crud/read .: dispatch/send, the URI as written, the command after it')
-  t.alike(await goto(exec, { uri: ['main', 'swarm-1/node-2/notes'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/node-2/notes', 'crud/read', '.']), 'what follows the unique URI goes with it')
+  t.alike(await goto(exec, { uri: ['main', 'swarm-1/peer-2'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/peer-2', 'crud/read', '.']), 'haicc swarm-1/peer-2 crud/read .: dispatch/send, the URI as written, the command after it')
+  t.alike(await goto(exec, { uri: ['main', 'swarm-1/peer-2/notes'], args: ['crud/read', '.'] }), said(['dispatch/send', 'swarm-1/peer-2/notes', 'crud/read', '.']), 'what follows the unique URI goes with it')
   t.alike(seen.sent, [], 'not through a shortcut')
   await goto(exec, { uri: ['main', 'swarms/swarm-1'], args: ['crud/read', '.'] })
   t.alike(seen.ran.at(-1), ['crud/read', '.'], 'a position that is here: executed here, as before')
   await t.exception(goto(exec, { uri: ['main', 'nowhere'], args: ['crud/read', '.'] }), /haicc nowhere: no node there$/, 'one name only: no unique URI, not dispatched')
   const none = context({ ...FILES(), 'protocols/dispatch.json': {} })
-  none.exec.run = async () => { throw new Error('no node of the swarm by that unique URI: swarm-1/nope (rns/status says who is registered)') }
-  await t.exception(goto(none.exec, { uri: ['main', 'swarm-1/nope'], args: ['crud/read', '.'] }), /haicc swarm-1\/nope: no node there, and no node of the swarm by that unique URI/, 'no node of the swarm either: one error')
+  none.exec.run = async () => { throw new Error('no peer of the swarm by that unique URI: swarm-1/nope (rns/status says who is registered)') }
+  await t.exception(goto(none.exec, { uri: ['main', 'swarm-1/nope'], args: ['crud/read', '.'] }), /haicc swarm-1\/nope: no node there, and no peer of the swarm by that unique URI/, 'no peer of the swarm either: one error')
   none.exec.run = async () => { throw new Error('not reachable yet: swarm-1/far lives on elsewhere') }
   await t.exception(goto(none.exec, { uri: ['main', 'swarm-1/far'], args: ['crud/read', '.'] }), /not reachable yet/, 'what dispatch refuses otherwise: as it says it')
 })

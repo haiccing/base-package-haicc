@@ -167,7 +167,7 @@ export async function run ({ work: w, repo: given = null, every = 200, idle = 20
   // No log of its own: what happens to a request is in its document and the
   // commits that moved it.
   const ctx = { work, dir, name: repo.name, backend: repo.backend, repo: openRepo(repo.backend), writer: writer(repo.backend), seen: {} }
-  // Its unique URI (<swarm>/<node>, a path), from its runtime layer; its name where
+  // Its unique URI (<swarm>/<peer>, a path), from its runtime layer; its name where
   // it has none: how it is addressed (its inbox's topic, its requests').
   ctx.uri = await ctx.repo.read(IDENTITY).then(b => JSON.parse(b.toString()).uri, () => null) ?? repo.name
   // What it checks by: the types its own mrepo holds, in its avro layer

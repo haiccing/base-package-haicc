@@ -2,9 +2,9 @@ import test from 'brittle'
 import { isName, validateName, isDataName, validateDataName, uriFormOf, dataNameOf, isHidden, HIDDEN, isSegment } from '../index.js'
 
 test('names: lowercase words joined by single hyphens', (t) => {
-  for (const s of ['hosts', 'node-1', '0-probes', 'remote-1', 'a1-b2']) t.ok(isName(s), s)
+  for (const s of ['hosts', 'peer-1', '0-probes', 'remote-1', 'a1-b2']) t.ok(isName(s), s)
   for (const s of ['', 'Node', 'a_b', '-a', 'a-', 'a--b', 'a.b', 'a b', null, 7]) t.ok(!isName(s), String(s))
-  t.is(validateName('node-1'), 'node-1')
+  t.is(validateName('peer-1'), 'peer-1')
   t.exception(() => validateName('Not-Valid', 'node name'), /not a node name: Not-Valid/)
 })
 

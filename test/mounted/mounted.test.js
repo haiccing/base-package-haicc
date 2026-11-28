@@ -94,7 +94,7 @@ test('goto at a position inside main: executed there; a URI that selects: at eac
 
 test('goto at a shortcut: the command sent on to the mrepo linked there, with what is left of the URI', async (t) => {
   const { exec, executed, sent } = execution(HOST)
-  const command = ['haicc', 'node-1', 'service/start']
+  const command = ['haicc', 'peer-1', 'service/start']
   t.is(await act('goto', exec, { uri: ['main', 'host'], args: command }), null, 'nothing returned here: the request waits for the linked mrepo\'s response')
   t.alike(sent, [{ to: LINK, command }], 'where it leads: the linked mrepo, its folder as its link\'s record says it; the command as it was, a haicc of its own included: commands chain')
   t.is(await act('goto', exec, { uri: ['main', 'host/swarms/*'], args: ['service/start'] }), null, 'a URI through the shortcut: sent on too')
@@ -106,7 +106,7 @@ test('goto: what it refuses', async (t) => {
   const { exec, executed, sent } = execution(HOST)
   await t.exception(act('goto', exec, { uri: ['main', 'host'] }), /missing argument: command/, 'no command follows')
   await t.exception(act('goto', exec, { uri: ['main', '.'], args: [] }), /missing argument: command/, 'an empty one neither')
-  await t.exception(act('goto', exec, { uri: ['main', 'nowhere'], args: ['boot/deploy', 'node-1'] }), /haicc nowhere: no node there/, 'a position named that is not there')
+  await t.exception(act('goto', exec, { uri: ['main', 'nowhere'], args: ['boot/deploy', 'peer-1'] }), /haicc nowhere: no node there/, 'a position named that is not there')
   await t.exception(act('goto', exec, { uri: ['main', 'notes.txt'], args: ['service/start'] }), /not a position/, 'a file is no position')
   await t.exception(act('goto', exec, { uri: ['main', '*'], args: ['service/start'] }), /not yet: it reaches a shortcut \(host\) among 2 positions; a command goes on from one shortcut at a time/, 'a shortcut beside other positions: not yet, said so')
   await t.exception(act('goto', exec, { uri: ['main', 'Host'], args: ['service/start'] }), /not canonical: Host \(host\)/, 'a URI that is not canonical')

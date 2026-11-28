@@ -57,7 +57,7 @@ mrepo's own packages: `bare
   mrepo holds, in its `avro` layer (`/avro/types/<org>/<package>/
   <name>.avsc`), read once as it starts; handed to the request
   protocol's pass, which takes nothing in without them.
-- Its unique URI, `<swarm>/<node>`, a path, read from its runtime layer
+- Its unique URI, `<swarm>/<peer>`, a path, read from its runtime layer
   (`/runtime/mrepo.json`) as it starts; its name where it has none. It is
   how the mrepo is addressed: its inbox's topic, its requests'. In its
   status: `repository.uri`.

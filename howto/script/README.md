@@ -27,7 +27,7 @@ crud/read .
 # a heredoc: a line that holds JSON keeps its quotes
 haicc host haicc/script . <<'END'
 crud/create swarms/swarm-2 '{"kind":"swarm"}'
-boot/deploy swarms/swarm-2/node-1 haiccing/base-component-haicc
+boot/deploy swarms/swarm-2/peer-1 haiccing/base-component-haicc
 END
 # a script kept in the install, by its name: <home>/scripts/check.haicc
 # (the folder is yours to make: mkdir -p ~/.haicc/scripts)
@@ -39,7 +39,7 @@ haicc scripts
 ## Notes
 
 - **Each line its own request**, recorded; a line that hops (`haicc
-  node-1 ...`) is a hop like any.
+  peer-1 ...`) is a hop like any.
 - **No variables, no logic**: the position is the input; a script
   written relative to where it runs is run elsewhere by pointing there.
 - **The install's scripts** (`haicc/file`): `<home>/scripts/<name>.haicc`,

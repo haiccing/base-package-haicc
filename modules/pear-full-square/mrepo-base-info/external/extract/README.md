@@ -32,11 +32,11 @@ What it writes, in the `info` layer:
   choices, `[{ page, section?, see?, oneliner, below, generated? }]`
   (`.` its README); a package's keywords are its own, kept apart;
 - `index.json`: the mrepo's own keywords: the top, each organisation,
-  `modules`, `third-party`, `schemas`;
+  `modules`, `third-party`;
 - `packages.json`: the packages, the contexts, `{ oneliner, own?,
   documented? }`; `keywords.json`: a short keyword and the packages that
   have it;
-- `modules/README.md`, `third-party/README.md`, `schemas/README.md` and
+- `modules/README.md`, `third-party/README.md` and
   each organisation's page, made here;
 - `problems.json`: `[{ keyword?, page?, check, detail }]`;
 - `.layer.json`, when the layer has none.

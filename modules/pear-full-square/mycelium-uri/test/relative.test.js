@@ -4,7 +4,7 @@ import { relative, stepsOf, selects, from, within, slashed, unslashed, segmented
 test('relative: no leading slash, . the position itself, ./ allowed in front', (t) => {
   t.is(ROOT, '.')
   t.is(relative('host'), 'host')
-  t.is(relative('swarms/swarm-1/node-1'), 'swarms/swarm-1/node-1')
+  t.is(relative('swarms/swarm-1/peer-1'), 'swarms/swarm-1/peer-1')
   t.is(relative('a/b.json'), 'a/b.json')
   t.is(relative('swarms/*'), 'swarms/*', 'a name part may be *: a URI that selects')
   t.is(relative('*'), '*')
@@ -66,7 +66,7 @@ test('slashed, unslashed: the slash-led paths', (t) => {
 })
 
 test('a URI as data: an array of segments, each a relative URI', (t) => {
-  for (const u of [['main', 'host'], ['main', '.'], ['.'], ['main', 'swarms/swarm-1/node-1'], ['runtime/hooks']]) t.is(segmented(u), u, `${JSON.stringify(u)}: as it is`)
+  for (const u of [['main', 'host'], ['main', '.'], ['.'], ['main', 'swarms/swarm-1/peer-1'], ['runtime/hooks']]) t.is(segmented(u), u, `${JSON.stringify(u)}: as it is`)
   t.exception(() => segmented('main/host'), /not a URI: its segments, an array/, 'one string: not the type')
   t.exception(() => segmented([]), /not a URI: its segments, an array/, 'no segment')
   t.exception(() => segmented(['main', 7]), /not a URI: a segment is a string/)

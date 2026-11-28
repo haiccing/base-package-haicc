@@ -2,7 +2,6 @@
 // mrepo's info layer: its pages addressed by keywords, from the top down
 // (README.md beside it).
 import { posix } from 'bare-path'
-import { registry } from 'mycelium-value-avro'
 
 // The layer the pages are extracted into.
 export const LAYER = 'info'
@@ -10,12 +9,10 @@ export const LAYER = 'info'
 export const MENU = 'Links'
 export const INCLUDED = 'Included packages'
 // What extraction reads of a package's files (its bundle's): its READMEs,
-// its package.json, its list, its third-party code's record, the schemas
-// it carries, and its how-tos' scripts (each at howto/<name>/steps.haicc, beside its page).
+// its package.json, its list, its third-party code's record, and its
+// how-tos' scripts (each at howto/<name>/steps.haicc, beside its page).
 export const STEPS = 'steps.haicc'
-// (a schema a package carries: its own, its modules')
-const SCHEMA = /^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/
-export const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/.layer.json' || k === '/modules/third-party.json' || SCHEMA.test(k) || (k.startsWith('/howto/') && k.endsWith(`/${STEPS}`))
+export const WANTED = k => k.endsWith('/README.md') || k === '/package.json' || k === '/mrepo/packages/.layer.json' || k === '/modules/third-party.json' || (k.startsWith('/howto/') && k.endsWith(`/${STEPS}`))
 
 // A how-to's page with its steps: its section ## Steps (made before ##
 // Notes, or last, where it has none) holds the script as it is, a fact
@@ -43,7 +40,7 @@ const pageOf = (files, path) => {
 
 // The top keyword; the two pages made at extraction.
 export const TOP = '.'
-export const GENERATED = ['modules', 'third-party', 'schemas']
+export const GENERATED = ['modules', 'third-party']
 
 // The first sentence: up to the first full stop followed by a space or the
 // end, outside code spans (`package.json`).
@@ -132,14 +129,6 @@ export function check (text) {
 
 // A module's place: /modules/<org>/<module>/... -> { module, rest }.
 const moduleOf = path => { const m = path.match(/^\/modules\/([^/]+)\/([^/]+)(\/.*)$/); return m && m[1] !== 'node_modules' ? { module: `${m[1]}/${m[2]}`, rest: m[3] } : null }
-// A schema as a row: its URI (its name's), its fingerprint, its fields;
-// named types it refers to found among those read before it.
-function schemaRow (schema, reg) {
-  const { fingerprint, uri } = reg.add(schema)
-  const t = reg.type(fingerprint)
-  const fields = (t.underlyingType ?? t).fields?.map(f => `\`${f.name}\``).join(', ') ?? `\`${JSON.stringify(t.schema())}\``
-  return { fingerprint, uri, name: (t.underlyingType ?? t).name ?? null, fields }
-}
 const family = name => name.split('-').slice(0, name.startsWith('mrepo-') || name.startsWith('pkgm-') ? 2 : 1).join('-')
 
 // The info layer from an mrepo's packages, in deploy order, the mrepo's
@@ -153,14 +142,12 @@ const family = name => name.split('-').slice(0, name.startsWith('mrepo-') || nam
 // one a page or a section that keyword reaches: [{ page, section?, see?,
 // oneliner, below, generated? }]; '.' its README), the mrepo's own
 // keywords in index.json (the top, the organisations, modules,
-// third-party, schemas), keywords.json (a short keyword -> the packages
+// third-party), keywords.json (a short keyword -> the packages
 // that have it), packages.json (each package, the contexts: { oneliner,
 // own?, documented? }), problems.json ([{ keyword?, page?, check, detail
 // }]).
 export function extract (packages, { alone = false } = {}) {
   const out = {}
-  // (the schemas read, in memory: what each is)
-  const reg = registry()
   const index = {}
   const problems = []
   const byName = Object.fromEntries(packages.map(p => [p.pkg.split('/').pop(), p]))
@@ -308,25 +295,6 @@ export function extract (packages, { alone = false } = {}) {
   if (head) {
     below(head, 'third-party')
     choose('third-party', { page: 'third-party/README.md', oneliner: 'The third-party code in this mrepo\'s packages, each module once.', below: [], generated: true })
-  }
-  // schemas: each once, by its URI, from the packages' schemas (their own,
-  // their modules'): its fingerprint, its fields, who carries it
-  const schemas = {}
-  for (const p of packages) {
-    for (const [path, b] of Object.entries(p.files)) {
-      if (!/^\/(modules\/[^/]+\/[^/]+\/)?schemas\/[^/]+\.json$/.test(path)) continue
-      let row
-      // catch: not a schema: a problem, said with where
-      try { row = schemaRow(JSON.parse(b.toString()), reg) } catch (err) { problems.push({ page: `packages/${p.pkg}${path}`, check: 'schema', detail: err.message }); continue }
-      const e = schemas[row.fingerprint] ??= { ...row, packages: [] }
-      e.packages.push(p.pkg.split('/').pop())
-    }
-  }
-  const srows = Object.values(schemas).sort((a, b) => String(a.uri) < String(b.uri) ? -1 : 1)
-  out['/schemas/README.md'] = Buffer.from(`# schemas\n\nThe schemas this mrepo's packages carry, each once, by its URI and its fingerprint.\n\nGenerated at extraction from the packages' \`schemas/\` and their modules'. A binary record names its schema by its fingerprint (\`mycelium-value-avro\`): this says what each is; \`crud/read\` decodes one.\n\n## Schemas\n\n| schema | fingerprint | fields | carried by |\n|---|---|---|---|\n${srows.map(e => `| \`${e.uri ?? e.name}\` | \`${e.fingerprint}\` | ${e.fields} | ${e.packages.length} packages |`).join('\n')}\n`)
-  if (head) {
-    below(head, 'schemas')
-    choose('schemas', { page: 'schemas/README.md', oneliner: 'The schemas this mrepo\'s packages carry, each once, by its URI and its fingerprint.', below: [], generated: true })
   }
   // each organisation's page: its packages, by their keywords
   for (const [org, qs] of Object.entries(orgs)) out[`/packages/${org}/README.md`] = Buffer.from(`# ${org}\n\nThe ${org} packages of this mrepo, each by its name.\n\nGenerated at extraction: \`info/get ${org}/<package>\`.\n\n## Links\n\n${qs.map(q => `- [${q.pkg.split('/')[1]}](${q.pkg.split('/')[1]}/)`).join('\n')}\n`)

@@ -184,7 +184,7 @@ const logged = (request, entries) => ({ ...request, processing: { ...request.pro
 // The runtime's context as an execution reads it: read-only, no writer.
 const runtimeView = ctx => Object.freeze({
   name: ctx.name,
-  // its unique URI (<swarm>/<node>); its name where it has none
+  // its unique URI (<swarm>/<peer>); its name where it has none
   uri: ctx.uri ?? ctx.name,
   work: ctx.work ?? null,
   dir: ctx.dir ?? null,

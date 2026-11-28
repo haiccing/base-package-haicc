@@ -28,7 +28,7 @@ any other's. The keywords are read in a package's context:
   package that has it; else each package that has it, a choice each,
   kept apart, each written with its context to go on with.
 - **The mrepo's own keywords** need none: the top, each organisation
-  (its packages, the contexts), `modules`, `third-party`, `schemas`.
+  (its packages, the contexts), `modules`, `third-party`.
 
 ## Returns
 
