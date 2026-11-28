@@ -5,7 +5,7 @@ Starts the program of a package placed in the mrepo's folder, as its own process
 A program is a package's `/run` entry. `runtime/run` runs a package's
 entries inside the runtime's process and refuses `/run`; this is its
 complement: the program beside the mrepo, a process of its own. A hook
-starts one: a Splectral component's `start` hook its renderer.
+starts one: a SPLectral component's `start` hook its renderer.
 
 ## Signature
 

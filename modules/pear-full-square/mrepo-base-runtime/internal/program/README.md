@@ -39,7 +39,7 @@ a package's `/run` entry, its bundle's default: started as `bare
 - **What a program does in return**: it writes its state, whole (written
   aside, then renamed), with its `pid`, once it is up; it removes it as
   it ends; and it ends by itself when the runtime it was given has ended
-  or the mrepo's folder is gone. Splectral's server is such a program.
+  or the mrepo's folder is gone. SPLectral's server is such a program.
 - **Started through the shell**, in its own session: it outlives the
   request that started it.
 - Its state is a file in the mrepo's folder, beside its bundle: this

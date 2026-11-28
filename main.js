@@ -70,10 +70,34 @@ export async function run (target = '/run', { dryRun = false, print = null, env 
 }
 
 // brittle's summary: '# tests = a/b pass', '# asserts = c/d pass'; a failed
-// test: 'not ok n - name' at the top level.
+// test: 'not ok n - name' at the top level, its failed asserts indented
+// above it ('    not ok n - message', then its actual and expected): each
+// failure the test's name, then the asserts that failed in it, so a report
+// says which assert, not only which test.
 export function summary (tap) {
   const count = re => { const m = tap.match(re); return m ? { passed: Number(m[1]), total: Number(m[2]) } : null }
-  const failures = tap.split('\n').filter(l => /^not ok \d+/.test(l)).map(l => l.replace(/^not ok \d+ - /, '').replace(/ # time = .*$/, ''))
+  const lines = tap.split('\n')
+  const failures = []
+  let failed = []
+  for (let i = 0; i < lines.length; i++) {
+    const l = lines[i]
+    const a = l.match(/^\s+not ok \d+ - (.*?)(?: # .*)?$/)
+    if (a) {
+      const said = []
+      for (let j = i + 1; j < lines.length && j < i + 60 && !/^\s*(?:not )?ok \d+/.test(lines[j]); j++) {
+        const m = lines[j].match(/^\s+(actual|expected): (.+)$/)
+        if (m) said.push(`${m[1]} ${m[2].slice(0, 200)}`)
+      }
+      failed.push(said.length ? `${a[1]} (${said.join(', ')})` : a[1])
+      continue
+    }
+    if (/^ok \d+/.test(l)) { failed = []; continue }
+    if (/^not ok \d+/.test(l)) {
+      const name = l.replace(/^not ok \d+ - /, '').replace(/ # time = .*$/, '')
+      failures.push(failed.length ? `${name}: ${failed.join('; ')}` : name)
+      failed = []
+    }
+  }
   return { tests: count(/^# tests = (\d+)\/(\d+)/m), asserts: count(/^# asserts = (\d+)\/(\d+)/m), failures }
 }
 

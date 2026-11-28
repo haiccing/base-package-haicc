@@ -3,7 +3,7 @@
 Ends the program of a package placed in the mrepo's folder, waited for until its process has ended.
 
 The other half of `runtime/start`: a hook ends what a hook started (a
-Splectral component's `stop` hook its renderer).
+SPLectral component's `stop` hook its renderer).
 
 ## Signature
 

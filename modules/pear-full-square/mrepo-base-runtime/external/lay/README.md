@@ -6,7 +6,7 @@ The second half of a deploy, for a platform: an mrepo deployed as any
 other (the first half), a platform places a package of its own in the
 mrepo's folder, and the mrepo lays that package's runtime config on top
 of its own, itself: its runtime is the one writer of its layers.
-Splectral's components are made so (`splectral/install`).
+SPLectral's components are made so (`splectral/install`).
 
 ## Signature
 
